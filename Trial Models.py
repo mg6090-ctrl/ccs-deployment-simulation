@@ -36,7 +36,7 @@ DURATION_DISTRIBUTIONS = {
             "mean": 36,
             "std": 2,  # Standard deviation for normal/lognormal distributions
             "min": 12,   # Optional minimum bound (clips samples)
-            "max": ,  # Optional maximum bound (clips samples)
+            "max": 30,  # Optional maximum bound (clips samples)
         },
         "Approvals_months": {
             "distribution": "normal",
@@ -58,7 +58,7 @@ DURATION_DISTRIBUTIONS = {
             "std": 3,
             "min": 9,
             "max": 27,
-        },
+        }
     },
 
     "TS": {
@@ -85,7 +85,7 @@ DURATION_DISTRIBUTIONS = {
             "min": 60,
             "max": 180,
         },
-    },
+    }
 }
 
 
