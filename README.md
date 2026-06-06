@@ -1,2 +1,2 @@
 # 2026SummerResearch
-Learning how to use this
+Developing a CCS simulation for Net Zero California
