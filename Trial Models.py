@@ -41,6 +41,12 @@ DURATION_DISTRIBUTIONS = {
         "Approvals_months": {
             "distribution": "normal",
             "mean": 24,
+            "min": 48,   # Optional minimum bound (clips samples)
+            "max": 18,  # Optional maximum bound (clips samples)
+        },
+        "Approvals_months": {
+            "distribution": "normal",
+            "mean": 12,
             "std": 2,
             "min": 6,
             "max": 18,
@@ -48,6 +54,7 @@ DURATION_DISTRIBUTIONS = {
         "Construction_months": {
             "distribution": "normal",
             "mean": 48,
+            "mean": 18,
             "std": 3,
             "min": 9,
             "max": 27,
@@ -73,6 +80,7 @@ DURATION_DISTRIBUTIONS = {
         "Construction_months": {
             "distribution": "normal",
             "mean": 120, 
+            "mean": 120,  # Will be overridden by transmission lead_time_months if using params
             "std": 20,
             "min": 60,
             "max": 180,
