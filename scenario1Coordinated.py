@@ -3,7 +3,7 @@
 import networkx as nx
 
 #==================================================================
-# PROJECT DICTIONARIES (INPUT DATA)
+# CONSTANTS (INPUT DATA AND PARAMETERS)
 #==================================================================
 
 # dictionary for capture projects
