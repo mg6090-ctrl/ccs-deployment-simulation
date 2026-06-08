@@ -105,7 +105,7 @@ def projGraph():
     return G
 
 #==================================================================
-# BUILDING THE DAG — ADDING INTRA-PROJECT EDGES
+# BUILDING THE DAG — ADDING EDGES
 #==================================================================
 
 def projEdges(G: nx.DiGraph):
@@ -113,22 +113,42 @@ def projEdges(G: nx.DiGraph):
     Description: adds intra-project edges to G
     Args: G
     '''
-    
-    def graphEdges(G, pid):
-        '''
-        Description: helper method for adding intra-project edges to each project
-        Args: G, pid
-        '''
-        for a, b in zip(STAGES[:-1], STAGES[1:]):
-            G.add_edge((pid, a), (pid, b))
-
-    # adding intra-project edges for capture projects
-    for pid in CAPTURE.keys():
-        graphEdges(G, pid)
-
-    # adding intra-project edges for TS projects 
-    for pid in TS.keys():
-        graphEdges(G, pid)
+    for ts in CLUSTERS.keys():
+        captures = CLUSTERS[ts]
+        for capture in captures:
+            for current_stage, next_stage in zip(STAGES[:-1], STAGES[1:]):
+              # adding the edge from the current ts stage to joint node
+              G.add_edge(
+                  (ts, current_stage),
+                  (capture, joint_naming(current_stage))
+              )  
+              # adding the edge from the current capture stage to joint node
+              G.add_edge(
+                  (capture, current_stage),
+                  (capture, joint_naming(current_stage))
+              )
+              # adding the edge from the joint node to the next ts stage
+              G. add_edge(
+                  (capture, joint_naming(current_stage)),
+                  (ts, next_stage)
+              )
+              # adding the edge from the joint node to the next capture stage
+              G. add_edge(
+                  (capture, joint_naming(current_stage)),
+                  (capture, next_stage)
+              )
+            
+            # add joint commissioning node
+            # adding the edge from capture construction to joint commissioning
+            G.add_edge(
+                (capture, "construction"),
+                (capture, joint_naming("construction"))
+            )
+            # adding the edge from ts construction to joint commissioning
+            G. add_edge(
+                (ts, "construction"),
+                (capture, joint_naming("construction"))
+            )    
 
 #==================================================================
 # RUNNING THE CPM
@@ -150,40 +170,7 @@ def CPM(G: nx.DiGraph):
         
         # update the ES and EF of each node
         G.nodes[node]["ES"] = updated_ES
-        G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"] 
-
-#==================================================================
-# BUILDING THE DAG — ADDING INTER-PROJECT EDGES
-#==================================================================
-def fracSplit():
-        '''
-        Description: helper method that splits capture into two batches based on risk aversion level
-        Returns: tuple of ([approval pids], [construction pids])
-        '''
-        # number of capture projects in approval batch
-        approv_num = round(len(CAPTURE)*FRAC_SPLIT[0])
-        
-        pids = [key for key in CAPTURE.keys()]
-        
-        # seeding and introducing randomness
-        rng = random.Random(SEED)
-        rng.shuffle(pids)
-
-        # cuts the list of pids in two for the two sets (go ahead at approval and construction)
-        return pids[:approv_num], pids[approv_num:]
-
-def projInterdep(G: nx.DiGraph):
-    '''
-    Description: adds inter-project edges to G
-    Args: G
-    '''
-
-    # loop through projects
-    approval, construction = fracSplit()
-    for pid in approval:
-        G.add_edge(("projS1", "approval"), (pid, "construction"))
-    for pid in construction:
-        G.add_edge(("projS1", "construction"), (pid, "construction"))
+        G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
 
 #==================================================================
 # RUNNING THE MODEL
@@ -199,9 +186,8 @@ def buildmodel():
     '''
 
     G = projGraph()
-    # projEdges(G)
-    # projInterdep(G)
-    # CPM(G)
+    projEdges(G)
+    CPM(G)
 
     return G
 
@@ -212,10 +198,9 @@ def buildmodel():
 G = buildmodel()
 
 # checking that G is a DAG
-# print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
+print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
 
 # inspecting the nodes of G 
 print("Printing out nodes of the graph: ")
 for n in G.nodes:
-    print(n)
-    # print(n, G.nodes[n])
+    print(n, G.nodes[n])
