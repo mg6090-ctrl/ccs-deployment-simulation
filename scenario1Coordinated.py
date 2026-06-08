@@ -20,6 +20,10 @@ TS = {
     "projS3": {"definition": 48, "approval": 24, "construction": 60}
 }
 
+# stages of projects
+STAGES = ["definition", "approval", "construction"]
+STAGES4 = ["definition", "approval", "construction"]
+
 #==================================================================
 # BUILDING THE DAG — ADDING NODES
 #==================================================================
@@ -59,4 +63,24 @@ for n in G.nodes:
 #==================================================================
 # BUILDING THE DAG — ADDING INTRA-PROJECT EDGES
 #==================================================================
+
+# function for adding intra-project edges to the graph
+def projEdges(G):
+
+    # helper method for adding intra-project edges to each project
+    def graphEdges(G, pid):
+        for a, b in zip(STAGES[:-1], STAGES[1:]):
+            G.add_edge((pid, a), (pid, b))
+
+    # adding intra-project edges for capture projects
+    for pid in CAPTURE.keys():
+        graphEdges(G, pid)
+
+    # adding intra-project edges for TS projects 
+    for pid in TS.keys():
+        graphEdges(G, pid)
+
+projEdges(G)
+print(list(G.edges))
+print(nx.is_directed_acyclic_graph(G)) 
 
