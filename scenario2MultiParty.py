@@ -5,6 +5,10 @@ import random
 # CONSTANTS (INPUT DATA AND PARAMETERS)
 #==================================================================
 
+# stages of projects
+STAGES = ["definition", "approval", "construction"]
+STAGES4 = ["definition", "approval", "construction", "commission"]
+
 # dictionary for capture projects
 CAPTURE = {
     "projC1": {"definition": 12, "approval": 24, "construction": 48},
@@ -16,16 +20,16 @@ CAPTURE = {
 # dictionary for TS projects
 TS = {
     "projS1": {"definition": 48, "approval": 36, "construction": 72},
-    # "projS2": {"definition": 60, "approval": 36, "construction": 96},
-    # "projS3": {"definition": 48, "approval": 24, "construction": 60}
+    "projS2": {"definition": 60, "approval": 36, "construction": 96},
+    "projS3": {"definition": 48, "approval": 24, "construction": 60}
 }
 
-# stages of projects
-STAGES = ["definition", "approval", "construction"]
-STAGES4 = ["definition", "approval", "construction", "commission"]
-
-# fraction split
-FRAC_SPLIT = (0.2, 0.8)
+# clusters (matching capture to transport)
+CLUSTERS = {
+    "projS1": ["projC1"],
+    "projS2": ["projC2"],
+    "projS3": ["projC3"],
+}
 
 # seed for shuffling before frac_split 
 SEED = 42
@@ -33,6 +37,19 @@ SEED = 42
 #==================================================================
 # BUILDING THE DAG — ADDING NODES
 #==================================================================
+
+def joint_naming(stage):
+    '''
+    Description: naming the joint nodes
+    Args: stage
+    Returns: name of the joint node
+    '''
+    if stage == "construction":
+        joint_name = "commissioning joint node"
+    else:
+        joint_name = stage + " joint node"
+    return joint_name
+
 
 def projGraph():
     '''
@@ -42,28 +59,48 @@ def projGraph():
     # make one large graph
     G = nx.DiGraph()
 
-    def add_project(pid, stages, tech):
-        '''
-        Description: helper function to add a node for each project stage
-        Args: pid, stages, tech
-        '''
-        for stage, dur in stages.items():
+    for ts, captures in CLUSTERS.items():
+        # cluster number is determined by ts project
+        cluster =  ts + " cluster"
+
+        # add ts nodes
+        for stage, dur in TS[ts].items():
             G.add_node(
-                (pid, stage),
+                (ts, stage),
                 duration = dur,
-                tech = tech,
                 stage = stage,
+                cluster = cluster,
+                tech = "TS",
                 ES = 0.0,
                 EF = 0.0
             )
 
-    # add nodes for capture projects
-    for pid, stages in CAPTURE.items():
-        add_project(pid, stages, "Capture")
-    
-    # add nodes for TS projects
-    for pid, stages in TS.items():
-        add_project(pid, stages, 'TS')
+        for capture in captures:
+            # add capture nodes
+            for stage, dur in CAPTURE[capture].items():
+                G.add_node(
+                    (capture, stage),
+                    duration = dur,
+                    stage = stage,
+                    cluster = cluster,
+                    tech = "Capture",
+                    ES = 0.0,
+                    EF = 0.0
+                )
+            
+            # add joint nodes
+            for stage in STAGES:
+                joint_name = joint_naming(stage)
+                G.add_node(
+                    (capture, joint_name),
+                    duration = 0,
+                    stage = joint_name,
+                    capture = capture,
+                    cluster = cluster,
+                    tech = "Joint",
+                    ES = 0.0,
+                    EF = 0.0
+                )
     
     return G
 
@@ -162,9 +199,9 @@ def buildmodel():
     '''
 
     G = projGraph()
-    projEdges(G)
-    projInterdep(G)
-    CPM(G)
+    # projEdges(G)
+    # projInterdep(G)
+    # CPM(G)
 
     return G
 
@@ -175,14 +212,10 @@ def buildmodel():
 G = buildmodel()
 
 # checking that G is a DAG
-print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
-
-# inspecting the outputs of fracSplit
-approval, construction = fracSplit()
-print("Approval batch: ", approval)
-print("Construction batch: ", construction)
+# print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
 
 # inspecting the nodes of G 
 print("Printing out nodes of the graph: ")
 for n in G.nodes:
-    print(n, G.nodes[n])
+    print(n)
+    # print(n, G.nodes[n])
