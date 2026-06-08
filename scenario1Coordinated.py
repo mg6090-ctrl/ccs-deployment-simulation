@@ -16,13 +16,16 @@ CAPTURE = {
 # dictionary for TS projects
 TS = {
     "projS1": {"definition": 48, "approval": 36, "construction": 72},
-    "projS2": {"definition": 60, "approval": 36, "construction": 96},
-    "projS3": {"definition": 48, "approval": 24, "construction": 60}
+    # "projS2": {"definition": 60, "approval": 36, "construction": 96},
+    # "projS3": {"definition": 48, "approval": 24, "construction": 60}
 }
 
 # stages of projects
 STAGES = ["definition", "approval", "construction"]
 STAGES4 = ["definition", "approval", "construction"]
+
+# fraction split
+FRAC_SPLIT = (0.2, 0.8)
 
 #==================================================================
 # BUILDING THE DAG — ADDING NODES
@@ -111,13 +114,26 @@ print(nx.is_directed_acyclic_graph(G))
 #==================================================================
 # BUILDING THE DAG — ADDING INTER-PROJECT EDGES
 #==================================================================
+def fracSplit():
+    # create empty dictionaries for the move-forward-at-approval and 
+    # move-forward-at-construction batches
+    approval_batch = {}
+    construction_batch = {}
+
 
 def projInterdep(G: nx.DiGraph):
     for cap_proj in CAPTURE.keys():
         G.add_edge(("projS1", "construction"), (cap_proj, "construction"))
 
-projInterdep(G)
+def fracTest(G: nx.DiGraph):
+    G.add_edge(("projS1", "construction"), ("projC1", "construction"))
+    G.add_edge(("projS1", "construction"), ("projC2", "construction"))
+    G.add_edge(("projS1", "approval"), ("projC3", "construction"))
+
+# projInterdep(G)
+fracTest(G)
 print(nx.is_directed_acyclic_graph(G)) 
 CPM(G)
 for n in G.nodes:
     print(n, G.nodes[n])
+
