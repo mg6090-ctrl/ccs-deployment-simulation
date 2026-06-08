@@ -84,3 +84,30 @@ projEdges(G)
 print(list(G.edges))
 print(nx.is_directed_acyclic_graph(G)) 
 
+
+#==================================================================
+# RUNNING THE CPM
+#==================================================================
+
+def CPM(G: nx.DiGraph):
+    for node in nx.topological_sort(G):
+        preds = list(G.predecessors(node))
+
+        # the new ES is the max of the EF of the preceeding node(s) and the original ES
+        max_preds = max((G.nodes[p]["EF"] for p in preds), default = 0.0)
+
+        updated_ES = max(max_preds, G.nodes[node].get("ES", 0.0))
+        
+        # update the ES and EF of each node
+        G.nodes[node]["ES"] = updated_ES
+        G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"] 
+
+CPM(G)
+for n in G.nodes:
+    print(n, G.nodes[n])
+
+print(nx.is_directed_acyclic_graph(G)) 
+
+#==================================================================
+# BUILDING THE DAG — ADDING INTER-PROJECT EDGES
+#==================================================================
