@@ -1,6 +1,7 @@
 # DAG FOR SCENARIO 1 (COORDINATED)
 
 import networkx as nx
+import random
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -10,7 +11,8 @@ import networkx as nx
 CAPTURE = {
     "projC1": {"definition": 12, "approval": 24, "construction": 48},
     "projC2": {"definition": 30, "approval": 48, "construction": 60},
-    "projC3": {"definition": 24, "approval": 24, "construction": 36}
+    "projC3": {"definition": 24, "approval": 24, "construction": 36},
+    "projC4": {"definition": 16, "approval": 32, "construction": 50}
 }
 
 # dictionary for TS projects
@@ -22,7 +24,7 @@ TS = {
 
 # stages of projects
 STAGES = ["definition", "approval", "construction"]
-STAGES4 = ["definition", "approval", "construction"]
+STAGES4 = ["definition", "approval", "construction", "commission"]
 
 # fraction split
 FRAC_SPLIT = (0.2, 0.8)
@@ -31,13 +33,19 @@ FRAC_SPLIT = (0.2, 0.8)
 # BUILDING THE DAG — ADDING NODES
 #==================================================================
 
-# function for adding nodes to the graph
 def projGraph():
+    '''
+    Description: creating graph and adding nodes
+    Returns: directed acyclic graph G
+    '''
     # make one large graph
     G = nx.DiGraph()
 
-    # helper function to add a node for each project stage
     def add_project(pid, stages, tech):
+        '''
+        Description: helper function to add a node for each project stage
+        Args: pid, stages, tech
+        '''
         for stage, dur in stages.items():
             G.add_node(
                 (pid, stage),
@@ -58,20 +66,21 @@ def projGraph():
     
     return G
 
-# print the nodes and their attributes
-G = projGraph()
-for n in G.nodes:
-    print(n, G.nodes[n])
-
 #==================================================================
 # BUILDING THE DAG — ADDING INTRA-PROJECT EDGES
 #==================================================================
 
-# function for adding intra-project edges to the graph
 def projEdges(G: nx.DiGraph):
-
-    # helper method for adding intra-project edges to each project
+    '''
+    Description: adds intra-project edges to G
+    Args: G
+    '''
+    
     def graphEdges(G, pid):
+        '''
+        Description: helper method for adding intra-project edges to each project
+        Args: G, pid
+        '''
         for a, b in zip(STAGES[:-1], STAGES[1:]):
             G.add_edge((pid, a), (pid, b))
 
@@ -83,16 +92,16 @@ def projEdges(G: nx.DiGraph):
     for pid in TS.keys():
         graphEdges(G, pid)
 
-projEdges(G)
-print(list(G.edges))
-print(nx.is_directed_acyclic_graph(G)) 
-
-
 #==================================================================
 # RUNNING THE CPM
 #==================================================================
 
 def CPM(G: nx.DiGraph):
+    '''
+    Description: runs critical path method (CPM), updating ES and EF 
+    Args: G
+    '''
+    
     for node in nx.topological_sort(G):
         preds = list(G.predecessors(node))
 
@@ -105,35 +114,62 @@ def CPM(G: nx.DiGraph):
         G.nodes[node]["ES"] = updated_ES
         G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"] 
 
-CPM(G)
-for n in G.nodes:
-    print(n, G.nodes[n])
-
-print(nx.is_directed_acyclic_graph(G)) 
-
 #==================================================================
 # BUILDING THE DAG — ADDING INTER-PROJECT EDGES
 #==================================================================
-def fracSplit():
-    # create empty dictionaries for the move-forward-at-approval and 
-    # move-forward-at-construction batches
-    approval_batch = {}
-    construction_batch = {}
-
 
 def projInterdep(G: nx.DiGraph):
-    for cap_proj in CAPTURE.keys():
-        G.add_edge(("projS1", "construction"), (cap_proj, "construction"))
+    '''
+    Description: adds inter-project edges to G
+    Args: G
+    '''
+    
+    def fracSplit():
+        '''
+        Description: helper method that splits capture into two batches based on risk aversion level
+        Returns: tuple of ([approval pids], [construction pids])
+        '''
+        # number of capture projects in approval batch
+        approv_num = round(len(CAPTURE)*FRAC_SPLIT[0])
+        
+        pids = [key for key in CAPTURE.keys()]
+        
+        # cuts the list of pids in two for the two sets (go ahead at approval and construction)
+        return pids[:approv_num], pids[approv_num:]
+    
+    # loop through projects
+    approval, construction = fracSplit()
+    for pid in approval:
+        G.add_edge(("projS1", "approval"), (pid, "construction"))
+    for pid in construction:
+        G.add_edge(("projS1", "construction"), (pid, "construction"))
 
-def fracTest(G: nx.DiGraph):
-    G.add_edge(("projS1", "construction"), ("projC1", "construction"))
-    G.add_edge(("projS1", "construction"), ("projC2", "construction"))
-    G.add_edge(("projS1", "approval"), ("projC3", "construction"))
+#==================================================================
+# RUNNING THE MODEL
+#==================================================================
 
-# projInterdep(G)
-fracTest(G)
-print(nx.is_directed_acyclic_graph(G)) 
-CPM(G)
+def buildmodel():
+    '''
+    Description: runs the process 1) building graph and add nodes 
+    -> 2) add intra-project edges
+    -> 3) add inter-project edges
+    -> 4) run CPM
+    Returns: G
+    '''
+
+    G = projGraph()
+    projEdges(G)
+    projInterdep(G)
+    CPM(G)
+
+    return G
+
+#==================================================================
+# MAIN (EXECUTION)
+#==================================================================
+
+G = buildmodel()
+
+print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
 for n in G.nodes:
     print(n, G.nodes[n])
-
