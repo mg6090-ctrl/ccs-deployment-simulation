@@ -65,7 +65,7 @@ for n in G.nodes:
 #==================================================================
 
 # function for adding intra-project edges to the graph
-def projEdges(G):
+def projEdges(G: nx.DiGraph):
 
     # helper method for adding intra-project edges to each project
     def graphEdges(G, pid):
@@ -111,3 +111,13 @@ print(nx.is_directed_acyclic_graph(G))
 #==================================================================
 # BUILDING THE DAG — ADDING INTER-PROJECT EDGES
 #==================================================================
+
+def projInterdep(G: nx.DiGraph):
+    for cap_proj in CAPTURE.keys():
+        G.add_edge(("projS1", "construction"), (cap_proj, "construction"))
+
+projInterdep(G)
+print(nx.is_directed_acyclic_graph(G)) 
+CPM(G)
+for n in G.nodes:
+    print(n, G.nodes[n])
