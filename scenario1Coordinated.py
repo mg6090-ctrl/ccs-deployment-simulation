@@ -29,6 +29,9 @@ STAGES4 = ["definition", "approval", "construction", "commission"]
 # fraction split
 FRAC_SPLIT = (0.2, 0.8)
 
+# seed for shuffling before frac_split 
+SEED = 42
+
 #==================================================================
 # BUILDING THE DAG — ADDING NODES
 #==================================================================
@@ -117,14 +120,7 @@ def CPM(G: nx.DiGraph):
 #==================================================================
 # BUILDING THE DAG — ADDING INTER-PROJECT EDGES
 #==================================================================
-
-def projInterdep(G: nx.DiGraph):
-    '''
-    Description: adds inter-project edges to G
-    Args: G
-    '''
-    
-    def fracSplit():
+def fracSplit():
         '''
         Description: helper method that splits capture into two batches based on risk aversion level
         Returns: tuple of ([approval pids], [construction pids])
@@ -134,9 +130,19 @@ def projInterdep(G: nx.DiGraph):
         
         pids = [key for key in CAPTURE.keys()]
         
+        # seeding and introducing randomness
+        rng = random.Random(SEED)
+        rng.shuffle(pids)
+
         # cuts the list of pids in two for the two sets (go ahead at approval and construction)
         return pids[:approv_num], pids[approv_num:]
-    
+
+def projInterdep(G: nx.DiGraph):
+    '''
+    Description: adds inter-project edges to G
+    Args: G
+    '''
+
     # loop through projects
     approval, construction = fracSplit()
     for pid in approval:
@@ -170,6 +176,16 @@ def buildmodel():
 
 G = buildmodel()
 
+# checking that G is a DAG
 print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
+
+# inspecting the outputs of fracSplit
+approval, construction = fracSplit()
+print("Approval batch: ", approval)
+print("Construction batch: ", construction)
+
+# inspecting the nodes of G 
+print("Printing out nodes of the graph: ")
 for n in G.nodes:
     print(n, G.nodes[n])
+
