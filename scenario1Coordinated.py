@@ -18,8 +18,6 @@ CAPTURE = {
 # dictionary for TS projects
 TS = {
     "projS1": {"definition": 48, "approval": 36, "construction": 72},
-    # "projS2": {"definition": 60, "approval": 36, "construction": 96},
-    # "projS3": {"definition": 48, "approval": 24, "construction": 60}
 }
 
 # stages of projects
