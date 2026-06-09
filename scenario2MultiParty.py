@@ -36,13 +36,76 @@ CLUSTERS = {
 SEED = 42
 
 # constants for the abandonment function
-BASE_RATE = 0.2
-MAX_RATE = 0.8
-CAPTURE_TOLERANCE = 18
-TS_TOLERANCE = 12
+BASE_RATE = 0.05
+MAX_RATE = 0.9
+CAPTURE_TOLERANCE = 24
+TS_TOLERANCE = 36
 
 #==================================================================
-# BUILDING THE DAG — ADDING NODES
+# BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
+#==================================================================
+
+def make_base_graph():
+    '''
+    Description: builds intra-project DAG without joint nodes
+    Returns: G_indep
+    '''
+
+    # helper method for drawing project nodes only (no joint nodes)
+    def intra_nodes():
+        # make one large graph
+        G = nx.DiGraph()
+
+        for ts, captures in CLUSTERS.items():
+            # cluster number is determined by ts project
+            cluster =  ts + " cluster"
+
+            # add ts nodes
+            for stage, dur in TS[ts].items():
+                G.add_node(
+                    (ts, stage),
+                    duration = dur,
+                    stage = stage,
+                    cluster = cluster,
+                    tech = "TS",
+                    ES = 0.0,
+                    EF = 0.0
+                )
+
+            for capture in captures:
+                # add capture nodes
+                for stage, dur in CAPTURE[capture].items():
+                    G.add_node(
+                        (capture, stage),
+                        duration = dur,
+                        stage = stage,
+                        cluster = cluster,
+                        tech = "Capture",
+                        ES = 0.0,
+                        EF = 0.0
+                    )
+        return G
+
+    # helper method for drawing intra-project edges only
+    def intra_edges(G: nx.DiGraph):
+        def graphEdges(G, pid):
+            for a, b in zip(STAGES[:-1], STAGES[1:]):
+                G.add_edge((pid, a), (pid, b))
+
+        for pid in CAPTURE.keys():
+            graphEdges(G, pid)
+
+        for pid in TS.keys():
+            graphEdges(G, pid)
+
+    # make a NEW graph without interdependent edges to evaluate baseline ES/EF
+    G_indep = intra_nodes()
+    intra_edges(G_indep)
+
+    return G_indep
+
+#==================================================================
+# BUILDING THE DAG WITH INTERDEPENDENCIES
 #==================================================================
 
 def joint_naming(stage):
@@ -110,10 +173,6 @@ def projGraph():
                 )
     
     return G
-
-#==================================================================
-# BUILDING THE DAG — ADDING EDGES
-#==================================================================
 
 def projEdges(G: nx.DiGraph):
     '''
@@ -183,66 +242,7 @@ def CPM(G: nx.DiGraph):
 # DELAYS AND ABANDONMENT
 #==================================================================
 
-def make_base_graph():
-    '''
-    Description: builds intra-project DAG without joint nodes
-    Returns: G_indep
-    '''
-
-    # helper method for drawing project nodes only (no joint nodes)
-    def intra_nodes():
-        # make one large graph
-        G = nx.DiGraph()
-
-        for ts, captures in CLUSTERS.items():
-            # cluster number is determined by ts project
-            cluster =  ts + " cluster"
-
-            # add ts nodes
-            for stage, dur in TS[ts].items():
-                G.add_node(
-                    (ts, stage),
-                    duration = dur,
-                    stage = stage,
-                    cluster = cluster,
-                    tech = "TS",
-                    ES = 0.0,
-                    EF = 0.0
-                )
-
-            for capture in captures:
-                # add capture nodes
-                for stage, dur in CAPTURE[capture].items():
-                    G.add_node(
-                        (capture, stage),
-                        duration = dur,
-                        stage = stage,
-                        cluster = cluster,
-                        tech = "Capture",
-                        ES = 0.0,
-                        EF = 0.0
-                    )
-        return G
-
-    # helper method for drawing intra-project edges only
-    def intra_edges(G: nx.DiGraph):
-        def graphEdges(G, pid):
-            for a, b in zip(STAGES[:-1], STAGES[1:]):
-                G.add_edge((pid, a), (pid, b))
-
-        for pid in CAPTURE.keys():
-            graphEdges(G, pid)
-
-        for pid in TS.keys():
-            graphEdges(G, pid)
-
-    # make a NEW graph without interdependent edges to evaluate baseline ES/EF
-    G_indep = intra_nodes()
-    intra_edges(G_indep)
-
-    return G_indep
-
-def slip_compute(node):
+def behind_schedule_delay(node):
     '''
     Description: returns slip time of a given node
     Args: node (project, stage); expectation: do not enter a joint node because we need to get 
@@ -273,28 +273,65 @@ def slip_compute(node):
     
     return base_EF, actual_EF, slip_time
 
+def stage_delay(G, node):
+    '''
+    Description: calculates delay at a specific stage
+    Args: constrained graph with interdepencies, node
+    Returns: the stage delay at that specific node 
+    '''
+    # KEY ASSUMPTION: EACH NODE ONLY FEEDS INTO ONE SUCCESSOR NODE. THIS WOULD NOT BE 
+    # TRUE FOR TS PROJECTS IF WE DON'T HAVE 1:1 MATCHING (RIGHT NOW IT WORKS)
+    return G.nodes[list(G.successors(node))[0]]["EF"] - G.nodes[node]["EF"]
+
+def stage_partner_wait(G: nx.DiGraph, node):
+    '''
+    Description: returns the cumulative and per-stage wait time for partner at the node
+    Args: constrained graph with interdepencies, node
+    Returns: cumulative wait time of that project up to (and including) that node
+    '''
+    # for each node, calculate the cumulative time spent waiting for the other actor up to (and 
+    # including that stage).
+
+    project = node[0]
+    target_stage = node[1]
+    cumulative = 0.0
+    for stage in STAGES:
+        cumulative += stage_delay(G, (project, stage))
+        if stage == target_stage:
+            break
+    
+    return cumulative
+
+
 def calculate_attrition_probability(delay, tech):
     '''
     Description: returns attrition probability based on delay and tech
-    Principle: slip past per-party tolerance baseline
+    Principle: slip past cumulative partner wait baseline
     Args: delay (calculated from slip_compute) and tech
     Returns: probability
     '''
-    if tech == "capture":
-        if delay < CAPTURE_TOLERANCE:
-            return BASE_RATE
-        else:
-            delay_factor = delay / CAPTURE_TOLERANCE
-            return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
+    if tech == "Capture":
+        tolerance = CAPTURE_TOLERANCE
+    else:
+        tolerance = TS_TOLERANCE
+    
+    if delay < tolerance:
+        return BASE_RATE
+    else:
+        delay_factor = delay / tolerance
+        return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
 
-    if tech == "TS":
-        if delay < TS_TOLERANCE:
-            return BASE_RATE
-        else:
-            delay_factor = delay / TS_TOLERANCE
-            return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
+def apply_attrition(G: nx.DiGraph):
+    # random seed
+    rng = random.Random(SEED)
 
-def apply_attrition():
+    # list of attrited projects
+
+    for node in nx.topological_sort(G):
+        tech = G.nodes[node]["tech"]
+        delay = behind_schedule_delay(node)
+        prob = calculate_attrition_probability(delay, tech)
+
     return
 
 #==================================================================
@@ -320,7 +357,7 @@ def buildmodel():
 # MAIN (EXECUTION)
 #==================================================================
 
-# G = buildmodel()
+G = buildmodel()
 
 # checking that G is a DAG
 # print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
@@ -330,8 +367,5 @@ def buildmodel():
 # for n in G.nodes:
     # print(n, G.nodes[n])
 
-# testing slip_compute
-print(slip_compute(("projC1", "definition")))
-print(slip_compute(("projC1", "approval")))
-print(slip_compute(("projS1", "definition")))
-print(slip_compute(("projS1", "approval")))
+print(stage_partner_wait(G, ("projC1", "approval")))
+print(stage_partner_wait(G, ("projS1", "approval")))
