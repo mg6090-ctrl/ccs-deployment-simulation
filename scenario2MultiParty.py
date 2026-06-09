@@ -12,34 +12,43 @@ STAGES4 = ["definition", "approval", "construction", "commission"]
 
 # dictionary for capture projects
 CAPTURE = {
-    "projC1": {"definition": 12, "approval": 24, "construction": 48},
-    "projC2": {"definition": 30, "approval": 48, "construction": 60},
-    "projC3": {"definition": 24, "approval": 24, "construction": 36},
-    # "projC4": {"definition": 16, "approval": 32, "construction": 50}
+    "projC1": {"definition": 12, "approval": 24, "construction": 48},   # fast capture, slow TS partner -> capture waits a lot
+    "projC2": {"definition": 30, "approval": 48, "construction": 60},   # roughly matched to its TS -> low slip
+    "projC3": {"definition": 24, "approval": 24, "construction": 36},   # fast capture, slow TS -> capture waits
+    "projC4": {"definition": 50, "approval": 40, "construction": 80},   # slow capture, fast TS -> TS waits a lot
+    "projC5": {"definition": 46, "approval": 34, "construction": 62},   # closely matched to its TS -> near-zero slip, should survive
+    "projC6": {"definition": 10, "approval": 18, "construction": 30},   # very fast capture, very slow TS -> extreme wait, should die
 }
 
 # dictionary for TS projects
 TS = {
-    "projS1": {"definition": 48, "approval": 36, "construction": 72},
-    "projS2": {"definition": 60, "approval": 36, "construction": 96},
-    "projS3": {"definition": 48, "approval": 24, "construction": 60}
+    "projS1": {"definition": 48, "approval": 36, "construction": 72},   # slow -> makes projC1 wait
+    "projS2": {"definition": 30, "approval": 50, "construction": 64},   # ~matched to projC2
+    "projS3": {"definition": 48, "approval": 24, "construction": 60},   # slow def -> makes projC3 wait
+    "projS4": {"definition": 14, "approval": 20, "construction": 40},   # fast -> makes slow projC4 the one that waits... actually TS waits here
+    "projS5": {"definition": 48, "approval": 32, "construction": 60},   # ~matched to projC5 -> low slip
+    "projS6": {"definition": 72, "approval": 48, "construction": 110},  # extremely slow -> projC6 waits enormously
 }
 
-# clusters (matching capture to transport)
+# clusters (1:1 matching, TS -> [capture])
 CLUSTERS = {
-    "projS1": ["projC1"],
-    "projS2": ["projC2"],
-    "projS3": ["projC3"],
+    "projS1": ["projC1"],   # mismatch (TS slow) -> capture slips, moderate abandonment risk
+    "projS2": ["projC2"],   # well-matched -> low slip, should survive
+    "projS3": ["projC3"],   # mismatch (TS slow def) -> capture slips
+    "projS4": ["projC4"],   # mismatch (capture slow) -> TS slips, tests the OTHER party abandoning
+    "projS5": ["projC5"],   # tightly matched -> near-zero slip, should reliably survive
+    "projS6": ["projC6"],   # extreme mismatch -> huge slip, should reliably abandon
 }
 
 # seed for shuffling before frac_split 
 SEED = 42
 
 # constants for the abandonment function
-BASE_RATE = 0.05
+BASE_RATE = 0.03
 MAX_RATE = 0.9
 CAPTURE_TOLERANCE = 24
 TS_TOLERANCE = 36
+SCALE = 60
 
 #==================================================================
 # BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
@@ -69,7 +78,8 @@ def make_base_graph():
                     cluster = cluster,
                     tech = "TS",
                     ES = 0.0,
-                    EF = 0.0
+                    EF = 0.0,
+                    abandoned = None
                 )
 
             for capture in captures:
@@ -82,7 +92,8 @@ def make_base_graph():
                         cluster = cluster,
                         tech = "Capture",
                         ES = 0.0,
-                        EF = 0.0
+                        EF = 0.0,
+                        abandoned = None
                     )
         return G
 
@@ -142,7 +153,8 @@ def projGraph():
                 cluster = cluster,
                 tech = "TS",
                 ES = 0.0,
-                EF = 0.0
+                EF = 0.0,
+                abandoned = None
             )
 
         for capture in captures:
@@ -155,7 +167,8 @@ def projGraph():
                     cluster = cluster,
                     tech = "Capture",
                     ES = 0.0,
-                    EF = 0.0
+                    EF = 0.0,
+                    abandoned = None
                 )
             
             # add joint nodes
@@ -169,7 +182,8 @@ def projGraph():
                     cluster = cluster,
                     tech = "Joint",
                     ES = 0.0,
-                    EF = 0.0
+                    EF = 0.0,
+                    abandoned = None
                 )
     
     return G
@@ -239,7 +253,7 @@ def CPM(G: nx.DiGraph):
         G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
 
 #==================================================================
-# DELAYS AND ABANDONMENT
+# CALCULATING PROJECT DELAYS 
 #==================================================================
 
 def behind_schedule_delay(node):
@@ -302,6 +316,9 @@ def stage_partner_wait(G: nx.DiGraph, node):
     
     return cumulative
 
+#==================================================================
+# PROJECT ABANDONMENT
+#==================================================================
 
 def calculate_attrition_probability(delay, tech):
     '''
@@ -318,21 +335,42 @@ def calculate_attrition_probability(delay, tech):
     if delay < tolerance:
         return BASE_RATE
     else:
-        delay_factor = delay / tolerance
+        delay_factor = (delay - tolerance)/SCALE
         return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
+
+def mark_abandonment(G, ts, capture, stage):
+    for s in STAGES:
+        G.nodes[(ts, s)]["abandoned"] = stage
+        G.nodes[(capture, s)]["abandoned"] = stage
+    for s in STAGES:
+        G.nodes[(capture, joint_naming(s))]["abandoned"] = stage
 
 def apply_attrition(G: nx.DiGraph):
     # random seed
     rng = random.Random(SEED)
 
-    # list of attrited projects
+    # empty list for storing abandoned_clusters
+    abandoned_clusters = {}
+    
+    for stage in STAGES:
+        for ts, captures in CLUSTERS.items():
+            if ts in abandoned_clusters:
+                continue
+            capture = captures[0] # because we are in the 1:1 case right now
+            capture_wait = stage_partner_wait(G, (capture, stage))
+            ts_wait = stage_partner_wait(G, (ts, stage))
 
-    for node in nx.topological_sort(G):
-        tech = G.nodes[node]["tech"]
-        delay = behind_schedule_delay(node)
-        prob = calculate_attrition_probability(delay, tech)
+            p_capture = calculate_attrition_probability(capture_wait, "Capture")
+            p_ts = calculate_attrition_probability(ts_wait, "TS")
 
-    return
+            # abandonment criteria
+            if rng.random() < p_capture or rng.random() < p_ts:
+                abandoned_clusters[ts] = stage
+                mark_abandonment(G, ts, capture, stage)
+    
+    return abandoned_clusters
+
+
 
 #==================================================================
 # RUNNING THE MODEL
@@ -367,5 +405,8 @@ G = buildmodel()
 # for n in G.nodes:
     # print(n, G.nodes[n])
 
-print(stage_partner_wait(G, ("projC1", "approval")))
-print(stage_partner_wait(G, ("projS1", "approval")))
+print(apply_attrition(G))
+print(stage_partner_wait(G, ("projC5", "definition")))
+print(calculate_attrition_probability(0, "Capture"))
+print(calculate_attrition_probability(0, "TS"))
+print(stage_partner_wait(G, ("projC6", "construction")))
