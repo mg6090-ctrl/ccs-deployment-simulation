@@ -477,6 +477,7 @@ G = buildmodel()
 # for n in G.nodes:
     # print(n, G.nodes[n])
 
+print("Running tests")
 print(apply_attrition(G))
 print(stage_partner_wait(G, ("projC5", "definition")))
 print(calculate_attrition_probability(0, "Capture"))
