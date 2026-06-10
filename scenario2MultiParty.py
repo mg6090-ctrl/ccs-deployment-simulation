@@ -1,6 +1,7 @@
 import networkx as nx
-import random 
+import random
 import numpy as np
+import pandas as pd
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -8,44 +9,62 @@ import numpy as np
 
 # stages of projects
 STAGES = ["definition", "approval", "construction"]
-STAGES4 = ["definition", "approval", "construction", "commission"]
+STAGES4 = ["definition", "approval", "construction", "commissioning"]
 
 # dictionary for capture projects
 CAPTURE = {
-    "projC1": {"definition": 12, "approval": 24, "construction": 48},   # fast capture, slow TS partner -> capture waits a lot
-    "projC2": {"definition": 30, "approval": 48, "construction": 60},   # roughly matched to its TS -> low slip
-    "projC3": {"definition": 24, "approval": 24, "construction": 36},   # fast capture, slow TS -> capture waits
-    "projC4": {"definition": 50, "approval": 40, "construction": 80},   # slow capture, fast TS -> TS waits a lot
-    "projC5": {"definition": 46, "approval": 34, "construction": 62},   # closely matched to its TS -> near-zero slip, should survive
-    "projC6": {"definition": 10, "approval": 18, "construction": 30},   # very fast capture, very slow TS -> extreme wait, should die
+    "projC1":  {"definition": 12, "approval": 24, "construction": 48},
+    "projC2":  {"definition": 30, "approval": 48, "construction": 60},
+    "projC3":  {"definition": 24, "approval": 24, "construction": 36},
+    "projC4":  {"definition": 50, "approval": 40, "construction": 80},
+    "projC5":  {"definition": 46, "approval": 34, "construction": 62},
+    "projC6":  {"definition": 10, "approval": 18, "construction": 30},
+    "projC7":  {"definition": 20, "approval": 30, "construction": 44},
+    "projC8":  {"definition": 36, "approval": 30, "construction": 54},
+    "projC9":  {"definition": 14, "approval": 20, "construction": 34},
+    "projC10": {"definition": 60, "approval": 44, "construction": 90},
+    "projC11": {"definition": 28, "approval": 36, "construction": 50},
+    "projC12": {"definition": 18, "approval": 22, "construction": 40},
 }
 
 # dictionary for TS projects
 TS = {
-    "projS1": {"definition": 48, "approval": 36, "construction": 72},   # slow -> makes projC1 wait
-    "projS2": {"definition": 30, "approval": 50, "construction": 64},   # ~matched to projC2
-    "projS3": {"definition": 48, "approval": 24, "construction": 60},   # slow def -> makes projC3 wait
-    "projS4": {"definition": 14, "approval": 20, "construction": 40},   # fast -> makes slow projC4 the one that waits... actually TS waits here
-    "projS5": {"definition": 48, "approval": 32, "construction": 60},   # ~matched to projC5 -> low slip
-    "projS6": {"definition": 72, "approval": 48, "construction": 110},  # extremely slow -> projC6 waits enormously
+    "projS1":  {"definition": 48, "approval": 36, "construction": 72},   # slow vs fast C1 -> C waits, moderate slip
+    "projS2":  {"definition": 30, "approval": 50, "construction": 64},   # ~matched to C2 -> low slip
+    "projS3":  {"definition": 48, "approval": 24, "construction": 60},   # slow def vs fast C3 -> C waits
+    "projS4":  {"definition": 14, "approval": 20, "construction": 40},   # fast vs slow C4 -> TS waits (tests TS-side)
+    "projS5":  {"definition": 48, "approval": 32, "construction": 60},   # ~matched to C5 -> near-zero slip, survives
+    "projS6":  {"definition": 72, "approval": 48, "construction": 110},  # very slow vs fast C6 -> extreme slip, dies
+    "projS7":  {"definition": 22, "approval": 32, "construction": 46},   # tightly matched to C7 -> low slip, survives
+    "projS8":  {"definition": 38, "approval": 28, "construction": 56},   # closely matched to C8 -> low slip
+    "projS9":  {"definition": 60, "approval": 40, "construction": 88},   # slow vs fast C9 -> large slip, likely dies
+    "projS10": {"definition": 58, "approval": 46, "construction": 86},   # ~matched to slow C10 -> low slip BUT late commission
+    "projS11": {"definition": 30, "approval": 38, "construction": 52},   # ~matched to C11 -> low slip
+    "projS12": {"definition": 50, "approval": 30, "construction": 70},   # slow vs fast C12 -> moderate-large slip
 }
 
 # clusters (1:1 matching, TS -> [capture])
 CLUSTERS = {
-    "projS1": ["projC1"],   # mismatch (TS slow) -> capture slips, moderate abandonment risk
-    "projS2": ["projC2"],   # well-matched -> low slip, should survive
-    "projS3": ["projC3"],   # mismatch (TS slow def) -> capture slips
-    "projS4": ["projC4"],   # mismatch (capture slow) -> TS slips, tests the OTHER party abandoning
-    "projS5": ["projC5"],   # tightly matched -> near-zero slip, should reliably survive
-    "projS6": ["projC6"],   # extreme mismatch -> huge slip, should reliably abandon
+    "projS1":  ["projC1"],    # moderate mismatch -> moderate abandon risk
+    "projS2":  ["projC2"],    # matched -> survives, mid commission
+    "projS3":  ["projC3"],    # mismatch -> capture slips
+    "projS4":  ["projC4"],    # TS-side slip (capture slow) -> tests TS abandoning
+    "projS5":  ["projC5"],    # control: matched -> survives, mid commission
+    "projS6":  ["projC6"],    # extreme mismatch -> reliably dies
+    "projS7":  ["projC7"],    # matched + small durations -> survives, EARLY commission
+    "projS8":  ["projC8"],    # matched -> survives, mid commission
+    "projS9":  ["projC9"],    # large mismatch -> likely dies
+    "projS10": ["projC10"],   # matched but BIG durations -> survives, LATE commission
+    "projS11": ["projC11"],   # matched -> survives, mid commission
+    "projS12": ["projC12"],   # moderate-large mismatch -> borderline
 }
 
 # seed for shuffling before frac_split 
 SEED = 42
 
 # constants for the abandonment function
-BASE_RATE = 0.03
-MAX_RATE = 0.9
+BASE_RATE = 0.05
+MAX_RATE = 0.7
 CAPTURE_TOLERANCE = 24
 TS_TOLERANCE = 36
 SCALE = 60
@@ -82,6 +101,18 @@ def make_base_graph():
                     abandoned = None
                 )
 
+            # add ts commissioning node
+            G.add_node(
+                (ts, "commissioning"),
+                duration = 0,
+                stage = "commissioning",
+                cluster = cluster,
+                tech = "TS",
+                ES = 0.0,
+                EF = 0.0,
+                abandoned = None
+            )
+
             for capture in captures:
                 # add capture nodes
                 for stage, dur in CAPTURE[capture].items():
@@ -95,12 +126,25 @@ def make_base_graph():
                         EF = 0.0,
                         abandoned = None
                     )
+            
+                # add capture commissioning node
+                G.add_node(
+                    (capture, "commissioning"),
+                    duration = 0.0,
+                    stage = "commissioning",
+                    cluster = cluster,
+                    tech = "Capture",
+                    ES = 0.0,
+                    EF = 0.0,
+                    abandoned = None
+                )
+
         return G
 
     # helper method for drawing intra-project edges only
     def intra_edges(G: nx.DiGraph):
         def graphEdges(G, pid):
-            for a, b in zip(STAGES[:-1], STAGES[1:]):
+            for a, b in zip(STAGES4[:-1], STAGES4[1:]):
                 G.add_edge((pid, a), (pid, b))
 
         for pid in CAPTURE.keys():
@@ -125,10 +169,8 @@ def joint_naming(stage):
     Args: stage
     Returns: name of the joint node
     '''
-    if stage == "construction":
-        joint_name = "commissioning joint node"
-    else:
-        joint_name = stage + " joint node"
+    
+    joint_name = stage + " joint node"
     return joint_name
 
 
@@ -157,6 +199,18 @@ def projGraph():
                 abandoned = None
             )
 
+        # add commissioning node for TS
+        G.add_node(
+            (ts, "commissioning"),
+            duration = 0.0,
+            stage = "commissioning",
+            cluster = cluster,
+            tech = 'TS',
+            ES = 0.0,
+            EF = 0.0,
+            abandoned = None
+        )
+
         for capture in captures:
             # add capture nodes
             for stage, dur in CAPTURE[capture].items():
@@ -171,12 +225,24 @@ def projGraph():
                     abandoned = None
                 )
             
+            # add commissioning node for capture
+            G.add_node(
+                (capture, "commissioning"),
+                duration = 0.0,
+                stage = "commissioning",
+                cluster = cluster,
+                tech = 'Capture',
+                ES = 0.0,
+                EF = 0.0,
+                abandoned = None
+            )
+
             # add joint nodes
-            for stage in STAGES:
+            for stage in ['definition', 'approval']:
                 joint_name = joint_naming(stage)
                 G.add_node(
                     (capture, joint_name),
-                    duration = 0,
+                    duration = 0.0,
                     stage = joint_name,
                     capture = capture,
                     cluster = cluster,
@@ -219,16 +285,21 @@ def projEdges(G: nx.DiGraph):
               )
             
             # add joint commissioning node
-            # adding the edge from capture construction to joint commissioning
+            # adding the edge from capture construction to capture commissioning
             G.add_edge(
                 (capture, "construction"),
-                (capture, joint_naming("construction"))
+                (capture, "commissioning")
             )
-            # adding the edge from ts construction to joint commissioning
-            G. add_edge(
+            # adding the edge from ts construction to capture commissioning
+            G.add_edge(
                 (ts, "construction"),
-                (capture, joint_naming("construction"))
-            )    
+                (capture, "commissioning")
+            )
+            # add the edge from ts construction to ts commissioning
+            G.add_edge(
+                (ts, "construction"),
+                (ts, "commissioning")
+            )
 
 #==================================================================
 # RUNNING THE CPM
@@ -336,14 +407,15 @@ def calculate_attrition_probability(delay, tech):
         return BASE_RATE
     else:
         delay_factor = (delay - tolerance)/SCALE
-        return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
+        return min(MAX_RATE, BASE_RATE + (MAX_RATE - BASE_RATE) * (1 - np.exp(-delay_factor)))
 
 def mark_abandonment(G, ts, capture, stage):
     for s in STAGES:
         G.nodes[(ts, s)]["abandoned"] = stage
         G.nodes[(capture, s)]["abandoned"] = stage
-    for s in STAGES:
+    for s in ["definition", "approval"]:
         G.nodes[(capture, joint_naming(s))]["abandoned"] = stage
+    
 
 def apply_attrition(G: nx.DiGraph):
     # random seed
@@ -410,3 +482,6 @@ print(stage_partner_wait(G, ("projC5", "definition")))
 print(calculate_attrition_probability(0, "Capture"))
 print(calculate_attrition_probability(0, "TS"))
 print(stage_partner_wait(G, ("projC6", "construction")))
+print(list(G.successors(("projS5", "construction"))))
+print(stage_delay(G, ("projS5", "construction")))
+print(stage_delay(G, ("projC5", "construction")))
