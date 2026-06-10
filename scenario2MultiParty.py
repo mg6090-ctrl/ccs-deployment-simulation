@@ -327,23 +327,22 @@ def CPM(G: nx.DiGraph):
 # CALCULATING PROJECT DELAYS 
 #==================================================================
 
-def behind_schedule_delay(node):
+# CURRENTLY DORMANT METHOD (DELAY IS STAGE + OWN BUNDLED TOGETHER)
+def behind_schedule_delay(G_actual, G_base, project, stage, capture):
     '''
-    Description: returns slip time of a given node
+     Total lateness at the moving-on point: how far past its unconstrained
+    baseline a party clears this stage (reads the joint, so it bundles
+    partner-waiting now and own-overruns once durations are stochastic).
+    NOTE: currently equals stage_partner_wait; the two diverge only once
+    stochastic durations introduce own-overruns. Decompose-vs-bundle TBD
+    with Dr Greig
     Args: node (project, stage); expectation: do not enter a joint node because we need to get 
     this slip time for the TS and capture projects; it does not make sense to calculate it for 
     a joint node because joint nodes do not exist in the base graph
     Returns: slip time 
     '''
 
-    # make DAG with no joint nodes (no interdependencies) and run CPM
-    G_base = make_base_graph()
-    CPM(G_base)
-
-    # make DAG with interdependencies (actual) and run CPM
-    G_actual = projGraph()
-    projEdges(G_actual)
-    CPM(G_actual)
+    node = (project, stage)
 
     base_EF = G_base.nodes[node]["EF"]
 
@@ -351,22 +350,31 @@ def behind_schedule_delay(node):
     # if (capture, definition) -> want EF of def joint node
     # if (capture, approval) -> want EF of app joint node
     # if (capture, cons) -> want EF of commissioning joint node 
-    actual_EF = G_actual.nodes[list(G_actual.successors(node))[0]]["EF"]
+    actual_EF = G_actual.nodes[target_node(project, stage, capture)]["EF"]
 
     # actual_EF = G_actual.node[node]["EF"]
     slip_time = actual_EF - base_EF
     
     return base_EF, actual_EF, slip_time
 
-def stage_delay(G, node):
+def target_node(project, stage, capture):
+    # 1:1 ASSUMPTION: TS has one joint per stage. 
+    # Many-to-one -> set of joints, aggregate per sync rule (TBD with mentor + data).
+    if stage == "construction":
+        return (project, "commissioning")
+    else:
+        return (capture, joint_naming(stage))
+
+def stage_delay(G, project, stage, capture):
     '''
     Description: calculates delay at a specific stage
     Args: constrained graph with interdepencies, node
     Returns: the stage delay at that specific node 
     '''
-    # KEY ASSUMPTION: EACH NODE ONLY FEEDS INTO ONE SUCCESSOR NODE. THIS WOULD NOT BE 
-    # TRUE FOR TS PROJECTS IF WE DON'T HAVE 1:1 MATCHING (RIGHT NOW IT WORKS)
-    return G.nodes[list(G.successors(node))[0]]["EF"] - G.nodes[node]["EF"]
+    # Looks up target node via target_node(), allows it to accommodate multiple successors
+    # robust for 1: multiple configuration 
+    target = target_node(project, stage, capture)
+    return G.nodes[target]["EF"] - G.nodes[(project, stage)]["EF"]
 
 def stage_partner_wait(G: nx.DiGraph, node):
     '''
@@ -377,14 +385,17 @@ def stage_partner_wait(G: nx.DiGraph, node):
     # for each node, calculate the cumulative time spent waiting for the other actor up to (and 
     # including that stage).
 
-    project = node[0]
-    target_stage = node[1]
+    project, target_stage = node[0], node[1]
+    # resolve the cluster's capture
+    if G.nodes[node]["tech"] == "TS":    # project is a TS
+        capture = CLUSTERS[project][0]               # ASSUMPTION: 1:1 matching. IF NOT, NEED TO CHANGE
+    else:                                            # project is a capture
+        capture = project
     cumulative = 0.0
     for stage in STAGES:
-        cumulative += stage_delay(G, (project, stage))
+        cumulative += stage_delay(G, project, stage, capture)
         if stage == target_stage:
             break
-    
     return cumulative
 
 #==================================================================
@@ -459,7 +470,6 @@ def buildmodel():
 
     G = projGraph()
     projEdges(G)
-    CPM(G)
 
     return G
 
@@ -467,7 +477,12 @@ def buildmodel():
 # MAIN (EXECUTION)
 #==================================================================
 
-G = buildmodel()
+G_actual = buildmodel()
+CPM(G_actual)
+
+# make DAG with no joint nodes (no interdependencies) and run CPM
+G_base = make_base_graph()
+CPM(G_base)
 
 # checking that G is a DAG
 # print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
@@ -478,11 +493,10 @@ G = buildmodel()
     # print(n, G.nodes[n])
 
 print("Running tests")
-print(apply_attrition(G))
-print(stage_partner_wait(G, ("projC5", "definition")))
+print(apply_attrition(G_actual))
+print(stage_partner_wait(G_actual, ("projC5", "definition")))
 print(calculate_attrition_probability(0, "Capture"))
 print(calculate_attrition_probability(0, "TS"))
-print(stage_partner_wait(G, ("projC6", "construction")))
-print(list(G.successors(("projS5", "construction"))))
-print(stage_delay(G, ("projS5", "construction")))
-print(stage_delay(G, ("projC5", "construction")))
+print(stage_partner_wait(G_actual, ("projC6", "construction")))
+print(list(G_actual.successors(("projS5", "construction"))))
+print(stage_delay(G_actual, "projS5", "construction", "projC5"))
