@@ -597,4 +597,3 @@ print(calculate_attrition_probability(0, "Capture"))
 print(calculate_attrition_probability(0, "TS"))
 print(stage_partner_wait(G_actual, ("projC6", "construction")))
 print(list(G_actual.successors(("projS5", "construction"))))
-
