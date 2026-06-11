@@ -29,34 +29,34 @@ CAPTURE = {
 
 # dictionary for TS projects
 TS = {
-    "projS1":  {"definition": 48, "approval": 36, "construction": 72},   # slow vs fast C1 -> C waits, moderate slip
-    "projS2":  {"definition": 30, "approval": 50, "construction": 64},   # ~matched to C2 -> low slip
-    "projS3":  {"definition": 48, "approval": 24, "construction": 60},   # slow def vs fast C3 -> C waits
-    "projS4":  {"definition": 14, "approval": 20, "construction": 40},   # fast vs slow C4 -> TS waits (tests TS-side)
-    "projS5":  {"definition": 48, "approval": 32, "construction": 60},   # ~matched to C5 -> near-zero slip, survives
-    "projS6":  {"definition": 72, "approval": 48, "construction": 110},  # very slow vs fast C6 -> extreme slip, dies
-    "projS7":  {"definition": 22, "approval": 32, "construction": 46},   # tightly matched to C7 -> low slip, survives
-    "projS8":  {"definition": 38, "approval": 28, "construction": 56},   # closely matched to C8 -> low slip
-    "projS9":  {"definition": 60, "approval": 40, "construction": 88},   # slow vs fast C9 -> large slip, likely dies
-    "projS10": {"definition": 58, "approval": 46, "construction": 86},   # ~matched to slow C10 -> low slip BUT late commission
-    "projS11": {"definition": 30, "approval": 38, "construction": 52},   # ~matched to C11 -> low slip
-    "projS12": {"definition": 50, "approval": 30, "construction": 70},   # slow vs fast C12 -> moderate-large slip
+    "projS1":  {"definition": 48, "approval": 36, "construction": 72},  
+    "projS2":  {"definition": 30, "approval": 50, "construction": 64},  
+    "projS3":  {"definition": 48, "approval": 24, "construction": 60},   
+    "projS4":  {"definition": 14, "approval": 20, "construction": 40},   
+    "projS5":  {"definition": 48, "approval": 32, "construction": 60},   
+    "projS6":  {"definition": 72, "approval": 48, "construction": 110}, 
+    "projS7":  {"definition": 22, "approval": 32, "construction": 46},   
+    "projS8":  {"definition": 38, "approval": 28, "construction": 56},   
+    "projS9":  {"definition": 60, "approval": 40, "construction": 88},   
+    "projS10": {"definition": 58, "approval": 46, "construction": 86},   
+    "projS11": {"definition": 30, "approval": 38, "construction": 52},   
+    "projS12": {"definition": 50, "approval": 30, "construction": 70},   
 }
 
-# clusters (1:1 matching, TS -> [capture])
+# clusters (1:multiple matching, TS -> [capture])
 CLUSTERS = {
-    "projS1":  ["projC1"],    # moderate mismatch -> moderate abandon risk
-    "projS2":  ["projC2"],    # matched -> survives, mid commission
-    "projS3":  ["projC3"],    # mismatch -> capture slips
-    "projS4":  ["projC4"],    # TS-side slip (capture slow) -> tests TS abandoning
-    "projS5":  ["projC5"],    # control: matched -> survives, mid commission
-    "projS6":  ["projC6"],    # extreme mismatch -> reliably dies
-    "projS7":  ["projC7"],    # matched + small durations -> survives, EARLY commission
-    "projS8":  ["projC8"],    # matched -> survives, mid commission
-    "projS9":  ["projC9"],    # large mismatch -> likely dies
-    "projS10": ["projC10"],   # matched but BIG durations -> survives, LATE commission
-    "projS11": ["projC11"],   # matched -> survives, mid commission
-    "projS12": ["projC12"],   # moderate-large mismatch -> borderline
+    "projS1":  ["projC1", "projC2"],    
+    "projS2":  ["projC3", "projC4", "projC5"],    
+    "projS3":  ["projC6"],    
+    "projS4":  ["projC7", "projC8", "projC9", "projC10"],    
+    "projS5":  ["projC11", "projC12"],   
+    # "projS6":  ["projC12"],    
+    # "projS7":  ["projC7"],    
+    # "projS8":  ["projC8"],    
+    # "projS9":  ["projC9"],    
+    # "projS10": ["projC10"],   
+    # "projS11": ["projC11"],   
+    # "projS12": ["projC12"],   
 }
 
 # seed for shuffling before frac_split 
@@ -80,6 +80,7 @@ def make_base_graph():
     '''
 
     # helper method for drawing project nodes only (no joint nodes)
+    # this method works for 1:multiple already
     def intra_nodes():
         # make one large graph
         G = nx.DiGraph()
@@ -142,16 +143,16 @@ def make_base_graph():
         return G
 
     # helper method for drawing intra-project edges only
+    # this method works for 1:multiple already
     def intra_edges(G: nx.DiGraph):
         def graphEdges(G, pid):
             for a, b in zip(STAGES4[:-1], STAGES4[1:]):
                 G.add_edge((pid, a), (pid, b))
 
-        for pid in CAPTURE.keys():
-            graphEdges(G, pid)
-
-        for pid in TS.keys():
-            graphEdges(G, pid)
+        for ts, captures in CLUSTERS.items():
+            graphEdges(G, ts)
+            for capture in captures:
+                graphEdges(G, capture)
 
     # make a NEW graph without interdependent edges to evaluate baseline ES/EF
     G_indep = intra_nodes()
@@ -169,10 +170,14 @@ def joint_naming(stage):
     Args: stage
     Returns: name of the joint node
     '''
+    if stage == "definition":
+        joint_name = stage + " joint node"
+    elif stage == "approval":
+        joint_name = "FID joint node"
+    else:
+        raise ValueError(f"No joint stage for {stage}") 
     
-    joint_name = stage + " joint node"
     return joint_name
-
 
 def projGraph():
     '''
@@ -211,6 +216,18 @@ def projGraph():
             abandoned = None
         )
 
+        # add cluster-wide FID node (defined by TS)
+        G.add_node(
+            (ts, "FID joint node"), 
+            duration = 0.0,
+            stage = "FID joint node",
+            cluster = cluster,
+            tech = "joint",
+            ES = 0.0,
+            EF = 0.0,
+            abandoned = None
+        )
+
         for capture in captures:
             # add capture nodes
             for stage, dur in CAPTURE[capture].items():
@@ -238,7 +255,7 @@ def projGraph():
             )
 
             # add joint nodes
-            for stage in ['definition', 'approval']:
+            for stage in ['definition']:
                 joint_name = joint_naming(stage)
                 G.add_node(
                     (capture, joint_name),
@@ -246,7 +263,7 @@ def projGraph():
                     stage = joint_name,
                     capture = capture,
                     cluster = cluster,
-                    tech = "Joint",
+                    tech = "joint",
                     ES = 0.0,
                     EF = 0.0,
                     abandoned = None
@@ -260,42 +277,67 @@ def projEdges(G: nx.DiGraph):
     Args: G
     '''
     for ts in CLUSTERS.keys():
+        # edge from ts app to FID joint node
+        G.add_edge(
+            (ts, "approval"),
+            (ts, joint_naming("approval"))
+        )
+
         captures = CLUSTERS[ts]
         for capture in captures:
-            for current_stage, next_stage in zip(STAGES[:-1], STAGES[1:]):
-              # adding the edge from the current ts stage to joint node
-              G.add_edge(
-                  (ts, current_stage),
-                  (capture, joint_naming(current_stage))
-              )  
-              # adding the edge from the current capture stage to joint node
-              G.add_edge(
-                  (capture, current_stage),
-                  (capture, joint_naming(current_stage))
-              )
-              # adding the edge from the joint node to the next ts stage
-              G. add_edge(
-                  (capture, joint_naming(current_stage)),
-                  (ts, next_stage)
-              )
-              # adding the edge from the joint node to the next capture stage
-              G. add_edge(
-                  (capture, joint_naming(current_stage)),
-                  (capture, next_stage)
-              )
-            
-            # add joint commissioning node
-            # adding the edge from capture construction to capture commissioning
+            # edge from ts def to joint def
+            G.add_edge(
+                (ts, "definition"),
+                (capture, joint_naming("definition"))
+            )
+
+            # edge from cap def to joint def
+            G.add_edge(
+                (capture, "definition"),
+                (capture, joint_naming("definition"))
+            )
+
+            # edge from joint def to ts app
+            G.add_edge(
+                (capture, joint_naming("definition")),
+                (ts, "approval")
+            )
+
+            # edge from joint def to cap app
+            G.add_edge(
+                (capture, joint_naming("definition")),
+                (capture, "approval")
+            )
+
+            # edge from cap app to joint FID
+            G.add_edge(
+                (capture, "approval"),
+                (ts, joint_naming("approval"))
+            )
+
+            # edge from joint FID to cap cons
+            G.add_edge(
+                (ts, joint_naming("approval")),
+                (capture, "construction")
+            )
+
+            # edge from joint FID to ts cons 
+            G.add_edge(
+                (ts, joint_naming("approval")),
+                (ts, "construction")
+            )
+
+            # edge from capture construction to capture commissioning
             G.add_edge(
                 (capture, "construction"),
                 (capture, "commissioning")
             )
-            # adding the edge from ts construction to capture commissioning
+            # edge from ts construction to capture commissioning
             G.add_edge(
                 (ts, "construction"),
                 (capture, "commissioning")
             )
-            # add the edge from ts construction to ts commissioning
+            # edge from ts construction to ts commissioning
             G.add_edge(
                 (ts, "construction"),
                 (ts, "commissioning")
@@ -357,15 +399,46 @@ def behind_schedule_delay(G_actual, G_base, project, stage, capture):
     
     return base_EF, actual_EF, slip_time
 
-def target_node(project, stage, capture):
-    # 1:1 ASSUMPTION: TS has one joint per stage. 
-    # Many-to-one -> set of joints, aggregate per sync rule (TBD with mentor + data).
-    if stage == "construction":
-        return (project, "commissioning")
+def cluster_ts(project):
+    '''
+    Description: returns the cluster (keyed by ts project) that a project is part of
+    Args: project
+    Returns: name of the ts project that defines the cluster
+    '''
+    if project in CLUSTERS: # checking if the project is a ts project (just return itself)
+        return project
+    for ts, caps in CLUSTERS.items():
+        if project in caps:
+            return ts
     else:
-        return (capture, joint_naming(stage))
+        raise ValueError(f"{project} does not exist")
 
-def stage_delay(G, project, stage, capture):
+def target_node(G: nx.DiGraph, project, stage):
+    '''
+    Description: gets the target node (next node) give the current node
+    Args: Graph, project, stage, capture (optional) 
+    Returns: a list of target nodes
+    '''
+    # Many-to-one -> set of joints, aggregate per sync rule (TBD with mentor + data).
+    ts = cluster_ts(project)
+    is_ts = G.nodes[(project, stage)]["tech"] == "TS"
+
+    if stage == "construction":
+        return ([(project, "commissioning")])
+    
+    elif stage == "approval":
+        return ([(ts, joint_naming(stage))])
+    
+    elif stage == "definition":
+        if is_ts:
+            return ([(cap, joint_naming(stage)) for cap in CLUSTERS[ts]])
+        else:
+            return ([(project, joint_naming(stage))])
+        
+    else:
+        raise ValueError(f"{stage} is not a valid stage")
+
+def stage_delay(G, project, stage):
     '''
     Description: calculates delay at a specific stage
     Args: constrained graph with interdepencies, node
@@ -373,8 +446,14 @@ def stage_delay(G, project, stage, capture):
     '''
     # Looks up target node via target_node(), allows it to accommodate multiple successors
     # robust for 1: multiple configuration 
-    target = target_node(project, stage, capture)
-    return G.nodes[target]["EF"] - G.nodes[(project, stage)]["EF"]
+    targets = target_node(G, project, stage)
+    max_delay = 0
+    for target in targets:
+        delay = G.nodes[target]["EF"] - G.nodes[(project, stage)]["EF"]
+        if delay > max_delay:
+            max_delay = delay
+    
+    return max_delay
 
 def stage_partner_wait(G: nx.DiGraph, node):
     '''
@@ -385,16 +464,12 @@ def stage_partner_wait(G: nx.DiGraph, node):
     # for each node, calculate the cumulative time spent waiting for the other actor up to (and 
     # including that stage).
 
-    project, target_stage = node[0], node[1]
-    # resolve the cluster's capture
-    if G.nodes[node]["tech"] == "TS":    # project is a TS
-        capture = CLUSTERS[project][0]               # ASSUMPTION: 1:1 matching. IF NOT, NEED TO CHANGE
-    else:                                            # project is a capture
-        capture = project
+    project, current_stage = node[0], node[1]
+    
     cumulative = 0.0
     for stage in STAGES:
-        cumulative += stage_delay(G, project, stage, capture)
-        if stage == target_stage:
+        cumulative += stage_delay(G, project, stage)
+        if stage == current_stage:
             break
     return cumulative
 
@@ -420,13 +495,24 @@ def calculate_attrition_probability(delay, tech):
         delay_factor = (delay - tolerance)/SCALE
         return min(MAX_RATE, BASE_RATE + (MAX_RATE - BASE_RATE) * (1 - np.exp(-delay_factor)))
 
-def mark_abandonment(G, ts, capture, stage):
-    for s in STAGES:
-        G.nodes[(ts, s)]["abandoned"] = stage
-        G.nodes[(capture, s)]["abandoned"] = stage
+def mark_abandonment(G, ts, captures, stage):
+    '''
+    Description: marks all nodes of all projects in a cluster as abandoned (annotates stage of 
+    abandonment)
+    Args: Graph, ts (defines the cluster), list of captures in that cluster, stage
+    Returns: marks nodes as abandoned
+    '''
     for s in ["definition", "approval"]:
-        G.nodes[(capture, joint_naming(s))]["abandoned"] = stage
+        G.nodes[(ts, s)]["abandoned"] = stage
     
+    G.nodes[(ts, joint_naming("approval"))]["abandoned"] = stage
+    G.nodes[(ts, "commissioning")]["abandoned"] = stage
+
+    for capture in captures:
+        for s in ["definition", "approval"]:
+            G.nodes[(capture, s)]["abandoned"] = stage
+        G.nodes[(capture, joint_naming("definition"))]["abandoned"] = stage
+        G.nodes[(capture, "commissioning")]["abandoned"] = stage
 
 def apply_attrition(G: nx.DiGraph):
     # random seed
@@ -437,20 +523,29 @@ def apply_attrition(G: nx.DiGraph):
     
     for stage in STAGES:
         for ts, captures in CLUSTERS.items():
+
             if ts in abandoned_clusters:
                 continue
-            capture = captures[0] # because we are in the 1:1 case right now
-            capture_wait = stage_partner_wait(G, (capture, stage))
+
             ts_wait = stage_partner_wait(G, (ts, stage))
-
-            p_capture = calculate_attrition_probability(capture_wait, "Capture")
             p_ts = calculate_attrition_probability(ts_wait, "TS")
+            cluster_dies = rng.random() < p_ts # here we roll the dice once for TS and each capture
+            # KEEP AN EYE OUT FOR THE MATH HERE — AM I DOUBLE ROLLING? WLL NEED TO CONFIRM LATER
 
-            # abandonment criteria
-            if rng.random() < p_capture or rng.random() < p_ts:
+            if not cluster_dies:
+                for cap in captures:
+                    capture_wait = stage_partner_wait(G, (cap, stage))
+                    p_capture = calculate_attrition_probability(capture_wait, "Capture")
+                
+                    # abandonment criteria
+                    if rng.random() < p_capture:
+                        cluster_dies = True
+                        break
+       
+            if cluster_dies:
                 abandoned_clusters[ts] = stage
-                mark_abandonment(G, ts, capture, stage)
-    
+                mark_abandonment(G, ts, captures, stage)
+
     return abandoned_clusters
 
 #==================================================================
@@ -488,7 +583,12 @@ CPM(G_base)
 # inspecting the nodes of G 
 # print("Printing out nodes of the graph: ")
 # for n in G.nodes:
-    # print(n, G.nodes[n])
+ # print(n, G.nodes[n])
+
+print(list(G_actual.predecessors(("projS1", "approval"))))
+print(list(G_actual.predecessors(("projC1", "approval"))))
+print(list(G_actual.predecessors(("projS2", "FID joint node"))))
+print(list(G_actual.neighbors(("projS2", "FID joint node"))))
 
 print("Running tests")
 print(apply_attrition(G_actual))
@@ -497,4 +597,4 @@ print(calculate_attrition_probability(0, "Capture"))
 print(calculate_attrition_probability(0, "TS"))
 print(stage_partner_wait(G_actual, ("projC6", "construction")))
 print(list(G_actual.successors(("projS5", "construction"))))
-print(stage_delay(G_actual, "projS5", "construction", "projC5"))
+
