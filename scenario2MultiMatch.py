@@ -2,6 +2,7 @@ import networkx as nx
 import random
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -370,7 +371,7 @@ def CPM(G: nx.DiGraph):
 #==================================================================
 
 # CURRENTLY DORMANT METHOD (DELAY IS STAGE + OWN BUNDLED TOGETHER)
-def behind_schedule_delay(G_actual, G_base, project, stage, capture):
+def behind_schedule_delay(G_actual, G_base, project, stage):
     '''
      Total lateness at the moving-on point: how far past its unconstrained
     baseline a party clears this stage (reads the joint, so it bundles
@@ -392,7 +393,9 @@ def behind_schedule_delay(G_actual, G_base, project, stage, capture):
     # if (capture, definition) -> want EF of def joint node
     # if (capture, approval) -> want EF of app joint node
     # if (capture, cons) -> want EF of commissioning joint node 
-    actual_EF = G_actual.nodes[target_node(project, stage, capture)]["EF"]
+    
+    targets = target_node(G_actual, project, stage)
+    actual_EF = max(G_actual.nodes[t]["EF"] for t in targets)
 
     # actual_EF = G_actual.node[node]["EF"]
     slip_time = actual_EF - base_EF
@@ -567,6 +570,61 @@ def buildmodel():
     return G
 
 #==================================================================
+# VISUALIZATION
+#==================================================================
+
+def visualize(G, cluster_filter=None):
+    '''
+    Draw the DAG left-to-right by stage. Optionally pass a TS id to draw just one cluster.
+    '''
+    # x-coordinate per stage column (left to right)
+    stage_x = {
+        "definition": 0,
+        "definition joint node": 1,
+        "approval": 2,
+        "FID joint node": 3,
+        "construction": 4,
+        "commissioning": 5,
+    }
+
+    # pick nodes (one cluster or all)
+    if cluster_filter:
+        nodes = [n for n in G.nodes if G.nodes[n]["cluster"] == cluster_filter + " cluster"]
+    else:
+        nodes = list(G.nodes)
+
+    # assign positions: x by stage, y spread by project
+    pos = {}
+    # group projects to give each a y-band
+    projects = sorted({n[0] for n in nodes})
+    y_of = {p: i for i, p in enumerate(projects)}
+    for n in nodes:
+        proj, stage = n
+        x = stage_x.get(stage, 0)
+        y = y_of[proj]
+        pos[n] = (x, y)
+
+    # color by tech
+    color_map = {"TS": "#4C72B0", "Capture": "#55A868", "joint": "#C44E52"}
+    colors = [color_map.get(G.nodes[n]["tech"], "#888888") for n in nodes]
+
+    sub = G.subgraph(nodes)
+    plt.figure(figsize=(14, 8))
+    nx.draw(
+        sub, pos,
+        node_color=colors,
+        node_size=1500,
+        with_labels=True,
+        labels={n: f"{n[0]}\n{n[1][:8]}" for n in nodes},  # short labels
+        font_size=6,
+        arrows=True,
+        edge_color="#aaaaaa",
+    )
+    plt.title(f"CCS DAG{' — ' + cluster_filter if cluster_filter else ''}")
+    plt.tight_layout()
+    plt.show()
+
+#==================================================================
 # MAIN (EXECUTION)
 #==================================================================
 
@@ -597,3 +655,4 @@ print(calculate_attrition_probability(0, "Capture"))
 print(calculate_attrition_probability(0, "TS"))
 print(stage_partner_wait(G_actual, ("projC6", "construction")))
 print(list(G_actual.successors(("projS5", "construction"))))
+visualize(G_actual, cluster_filter="projS2")

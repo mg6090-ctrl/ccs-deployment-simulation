@@ -2,6 +2,8 @@
 
 import networkx as nx
 import random
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -186,4 +188,3 @@ print("Construction batch: ", construction)
 print("Printing out nodes of the graph: ")
 for n in G.nodes:
     print(n, G.nodes[n])
-
