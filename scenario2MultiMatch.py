@@ -370,38 +370,6 @@ def CPM(G: nx.DiGraph):
 # CALCULATING PROJECT DELAYS 
 #==================================================================
 
-# CURRENTLY DORMANT METHOD (DELAY IS STAGE + OWN BUNDLED TOGETHER)
-def behind_schedule_delay(G_actual, G_base, project, stage):
-    '''
-     Total lateness at the moving-on point: how far past its unconstrained
-    baseline a party clears this stage (reads the joint, so it bundles
-    partner-waiting now and own-overruns once durations are stochastic).
-    NOTE: currently equals stage_partner_wait; the two diverge only once
-    stochastic durations introduce own-overruns. Decompose-vs-bundle TBD
-    with Dr Greig
-    Args: node (project, stage); expectation: do not enter a joint node because we need to get 
-    this slip time for the TS and capture projects; it does not make sense to calculate it for 
-    a joint node because joint nodes do not exist in the base graph
-    Returns: slip time 
-    '''
-
-    node = (project, stage)
-
-    base_EF = G_base.nodes[node]["EF"]
-
-    # corresponding joint node for this stage in the graph with interdependencies is the next node
-    # if (capture, definition) -> want EF of def joint node
-    # if (capture, approval) -> want EF of app joint node
-    # if (capture, cons) -> want EF of commissioning joint node 
-    
-    targets = target_node(G_actual, project, stage)
-    actual_EF = max(G_actual.nodes[t]["EF"] for t in targets)
-
-    # actual_EF = G_actual.node[node]["EF"]
-    slip_time = actual_EF - base_EF
-    
-    return base_EF, actual_EF, slip_time
-
 def cluster_ts(project):
     '''
     Description: returns the cluster (keyed by ts project) that a project is part of
@@ -441,7 +409,7 @@ def target_node(G: nx.DiGraph, project, stage):
     else:
         raise ValueError(f"{stage} is not a valid stage")
 
-def stage_delay(G, project, stage):
+def stage_delay(G: nx.DiGraph, node):
     '''
     Description: calculates delay at a specific stage
     Args: constrained graph with interdepencies, node
@@ -449,6 +417,7 @@ def stage_delay(G, project, stage):
     '''
     # Looks up target node via target_node(), allows it to accommodate multiple successors
     # robust for 1: multiple configuration 
+    project, stage = node[0], node[1]
     targets = target_node(G, project, stage)
     max_delay = 0
     for target in targets:
@@ -457,24 +426,6 @@ def stage_delay(G, project, stage):
             max_delay = delay
     
     return max_delay
-
-def stage_partner_wait(G: nx.DiGraph, node):
-    '''
-    Description: returns the cumulative and per-stage wait time for partner at the node
-    Args: constrained graph with interdepencies, node
-    Returns: cumulative wait time of that project up to (and including) that node
-    '''
-    # for each node, calculate the cumulative time spent waiting for the other actor up to (and 
-    # including that stage).
-
-    project, current_stage = node[0], node[1]
-    
-    cumulative = 0.0
-    for stage in STAGES:
-        cumulative += stage_delay(G, project, stage)
-        if stage == current_stage:
-            break
-    return cumulative
 
 #==================================================================
 # PROJECT ABANDONMENT
@@ -530,14 +481,14 @@ def apply_attrition(G: nx.DiGraph):
             if ts in abandoned_clusters:
                 continue
 
-            ts_wait = stage_partner_wait(G, (ts, stage))
+            ts_wait = stage_delay(G, (ts, stage))
             p_ts = calculate_attrition_probability(ts_wait, "TS")
             cluster_dies = rng.random() < p_ts # here we roll the dice once for TS and each capture
             # KEEP AN EYE OUT FOR THE MATH HERE — AM I DOUBLE ROLLING? WLL NEED TO CONFIRM LATER
 
             if not cluster_dies:
                 for cap in captures:
-                    capture_wait = stage_partner_wait(G, (cap, stage))
+                    capture_wait = stage_delay(G, (cap, stage))
                     p_capture = calculate_attrition_probability(capture_wait, "Capture")
                 
                     # abandonment criteria
@@ -650,9 +601,7 @@ print(list(G_actual.neighbors(("projS2", "FID joint node"))))
 
 print("Running tests")
 print(apply_attrition(G_actual))
-print(stage_partner_wait(G_actual, ("projC5", "definition")))
 print(calculate_attrition_probability(0, "Capture"))
 print(calculate_attrition_probability(0, "TS"))
-print(stage_partner_wait(G_actual, ("projC6", "construction")))
 print(list(G_actual.successors(("projS5", "construction"))))
 visualize(G_actual, cluster_filter="projS2")
