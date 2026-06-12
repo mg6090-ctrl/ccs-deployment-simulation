@@ -378,11 +378,12 @@ def cluster_ts(project):
     '''
     if project in CLUSTERS: # checking if the project is a ts project (just return itself)
         return project
+    
     for ts, caps in CLUSTERS.items():
         if project in caps:
             return ts
-    else:
-        raise ValueError(f"{project} does not exist")
+    
+    raise ValueError(f"{project} does not exist")
 
 def target_node(G: nx.DiGraph, project, stage):
     '''
@@ -434,8 +435,8 @@ def stage_delay(G: nx.DiGraph, node):
 def calculate_attrition_probability(delay, tech):
     '''
     Description: returns attrition probability based on delay and tech
-    Principle: slip past cumulative partner wait baseline
-    Args: delay (calculated from slip_compute) and tech
+    Principle: slip past partner wait baseline
+    Args: delay (calculated from stage_delay) and tech
     Returns: probability
     '''
     if tech == "Capture":
