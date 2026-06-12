@@ -263,6 +263,9 @@ def joint_naming(stage):
     
     return joint_name
 
+def cluster_naming(cluster):
+    return cluster + " cluster"
+
 def projGraph():
     '''
     Description: creating graph and adding nodes
@@ -273,7 +276,7 @@ def projGraph():
         
     for storage, transport_clusters in CLUSTERS.items():
         # layer 1: storage nodes
-        storage_cluster = storage + " cluster" # naming the overarching storage cluster
+        storage_cluster = cluster_naming(storage) # naming the overarching storage cluster
 
         for stage, dur in STORAGE[storage].items():
             G.add_node(
@@ -303,9 +306,23 @@ def projGraph():
             abandoned = None
         )
 
+        # add storage joint FID node
+        G.add_node(
+            (storage_cluster, "FID joint node"),
+            duration = 0.0,
+            stage = "FID joint node",
+            tech = "joint",
+            ES = 0.0,
+            EF = 0.0,
+            volume = STORAGE_VOLUMES[storage],
+            t_cluster = None,
+            s_cluster = storage_cluster,
+            abandoned = None
+        )
+
         for transport, captures in transport_clusters.items():
             # cluster number is determined by ts project
-            transport_cluster =  transport + " cluster"
+            transport_cluster =  cluster_naming(transport)
 
             # add transport nodes
             for stage, dur in TRANSPORT[transport].items():
@@ -380,22 +397,22 @@ def projGraph():
                     abandoned = None
                 )
 
-            # joint nodes within the transport cluster (between transport and capture)
-            for stage in ['definition']:
-                joint_name = joint_naming(stage)
-                G.add_node(
-                    (capture, joint_name),
-                    duration = 0.0,
-                    stage = joint_name,
-                    tech = "joint",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = TRANSPORT_VOLUMES[transport],
-                    t_cluster = transport_cluster,
-                    s_cluster = storage_cluster,
-                    abandoned = None
-                )
-    
+                # joint nodes within the transport cluster (between transport and capture)
+                for stage in ['definition']:
+                    joint_name = joint_naming(stage)
+                    G.add_node(
+                        (capture, joint_name),
+                        duration = 0.0,
+                        stage = joint_name,
+                        tech = "joint",
+                        ES = 0.0,
+                        EF = 0.0,
+                        volume = TRANSPORT_VOLUMES[transport],
+                        t_cluster = transport_cluster,
+                        s_cluster = storage_cluster,
+                        abandoned = None
+                    )
+        
     return G
 
 def projEdges(G: nx.DiGraph):
@@ -403,73 +420,115 @@ def projEdges(G: nx.DiGraph):
     Description: adds intra-project edges to G
     Args: G
     '''
-    for ts in CLUSTERS.keys():
-        # edge from ts app to FID joint node
+    # edges between the storage nodes
+    for storage, transport_clusters in CLUSTERS.items():
+       
+        # edge from storage def to storage app
         G.add_edge(
-            (ts, "approval"),
-            (ts, joint_naming("approval"))
+            (storage, "definition"),
+            (storage, "approval")
         )
 
-        captures = CLUSTERS[ts]
-        for capture in captures:
-            # edge from ts def to joint def
+        # edge from storage app to storage cluster FID joint node
+        G.add_edge(
+            (storage, "approval"),
+            (cluster_naming(storage), "FID joint node")
+        )
+
+        # edge from storage FID to storage construction
+        G.add_edge(
+            (cluster_naming(storage), "FID joint node"),
+            (storage, "construction")
+        )
+
+        # edge from storage construction to storage commissioning
+        G.add_edge(
+            (storage, "construction"),
+            (storage, "commissioning")
+        )
+        
+        for transport, captures in transport_clusters.items():
+
+            # edge from transport app to transport cluster FID joint node
             G.add_edge(
-                (ts, "definition"),
-                (capture, joint_naming("definition"))
+                (transport, "approval"),
+                (cluster_naming(transport), joint_naming("approval"))
             )
 
-            # edge from cap def to joint def
+            # edge from storage cluster FID joint node to transport construction
             G.add_edge(
-                (capture, "definition"),
-                (capture, joint_naming("definition"))
+                (cluster_naming(storage), joint_naming("approval")),
+                (transport, "construction")
             )
 
-            # edge from joint def to ts app
-            G.add_edge(
-                (capture, joint_naming("definition")),
-                (ts, "approval")
-            )
-
-            # edge from joint def to cap app
-            G.add_edge(
-                (capture, joint_naming("definition")),
-                (capture, "approval")
-            )
-
-            # edge from cap app to joint FID
-            G.add_edge(
-                (capture, "approval"),
-                (ts, joint_naming("approval"))
-            )
-
-            # edge from joint FID to cap cons
-            G.add_edge(
-                (ts, joint_naming("approval")),
-                (capture, "construction")
-            )
-
-            # edge from joint FID to ts cons 
-            G.add_edge(
-                (ts, joint_naming("approval")),
-                (ts, "construction")
-            )
-
-            # edge from capture construction to capture commissioning
-            G.add_edge(
-                (capture, "construction"),
-                (capture, "commissioning")
-            )
-            # edge from ts construction to capture commissioning
-            G.add_edge(
-                (ts, "construction"),
-                (capture, "commissioning")
-            )
             # edge from ts construction to ts commissioning
             G.add_edge(
-                (ts, "construction"),
-                (ts, "commissioning")
+                (transport, "construction"),
+                (transport, "commissioning")
             )
 
+            # edge from storage commissioning to transport commissioning
+            G.add_edge(
+                (storage, "commissioning"),
+                (transport, "commissioning")
+            )
+
+            for capture in captures:
+                # edge from ts def to joint def
+                G.add_edge(
+                    (transport, "definition"),
+                    (capture, joint_naming("definition"))
+                )
+
+                # edge from cap def to joint def
+                G.add_edge(
+                    (capture, "definition"),
+                    (capture, joint_naming("definition"))
+                )
+
+                # edge from joint def to ts app
+                G.add_edge(
+                    (capture, joint_naming("definition")),
+                    (transport, "approval")
+                )
+
+                # edge from joint def to cap app
+                G.add_edge(
+                    (capture, joint_naming("definition")),
+                    (capture, "approval")
+                )
+
+                # edge from cap app to transport cluster joint FID
+                G.add_edge(
+                    (capture, "approval"),
+                    (cluster_naming(transport), joint_naming("approval"))
+                )
+
+                # edge from transport cluster joint FID to storage cluster joint FID
+                G.add_edge(
+                    (cluster_naming(transport), joint_naming("approval")),
+                    (cluster_naming(storage), "FID joint node")
+                )
+
+                # edge from storage cluster joint FID to capture cons
+                G.add_edge(
+                    (cluster_naming(storage), joint_naming("approval")),
+                    (capture, "construction")
+                )
+
+                # edge from capture construction to capture commissioning
+                G.add_edge(
+                    (capture, "construction"),
+                    (capture, "commissioning")
+                )
+                
+                # edge from ts construction to capture commissioning
+                G.add_edge(
+                    (transport, "construction"),
+                    (capture, "commissioning")
+                )
+
+            
 #==================================================================
 # RUNNING THE CPM
 #==================================================================
@@ -713,22 +772,4 @@ CPM(G_actual)
 G_base = make_base_graph()
 CPM(G_base)
 
-# checking that G is a DAG
-# print("Checking if G is DAG: " + str(nx.is_directed_acyclic_graph(G)))
-
-# inspecting the nodes of G 
-# print("Printing out nodes of the graph: ")
-# for n in G.nodes:
- # print(n, G.nodes[n])
-
-print(list(G_actual.predecessors(("projS1", "approval"))))
-print(list(G_actual.predecessors(("projC1", "approval"))))
-print(list(G_actual.predecessors(("projS2", "FID joint node"))))
-print(list(G_actual.neighbors(("projS2", "FID joint node"))))
-
-print("Running tests")
-print(apply_attrition(G_actual))
-print(calculate_attrition_probability(0, "capture"))
-print(calculate_attrition_probability(0, "TS"))
-print(list(G_actual.successors(("projS5", "construction"))))
 visualize(G_actual, cluster_filter="projS2")
