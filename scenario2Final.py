@@ -28,36 +28,78 @@ CAPTURE = {
     "projC12": {"definition": 18, "approval": 22, "construction": 40},
 }
 
-# dictionary for TS projects
-TS = {
+# capture volumes
+CAPTURE_VOLUMES = {
+    "projC1":  100,
+    "projC2":  150,
+    "projC3":  50,
+    "projC4":  120,
+    "projC5":  110,
+    "projC6":  80,
+    "projC7":  80,
+    "projC8":  120,
+    "projC9":  100,
+    "projC10": 30,
+    "projC11": 45,
+    "projC12": 50,
+}
+
+# dictionary for storage projects
+STORAGE = {
     "projS1":  {"definition": 48, "approval": 36, "construction": 72},  
     "projS2":  {"definition": 30, "approval": 50, "construction": 64},  
     "projS3":  {"definition": 48, "approval": 24, "construction": 60},   
     "projS4":  {"definition": 14, "approval": 20, "construction": 40},   
-    "projS5":  {"definition": 48, "approval": 32, "construction": 60},   
-    "projS6":  {"definition": 72, "approval": 48, "construction": 110}, 
-    "projS7":  {"definition": 22, "approval": 32, "construction": 46},   
-    "projS8":  {"definition": 38, "approval": 28, "construction": 56},   
-    "projS9":  {"definition": 60, "approval": 40, "construction": 88},   
-    "projS10": {"definition": 58, "approval": 46, "construction": 86},   
-    "projS11": {"definition": 30, "approval": 38, "construction": 52},   
-    "projS12": {"definition": 50, "approval": 30, "construction": 70},   
 }
 
-# clusters (1:multiple matching, TS -> [capture])
+# capture volumes
+STORAGE_VOLUMES = {
+    "projS1":  1500,  
+    "projS2":  2500,  
+    "projS3":  3600,   
+    "projS4":  3000,   
+}
+
+# dictionary for transport projects
+TRANSPORT = {
+    "projT1":  {"definition": 24, "approval": 12, "construction": 72},  
+    "projT2":  {"definition": 32, "approval": 18, "construction": 64},  
+    "projT3":  {"definition": 46, "approval": 25, "construction": 60},   
+    "projT4":  {"definition": 18, "approval": 18, "construction": 40},   
+    "projT5":  {"definition": 12, "approval": 42, "construction": 60},   
+    "projT6":  {"definition": 64, "approval": 36, "construction": 110}, 
+    "projT7":  {"definition": 48, "approval": 24, "construction": 56},   
+}
+
+# transport volumes
+TRANSPORT_VOLUMES = {
+    "projT1":  500,  
+    "projT2":  600,  
+    "projT3":  550,   
+    "projT4":  400,   
+    "projT5":  800,   
+    "projT6":  750, 
+    "projT7":  250,   
+}
+
+# NOTE: THE CLUSTER LOGIC HAS CHANGED HERE! NEED TO ENSURE THE FUTURE CODE ALIGNS WITH THE NEW 
+# DATA STRUCTURE HERE!
 CLUSTERS = {
-    "projS1":  ["projC1", "projC2"],    
-    "projS2":  ["projC3", "projC4", "projC5"],    
-    "projS3":  ["projC6"],    
-    "projS4":  ["projC7", "projC8", "projC9", "projC10"],    
-    "projS5":  ["projC11", "projC12"],   
-    # "projS6":  ["projC12"],    
-    # "projS7":  ["projC7"],    
-    # "projS8":  ["projC8"],    
-    # "projS9":  ["projC9"],    
-    # "projS10": ["projC10"],   
-    # "projS11": ["projC11"],   
-    # "projS12": ["projC12"],   
+    "projS1":  {
+        "projT1": ["projC1", "projC2"], 
+        "projT2": ["projC3"]
+        },    
+    "projS2":  {
+        "projT3": ["projC4", "projC5"], 
+        "projT4": ["projC5", "projC6"],
+    },   
+    "projS3":  {
+        "projT5": ["projC6"],
+        "projT6": ["projC7", "projC8", "projC9", "projC10"]
+    },    
+    "projS4":  {
+        "projT7":  ["projC11", "projC12"]
+    }
 }
 
 # seed for shuffling before frac_split 
