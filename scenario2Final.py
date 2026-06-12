@@ -91,11 +91,11 @@ CLUSTERS = {
         },    
     "projS2":  {
         "projT3": ["projC4", "projC5"], 
-        "projT4": ["projC5", "projC6"],
+        "projT4": ["projC6", "projC7"],
     },   
     "projS3":  {
-        "projT5": ["projC6"],
-        "projT6": ["projC7", "projC8", "projC9", "projC10"]
+        "projT5": ["projC8"],
+        "projT6": ["projC9", "projC10"]
     },    
     "projS4":  {
         "projT7":  ["projC11", "projC12"]
@@ -121,67 +121,106 @@ def make_base_graph():
     Description: builds intra-project DAG without joint nodes
     Returns: G_indep
     '''
-
     # helper method for drawing project nodes only (no joint nodes)
-    # this method works for 1:multiple already
+
     def intra_nodes():
         # make one large graph
         G = nx.DiGraph()
 
-        for ts, captures in CLUSTERS.items():
-            # cluster number is determined by ts project
-            cluster =  ts + " cluster"
+        for storage, transport_clusters in CLUSTERS.items():
+            # layer 1: storage nodes
+            storage_cluster = storage + " cluster" # naming the overarching storage cluster
 
-            # add ts nodes
-            for stage, dur in TS[ts].items():
+            for stage, dur in STORAGE[storage].items():
                 G.add_node(
-                    (ts, stage),
+                    (storage, stage),
                     duration = dur,
                     stage = stage,
-                    cluster = cluster,
-                    tech = "TS",
+                    tech = "storage",
                     ES = 0.0,
                     EF = 0.0,
+                    volume = STORAGE_VOLUMES[storage],
+                    s_cluster = storage_cluster,
+                    transport_cluster = None,
                     abandoned = None
                 )
-
-            # add ts commissioning node
+            
+            # add storage commissioning node
             G.add_node(
-                (ts, "commissioning"),
+                (storage, "commissioning"),
                 duration = 0,
                 stage = "commissioning",
-                cluster = cluster,
-                tech = "TS",
+                tech = "storage",
                 ES = 0.0,
                 EF = 0.0,
+                volume = STORAGE_VOLUMES[storage],
+                s_cluster = storage_cluster,
+                transport_cluster = None,
                 abandoned = None
             )
 
-            for capture in captures:
-                # add capture nodes
-                for stage, dur in CAPTURE[capture].items():
+            for transport, captures in transport_clusters.items():
+                # cluster number is determined by ts project
+                transport_cluster =  transport + " cluster"
+
+                # add transport nodes
+                for stage, dur in TRANSPORT[transport].items():
                     G.add_node(
-                        (capture, stage),
+                        (transport, stage),
                         duration = dur,
                         stage = stage,
-                        cluster = cluster,
-                        tech = "Capture",
+                        tech = "transport",
                         ES = 0.0,
                         EF = 0.0,
+                        volume = TRANSPORT_VOLUMES[transport],
+                        t_cluster = transport_cluster,
+                        s_cluster = storage_cluster,
                         abandoned = None
                     )
-            
-                # add capture commissioning node
+
+                # add transport commissioning node
                 G.add_node(
-                    (capture, "commissioning"),
-                    duration = 0.0,
+                    (transport, "commissioning"),
+                    duration = 0,
                     stage = "commissioning",
-                    cluster = cluster,
-                    tech = "Capture",
+                    tech = "transport",
                     ES = 0.0,
                     EF = 0.0,
+                    volume = TRANSPORT_VOLUMES[transport],
+                    t_cluster = transport_cluster,
+                    s_cluster = storage_cluster,
                     abandoned = None
                 )
+
+                for capture in captures:
+                    # add capture nodes
+                    for stage, dur in CAPTURE[capture].items():
+                        G.add_node(
+                            (capture, stage),
+                            duration = dur,
+                            stage = stage,
+                            tech = "capture",
+                            ES = 0.0,
+                            EF = 0.0,
+                            volume = CAPTURE_VOLUMES[capture],
+                            t_cluster = transport_cluster,
+                            s_cluster = storage_cluster,
+                            abandoned = None
+                        )
+            
+                    # add capture commissioning node
+                    G.add_node(
+                        (capture, "commissioning"),
+                        duration = 0.0,
+                        stage = "commissioning",
+                        tech = "capture",
+                        ES = 0.0,
+                        EF = 0.0,
+                        volume = CAPTURE_VOLUMES[capture],
+                        t_cluster = transport_cluster,
+                        s_cluster = storage_cluster,
+                        abandoned = None
+                    )
 
         return G
 
@@ -191,11 +230,13 @@ def make_base_graph():
         def graphEdges(G, pid):
             for a, b in zip(STAGES4[:-1], STAGES4[1:]):
                 G.add_edge((pid, a), (pid, b))
-
-        for ts, captures in CLUSTERS.items():
-            graphEdges(G, ts)
-            for capture in captures:
-                graphEdges(G, capture)
+        
+        for storage, transport_clusters in CLUSTERS.items():
+            graphEdges(G, storage)
+            for transport, captures in transport_clusters.items():
+                graphEdges(G, transport)
+                for capture in captures:
+                    graphEdges(G, capture)
 
     # make a NEW graph without interdependent edges to evaluate baseline ES/EF
     G_indep = intra_nodes()
@@ -229,86 +270,129 @@ def projGraph():
     '''
     # make one large graph
     G = nx.DiGraph()
+        
+    for storage, transport_clusters in CLUSTERS.items():
+        # layer 1: storage nodes
+        storage_cluster = storage + " cluster" # naming the overarching storage cluster
 
-    for ts, captures in CLUSTERS.items():
-        # cluster number is determined by ts project
-        cluster =  ts + " cluster"
-
-        # add ts nodes
-        for stage, dur in TS[ts].items():
+        for stage, dur in STORAGE[storage].items():
             G.add_node(
-                (ts, stage),
+                (storage, stage),
                 duration = dur,
                 stage = stage,
-                cluster = cluster,
-                tech = "TS",
+                tech = "storage",
                 ES = 0.0,
                 EF = 0.0,
+                volume = STORAGE_VOLUMES[storage],
+                s_cluster = storage_cluster,
+                transport_cluster = None,
                 abandoned = None
-            )
-
-        # add commissioning node for TS
-        G.add_node(
-            (ts, "commissioning"),
-            duration = 0.0,
-            stage = "commissioning",
-            cluster = cluster,
-            tech = 'TS',
-            ES = 0.0,
-            EF = 0.0,
-            abandoned = None
-        )
-
-        # add cluster-wide FID node (defined by TS)
-        G.add_node(
-            (ts, "FID joint node"), 
-            duration = 0.0,
-            stage = "FID joint node",
-            cluster = cluster,
-            tech = "joint",
-            ES = 0.0,
-            EF = 0.0,
-            abandoned = None
-        )
-
-        for capture in captures:
-            # add capture nodes
-            for stage, dur in CAPTURE[capture].items():
-                G.add_node(
-                    (capture, stage),
-                    duration = dur,
-                    stage = stage,
-                    cluster = cluster,
-                    tech = "Capture",
-                    ES = 0.0,
-                    EF = 0.0,
-                    abandoned = None
                 )
             
-            # add commissioning node for capture
+        # add storage commissioning node
+        G.add_node(
+            (storage, "commissioning"),
+            duration = 0,
+            stage = "commissioning",
+            tech = "storage",
+            ES = 0.0,
+            EF = 0.0,
+            volume = STORAGE_VOLUMES[storage],
+            s_cluster = storage_cluster,
+            transport_cluster = None,
+            abandoned = None
+        )
+
+        for transport, captures in transport_clusters.items():
+            # cluster number is determined by ts project
+            transport_cluster =  transport + " cluster"
+
+            # add transport nodes
+            for stage, dur in TRANSPORT[transport].items():
+                G.add_node(
+                    (transport, stage),
+                    duration = dur,
+                    stage = stage,
+                    tech = "transport",
+                    ES = 0.0,
+                    EF = 0.0,
+                    volume = TRANSPORT_VOLUMES[transport],
+                    t_cluster = transport_cluster,
+                    s_cluster = storage_cluster,
+                    abandoned = None
+                )
+
+            # add transport commissioning node
             G.add_node(
-                (capture, "commissioning"),
-                duration = 0.0,
+                (transport, "commissioning"),
+                duration = 0,
                 stage = "commissioning",
-                cluster = cluster,
-                tech = 'Capture',
+                tech = "transport",
                 ES = 0.0,
                 EF = 0.0,
+                volume = TRANSPORT_VOLUMES[transport],
+                t_cluster = transport_cluster,
+                s_cluster = storage_cluster,
                 abandoned = None
             )
 
-            # add joint nodes
+            # transport cluster joint FID node
+            G.add_node(
+                (transport_cluster, "FID joint node"),
+                duration = 0.0,
+                stage = "FID joint node",
+                tech = "joint",
+                ES = 0.0,
+                EF = 0.0,
+                volume = TRANSPORT_VOLUMES[transport],
+                t_cluster = transport_cluster,
+                s_cluster = storage_cluster,
+                abandoned = None
+            )
+
+            for capture in captures:
+                # add capture nodes
+                for stage, dur in CAPTURE[capture].items():
+                    G.add_node(
+                        (capture, stage),
+                        duration = dur,
+                        stage = stage,
+                        tech = "capture",
+                        ES = 0.0,
+                        EF = 0.0,
+                        volume = CAPTURE_VOLUMES[capture],
+                        t_cluster = transport_cluster,
+                        s_cluster = storage_cluster,
+                        abandoned = None
+                    )
+            
+                # add capture commissioning node
+                G.add_node(
+                    (capture, "commissioning"),
+                    duration = 0.0,
+                    stage = "commissioning",
+                    tech = "capture",
+                    ES = 0.0,
+                    EF = 0.0,
+                    volume = CAPTURE_VOLUMES[capture],
+                    t_cluster = transport_cluster,
+                    s_cluster = storage_cluster,
+                    abandoned = None
+                )
+
+            # joint nodes within the transport cluster (between transport and capture)
             for stage in ['definition']:
                 joint_name = joint_naming(stage)
                 G.add_node(
                     (capture, joint_name),
                     duration = 0.0,
                     stage = joint_name,
-                    capture = capture,
-                    cluster = cluster,
                     tech = "joint",
                     ES = 0.0,
                     EF = 0.0,
+                    volume = TRANSPORT_VOLUMES[transport],
+                    t_cluster = transport_cluster,
+                    s_cluster = storage_cluster,
                     abandoned = None
                 )
     
@@ -481,7 +565,7 @@ def calculate_attrition_probability(delay, tech):
     Args: delay (calculated from stage_delay) and tech
     Returns: probability
     '''
-    if tech == "Capture":
+    if tech == "capture":
         tolerance = CAPTURE_TOLERANCE
     else:
         tolerance = TS_TOLERANCE
@@ -532,7 +616,7 @@ def apply_attrition(G: nx.DiGraph):
             if not cluster_dies:
                 for cap in captures:
                     capture_wait = stage_delay(G, (cap, stage))
-                    p_capture = calculate_attrition_probability(capture_wait, "Capture")
+                    p_capture = calculate_attrition_probability(capture_wait, "capture")
                 
                     # abandonment criteria
                     if rng.random() < p_capture:
@@ -599,7 +683,7 @@ def visualize(G, cluster_filter=None):
         pos[n] = (x, y)
 
     # color by tech
-    color_map = {"TS": "#4C72B0", "Capture": "#55A868", "joint": "#C44E52"}
+    color_map = {"TS": "#4C72B0", "capture": "#55A868", "joint": "#C44E52"}
     colors = [color_map.get(G.nodes[n]["tech"], "#888888") for n in nodes]
 
     sub = G.subgraph(nodes)
@@ -644,7 +728,7 @@ print(list(G_actual.neighbors(("projS2", "FID joint node"))))
 
 print("Running tests")
 print(apply_attrition(G_actual))
-print(calculate_attrition_probability(0, "Capture"))
+print(calculate_attrition_probability(0, "capture"))
 print(calculate_attrition_probability(0, "TS"))
 print(list(G_actual.successors(("projS5", "construction"))))
 visualize(G_actual, cluster_filter="projS2")
