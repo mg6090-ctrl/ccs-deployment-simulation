@@ -106,6 +106,7 @@ CLUSTERS = {
 SEED = 42
 
 # constants for the abandonment function
+THRESHOLD_FRAC = 0.5
 BASE_RATE = 0.05
 MAX_RATE = 0.7
 CAPTURE_TOLERANCE = 24
@@ -315,8 +316,10 @@ def projGraph():
             ES = 0.0,
             EF = 0.0,
             volume = STORAGE_VOLUMES[storage],
+            actual_volume = 0.0,
             t_cluster = None,
             s_cluster = storage_cluster,
+            below_threshold = None,
             abandoned = None
         )
 
@@ -362,8 +365,10 @@ def projGraph():
                 ES = 0.0,
                 EF = 0.0,
                 volume = TRANSPORT_VOLUMES[transport],
+                actual_volume = 0.0,
                 t_cluster = transport_cluster,
                 s_cluster = storage_cluster,
+                below_threshold = None,
                 abandoned = None
             )
 
@@ -527,29 +532,93 @@ def projEdges(G: nx.DiGraph):
                     (transport, "construction"),
                     (capture, "commissioning")
                 )
-
             
 #==================================================================
 # RUNNING THE CPM
 #==================================================================
+
+def is_threshold_joint(G: nx.DiGraph, node):
+    '''
+    Description: checks if a given node is a joint node requiring volumetric control 
+    Args: G, node
+    Returns: True or False
+    '''
+    return G.nodes[node]["tech"] == "joint" and G.nodes[node]["stage"] == "FID joint node"
+
+def gather_input_specs(G: nx.DiGraph, joint):
+    '''
+    Description: gathers (volume, arrival_time) specs for predecessors of joint node 
+    Args: G, joint node
+    Returns a list of (volume, arrival_time) to feed into the volumetric gating method
+    '''
+    if not is_threshold_joint:
+        raise ValueError(f"{joint} is not a joint node")
+    
+    arrivals = []
+
+    for node in G.predecessors(joint):
+        # this handles inputs from capture projects
+        if G.nodes[node]["tech"] == "capture":
+            volume = G.nodes[node]["volume"]
+            arrival_time = G.nodes[node]["EF"]
+            arrivals.append((volume, arrival_time))
+        
+        # this handles actual inputs from the transport cluster FID joint node
+        elif G.nodes[node]["tech"] == "joint":
+            volume = G.nodes[node]["actual_volume"]
+            arrival_time = G.nodes[node]["EF"]
+            arrivals.append((volume, arrival_time))
+
+    return arrivals
+
+def threshold_gating(arrivals, capacity, fraction):
+    '''
+    arrivals: list of (volume, arrival_time) for each committed party
+    capacity: the downstream capacity (e.g. pipeline volume)
+    fraction: fraction that must be filled to fire (e.g. 0.75)
+    Returns: the time the gate fires, or None if threshold never reached
+    '''
+    needed = capacity*fraction
+    ordered = sorted(arrivals, key = lambda x: x[1]) #lambda returns second tuple element (arrival time)
+    cumulative_volume = 0.0
+    for volume, arrival_time in ordered:
+        cumulative_volume += volume
+        if cumulative_volume >= needed:
+            return arrival_time
+    return None # if the capacity is never filled, then the gate won't fire
 
 def CPM(G: nx.DiGraph):
     '''
     Description: runs critical path method (CPM), updating ES and EF 
     Args: G
     '''
-    
     for node in nx.topological_sort(G):
-        preds = list(G.predecessors(node))
-
-        # the new ES is the max of the EF of the preceeding node(s) and the original ES
-        max_preds = max((G.nodes[p]["EF"] for p in preds), default = 0.0)
-
-        updated_ES = max(max_preds, G.nodes[node].get("ES", 0.0))
+        # case where it is a volumetric control gate (FID joint nodes)
+        if is_threshold_joint(G, node):
+            arrivals = gather_input_specs(G, node)
+            capacity = G.nodes[node]["volume"]
+            fire = threshold_gating(arrivals, capacity, THRESHOLD_FRAC)
+            if fire is None:
+                G.nodes[node]["ES"] = float("inf")
+                G.nodes[node]["EF"] = float("inf")
+                G.nodes[node]["below_threshold"] = True
+                G.nodes[node]["actual_volume"] = 0.0
+            else:
+                G.nodes[node]["ES"] = fire
+                G.nodes[node]["EF"] = fire
+                G.nodes[node]["actual_volume"] = sum(v for v,t in arrivals) # realized throughput
         
-        # update the ES and EF of each node
-        G.nodes[node]["ES"] = updated_ES
-        G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
+        else:
+            preds = list(G.predecessors(node))
+
+            # the new ES is the max of the EF of the preceeding node(s) and the original ES
+            max_preds = max((G.nodes[p]["EF"] for p in preds), default = 0.0)
+
+            updated_ES = max(max_preds, G.nodes[node].get("ES", 0.0))
+            
+            # update the ES and EF of each node
+            G.nodes[node]["ES"] = updated_ES
+            G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
 
 #==================================================================
 # CALCULATING PROJECT DELAYS 
