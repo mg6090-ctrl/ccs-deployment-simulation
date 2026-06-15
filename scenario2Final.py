@@ -30,18 +30,10 @@ CAPTURE = {
 
 # capture volumes
 CAPTURE_VOLUMES = {
-    "projC1":  100,
-    "projC2":  150,
-    "projC3":  50,
-    "projC4":  120,
-    "projC5":  110,
-    "projC6":  80,
-    "projC7":  80,
-    "projC8":  120,
-    "projC9":  100,
-    "projC10": 30,
-    "projC11": 45,
-    "projC12": 50,
+    "projC1": 300, "projC2": 300, "projC3": 250,    # projS1 cluster — clears (oversubscribes T1)
+    "projC4": 120, "projC5": 110, "projC6": 80, "projC7": 80,   # projS2 — T3 fails, S2 fails (cascade)
+    "projC8": 400, "projC9": 200, "projC10": 250,   # projS3 cluster — clears
+    "projC11": 45, "projC12": 50,                    # projS4 — starved, fails
 }
 
 # dictionary for storage projects
@@ -54,10 +46,7 @@ STORAGE = {
 
 # capture volumes
 STORAGE_VOLUMES = {
-    "projS1":  1500,  
-    "projS2":  2500,  
-    "projS3":  3600,   
-    "projS4":  3000,   
+    "projS1": 1000, "projS2": 2500, "projS3": 1500, "projS4": 3000,
 }
 
 # dictionary for transport projects
@@ -73,13 +62,8 @@ TRANSPORT = {
 
 # transport volumes
 TRANSPORT_VOLUMES = {
-    "projT1":  500,  
-    "projT2":  600,  
-    "projT3":  550,   
-    "projT4":  400,   
-    "projT5":  800,   
-    "projT6":  750, 
-    "projT7":  250,   
+    "projT1": 500, "projT2": 400, "projT3": 550, "projT4": 200,
+    "projT5": 600, "projT6": 600, "projT7": 250,
 }
 
 # NOTE: THE CLUSTER LOGIC HAS CHANGED HERE! NEED TO ENSURE THE FUTURE CODE ALIGNS WITH THE NEW 
@@ -288,6 +272,8 @@ def projGraph():
                 ES = 0.0,
                 EF = 0.0,
                 volume = STORAGE_VOLUMES[storage],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
                 s_cluster = storage_cluster,
                 transport_cluster = None,
                 abandoned = None
@@ -302,6 +288,8 @@ def projGraph():
             ES = 0.0,
             EF = 0.0,
             volume = STORAGE_VOLUMES[storage],
+            actual_volume = 0.0,
+            committed_volume = 0.0,
             s_cluster = storage_cluster,
             transport_cluster = None,
             abandoned = None
@@ -317,6 +305,7 @@ def projGraph():
             EF = 0.0,
             volume = STORAGE_VOLUMES[storage],
             actual_volume = 0.0,
+            committed_volume = 0.0,
             t_cluster = None,
             s_cluster = storage_cluster,
             below_threshold = None,
@@ -337,6 +326,8 @@ def projGraph():
                     ES = 0.0,
                     EF = 0.0,
                     volume = TRANSPORT_VOLUMES[transport],
+                    actual_volume = 0.0,
+                    committed_volume = 0.0,
                     t_cluster = transport_cluster,
                     s_cluster = storage_cluster,
                     abandoned = None
@@ -351,6 +342,8 @@ def projGraph():
                 ES = 0.0,
                 EF = 0.0,
                 volume = TRANSPORT_VOLUMES[transport],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
                 t_cluster = transport_cluster,
                 s_cluster = storage_cluster,
                 abandoned = None
@@ -366,6 +359,7 @@ def projGraph():
                 EF = 0.0,
                 volume = TRANSPORT_VOLUMES[transport],
                 actual_volume = 0.0,
+                committed_volume = 0.0,
                 t_cluster = transport_cluster,
                 s_cluster = storage_cluster,
                 below_threshold = None,
@@ -383,6 +377,8 @@ def projGraph():
                         ES = 0.0,
                         EF = 0.0,
                         volume = CAPTURE_VOLUMES[capture],
+                        actual_volume = 0.0,
+                        committed_volume = 0.0,
                         t_cluster = transport_cluster,
                         s_cluster = storage_cluster,
                         abandoned = None
@@ -397,6 +393,8 @@ def projGraph():
                     ES = 0.0,
                     EF = 0.0,
                     volume = CAPTURE_VOLUMES[capture],
+                    actual_volume = 0.0,
+                    committed_volume = 0.0,
                     t_cluster = transport_cluster,
                     s_cluster = storage_cluster,
                     abandoned = None
@@ -413,6 +411,8 @@ def projGraph():
                         ES = 0.0,
                         EF = 0.0,
                         volume = TRANSPORT_VOLUMES[transport],
+                        actual_volume = 0.0,
+                        committed_volume = 0.0,
                         t_cluster = transport_cluster,
                         s_cluster = storage_cluster,
                         abandoned = None
@@ -543,7 +543,7 @@ def is_threshold_joint(G: nx.DiGraph, node):
     Args: G, node
     Returns: True or False
     '''
-    return G.nodes[node]["tech"] == "joint" and G.nodes[node]["stage"] == "FID joint node"
+    return G.nodes[node].get("tech") == "joint" and G.nodes[node].get("stage") == "FID joint node"
 
 def gather_input_specs(G: nx.DiGraph, joint):
     '''
@@ -606,7 +606,9 @@ def CPM(G: nx.DiGraph):
             else:
                 G.nodes[node]["ES"] = fire
                 G.nodes[node]["EF"] = fire
-                G.nodes[node]["actual_volume"] = sum(v for v,t in arrivals) # realized throughput
+                G.nodes[node]["committed_volume"] = sum(v for v,t in arrivals) # realized throughput
+                G.nodes[node]["actual_volume"] = min(
+                    G.nodes[node].get("committed_volume"), G.nodes[node].get("volume"))
         
         else:
             preds = list(G.predecessors(node))
@@ -641,7 +643,7 @@ def cluster_ts(project):
 
 def target_node(G: nx.DiGraph, project, stage):
     '''
-    Description: gets the target node (next node) give the current node
+    Description: gets the target node (next node) given the current node
     Args: Graph, project, stage, capture (optional) 
     Returns: a list of target nodes
     '''
@@ -779,56 +781,6 @@ def buildmodel():
 # VISUALIZATION
 #==================================================================
 
-def visualize(G, cluster_filter=None):
-    '''
-    Draw the DAG left-to-right by stage. Optionally pass a TS id to draw just one cluster.
-    '''
-    # x-coordinate per stage column (left to right)
-    stage_x = {
-        "definition": 0,
-        "definition joint node": 1,
-        "approval": 2,
-        "FID joint node": 3,
-        "construction": 4,
-        "commissioning": 5,
-    }
-
-    # pick nodes (one cluster or all)
-    if cluster_filter:
-        nodes = [n for n in G.nodes if G.nodes[n]["cluster"] == cluster_filter + " cluster"]
-    else:
-        nodes = list(G.nodes)
-
-    # assign positions: x by stage, y spread by project
-    pos = {}
-    # group projects to give each a y-band
-    projects = sorted({n[0] for n in nodes})
-    y_of = {p: i for i, p in enumerate(projects)}
-    for n in nodes:
-        proj, stage = n
-        x = stage_x.get(stage, 0)
-        y = y_of[proj]
-        pos[n] = (x, y)
-
-    # color by tech
-    color_map = {"TS": "#4C72B0", "capture": "#55A868", "joint": "#C44E52"}
-    colors = [color_map.get(G.nodes[n]["tech"], "#888888") for n in nodes]
-
-    sub = G.subgraph(nodes)
-    plt.figure(figsize=(14, 8))
-    nx.draw(
-        sub, pos,
-        node_color=colors,
-        node_size=1500,
-        with_labels=True,
-        labels={n: f"{n[0]}\n{n[1][:8]}" for n in nodes},  # short labels
-        font_size=6,
-        arrows=True,
-        edge_color="#aaaaaa",
-    )
-    plt.title(f"CCS DAG{' — ' + cluster_filter if cluster_filter else ''}")
-    plt.tight_layout()
-    plt.show()
 
 #==================================================================
 # MAIN (EXECUTION)
@@ -841,4 +793,3 @@ CPM(G_actual)
 G_base = make_base_graph()
 CPM(G_base)
 
-visualize(G_actual, cluster_filter="projS2")
