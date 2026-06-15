@@ -94,7 +94,8 @@ THRESHOLD_FRAC = 0.5
 BASE_RATE = 0.05
 MAX_RATE = 0.7
 CAPTURE_TOLERANCE = 24
-TS_TOLERANCE = 36
+STORAGE_TOLERANCE = 36
+TRANSPORT_TOLERANCE = 24
 SCALE = 60
 
 #==================================================================
@@ -581,8 +582,12 @@ def gather_input_specs(G: nx.DiGraph, joint):
     arrivals = []
 
     for node in G.predecessors(joint):
+        # skip nodes marked as abandoned
+        if G.nodes[node]["abandoned"] is not None:
+            continue
+
         # this handles inputs from capture projects
-        if G.nodes[node]["tech"] == "capture":
+        elif G.nodes[node]["tech"] == "capture":
             volume = G.nodes[node]["volume"]
             arrival_time = G.nodes[node]["EF"]
             arrivals.append((volume, arrival_time))
@@ -630,6 +635,7 @@ def CPM(G: nx.DiGraph):
             else:
                 G.nodes[node]["ES"] = fire
                 G.nodes[node]["EF"] = fire
+                G.nodes[node]["below_threshold"] = False
                 G.nodes[node]["committed_volume"] = sum(v for v,t in arrivals) # realized throughput
                 G.nodes[node]["actual_volume"] = min(
                     G.nodes[node].get("committed_volume"), G.nodes[node].get("volume"))
@@ -650,49 +656,41 @@ def CPM(G: nx.DiGraph):
 # CALCULATING PROJECT DELAYS (NEED TO EDIT)
 #==================================================================
 
-def cluster_ts(project):
-    '''
-    Description: returns the cluster (keyed by ts project) that a project is part of
-    Args: project
-    Returns: name of the ts project that defines the cluster
-    '''
-    if project in CLUSTERS: # checking if the project is a ts project (just return itself)
-        return project
-    
-    for ts, caps in CLUSTERS.items():
-        if project in caps:
-            return ts
-    
-    raise ValueError(f"{project} does not exist")
+def transport_captures(G: nx.DiGraph, transport):
+    for storage, t_cluster in CLUSTERS.items():
+        if transport in t_cluster:
+            return t_cluster[transport]
 
 def target_node(G: nx.DiGraph, project, stage):
-    '''
-    Description: gets the target node (next node) given the current node
-    Args: Graph, project, stage, capture (optional) 
-    Returns: a list of target nodes
-    '''
-    # Many-to-one -> set of joints, aggregate per sync rule (TBD with mentor + data).
-    ts = cluster_ts(project)
-    is_ts = G.nodes[(project, stage)]["tech"] == "TS"
+    tech = G.nodes[(project, stage)].get("tech")
+    t_cluster = G.nodes[(project, stage)].get("t_cluster")
+    s_cluster = G.nodes[(project, stage)].get("s_cluster")
 
     if stage == "construction":
-        return ([(project, "commissioning")])
-    
-    elif stage == "approval":
-        return ([(ts, joint_naming(stage))])
-    
-    elif stage == "definition":
-        if is_ts:
-            return ([(cap, joint_naming(stage)) for cap in CLUSTERS[ts]])
-        else:
-            return ([(project, joint_naming(stage))])
-        
-    else:
-        raise ValueError(f"{stage} is not a valid stage")
+        return [(project, "commissioning")]
+
+    if tech == "capture":
+        if stage == "definition":
+            return [(project, "definition joint node")]
+        elif stage == "approval":
+            return [(t_cluster, "FID joint node")]
+
+    elif tech == "transport":
+        if stage == "definition":
+            return [(project, "approval joint node")]
+        elif stage == "approval":
+            return [(t_cluster, "FID joint node")]
+
+    elif tech == "storage":
+        # no sync partner until the storage FID joint
+        return [(s_cluster, "FID joint node")]
+
+    raise ValueError(f"no target for tech={tech}, stage={stage}")
 
 def stage_delay(G: nx.DiGraph, node):
     '''
     Description: calculates delay at a specific stage
+    This code works because joint nodes have duration 0
     Args: constrained graph with interdepencies, node
     Returns: the stage delay at that specific node 
     '''
@@ -712,7 +710,7 @@ def stage_delay(G: nx.DiGraph, node):
 # PROJECT ABANDONMENT (NEED TO EDIT)
 #==================================================================
 
-def calculate_attrition_probability(delay, tech):
+def calculate_attrition_probability(delay, tech): 
     '''
     Description: returns attrition probability based on delay and tech
     Principle: slip past partner wait baseline
@@ -721,8 +719,10 @@ def calculate_attrition_probability(delay, tech):
     '''
     if tech == "capture":
         tolerance = CAPTURE_TOLERANCE
+    elif tech == "transport":
+        tolerance = TRANSPORT_TOLERANCE
     else:
-        tolerance = TS_TOLERANCE
+        tolerance = STORAGE_TOLERANCE
     
     if delay < tolerance:
         return BASE_RATE
@@ -730,58 +730,102 @@ def calculate_attrition_probability(delay, tech):
         delay_factor = (delay - tolerance)/SCALE
         return min(MAX_RATE, BASE_RATE + (MAX_RATE - BASE_RATE) * (1 - np.exp(-delay_factor)))
 
-def mark_abandonment(G, ts, captures, stage):
+def mark_abandonment(G: nx.DiGraph, project, stage):
     '''
-    Description: marks all nodes of all projects in a cluster as abandoned (annotates stage of 
+    Description: marks all nodes of all projects in related cluster as abandoned (annotates stage of 
     abandonment)
-    Args: Graph, ts (defines the cluster), list of captures in that cluster, stage
+    Args: Graph, storage_cluster, transport_cluster, project, stage
     Returns: marks nodes as abandoned
     '''
-    for s in ["definition", "approval"]:
-        G.nodes[(ts, s)]["abandoned"] = stage
-    
-    G.nodes[(ts, joint_naming("approval"))]["abandoned"] = stage
-    G.nodes[(ts, "commissioning")]["abandoned"] = stage
+    tech = G.nodes[(project, stage)].get("tech")
+    transport_cluster = G.nodes[(project, stage)].get("t_cluster") 
+    storage_cluster = G.nodes[(project, stage)].get("s_cluster")
 
-    for capture in captures:
-        for s in ["definition", "approval"]:
-            G.nodes[(capture, s)]["abandoned"] = stage
-        G.nodes[(capture, joint_naming("definition"))]["abandoned"] = stage
-        G.nodes[(capture, "commissioning")]["abandoned"] = stage
+    # if it is a capture project -> mark all stages of the capture project as abandoned
+    if tech == "capture":
+        for s in ["definition", "approval", "construction", "commissioning"]:
+            G.nodes[(project, s)]["abandoned"] = stage
+    
+    # if it is a transport project -> mark every node in the transport cluster as abandoned
+    elif tech == "transport":
+        for node in G.nodes():
+            if G.nodes[node]["t_cluster"] == transport_cluster:
+                G.nodes[node]["abandoned"] = stage
+
+    # if it is a storage project -> mark every node in the storage cluster as abandoned
+    elif tech == "storage":
+        for node in G.nodes():
+            if G.nodes[node]["s_cluster"] == storage_cluster:
+                G.nodes[node]["abandoned"] = stage
+
+def threshold_failed(G, joint_node):
+    return G.nodes[joint_node]["below_threshold"] == True
 
 def apply_attrition(G: nx.DiGraph):
     # random seed
     rng = random.Random(SEED)
 
-    # empty list for storing abandoned_clusters
-    abandoned_clusters = {}
+    # empty lists for storing abandoned_clusters (DO I NEED THIS?)
+    abandoned_transport_clusters = {}
+    abandoned_storage_clusters = {}
     
     for stage in STAGES:
-        for ts, captures in CLUSTERS.items():
-
-            if ts in abandoned_clusters:
+        for storage in CLUSTERS.keys():
+            if storage in abandoned_storage_clusters:
                 continue
 
-            ts_wait = stage_delay(G, (ts, stage))
-            p_ts = calculate_attrition_probability(ts_wait, "TS")
-            cluster_dies = rng.random() < p_ts # here we roll the dice once for TS and each capture
-            # KEEP AN EYE OUT FOR THE MATH HERE — AM I DOUBLE ROLLING? WLL NEED TO CONFIRM LATER
-
-            if not cluster_dies:
-                for cap in captures:
-                    capture_wait = stage_delay(G, (cap, stage))
-                    p_capture = calculate_attrition_probability(capture_wait, "capture")
+            for transport in CLUSTERS[storage].keys():
+                if transport in abandoned_transport_clusters:
+                    continue
                 
-                    # abandonment criteria
-                    if rng.random() < p_capture:
-                        cluster_dies = True
-                        break
-       
-            if cluster_dies:
-                abandoned_clusters[ts] = stage
-                mark_abandonment(G, ts, captures, stage)
+                for capture in CLUSTERS[storage][transport]:
+                    cap_delay = stage_delay(G, (capture, stage))
+                    cap_prob = calculate_attrition_probability(cap_delay, "capture")
+                    capture_dies = rng.random() < cap_prob
+                    if capture_dies:
+                        mark_abandonment(G, capture, stage)
+                
+                CPM(G) # re-run the CPM to re-time before going into transport
+                
+                # joint node checking after CPM run 
+                approval_joint = (transport, "approval joint node")
+                transport_fid_joint = (cluster_naming(transport), "FID joint node")
+                
+                if stage == "definition" and threshold_failed(G, approval_joint):
+                    mark_abandonment(G, transport, stage)
+                    abandoned_transport_clusters[transport] = stage
+                    continue
 
-    return abandoned_clusters
+                if stage == "approval" and threshold_failed(G, transport_fid_joint):
+                    mark_abandonment(G, transport, stage)
+                    abandoned_transport_clusters[transport] = stage
+                    continue
+                
+                # stochastic abandonment for transport nodes if threshold is cleared
+                trans_delay = stage_delay(G, (transport, stage))
+                trans_prob = calculate_attrition_probability(trans_delay, "transport")
+                trans_dies = rng.random() < trans_prob
+                if trans_dies:
+                    mark_abandonment(G, transport, stage)
+                    abandoned_transport_clusters[transport] = stage
+
+            CPM(G) # re-run the CPM to re-time before going to storage 
+            
+            # threshold checking at storage cluster joint FID node
+            storage_fid_joint = (cluster_naming(storage), "FID joint node")
+
+            if threshold_failed(G, storage_fid_joint):
+                mark_abandonment(G, storage, stage)
+                abandoned_storage_clusters[storage] = stage
+                continue
+
+            # stochastic abandonment if volumetric threshold is cleared
+            stor_delay = stage_delay(G, (storage, stage))
+            stor_prob = calculate_attrition_probability(stor_delay, "storage")
+            stor_dies = rng.random() < stor_prob
+            if stor_dies:
+                mark_abandonment(G, storage, stage)
+                abandoned_storage_clusters[storage] = stage
 
 #==================================================================
 # RUNNING THE MODEL
