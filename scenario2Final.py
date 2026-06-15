@@ -332,6 +332,23 @@ def projGraph():
                     s_cluster = storage_cluster,
                     abandoned = None
                 )
+            
+            # adding a volumetric-gating node before transport approval
+            G.add_node(
+                (transport, "approval joint node"),
+                duration = 0.0,
+                stage = "approval joint node",
+                tech = "joint",
+                ES = 0.0,
+                EF = 0.0,
+                volume = TRANSPORT_VOLUMES[transport],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
+                t_cluster = transport_cluster,
+                s_cluster = storage_cluster,
+                below_threshold = None,
+                abandoned = None
+            )
 
             # add transport commissioning node
             G.add_node(
@@ -454,6 +471,12 @@ def projEdges(G: nx.DiGraph):
         
         for transport, captures in transport_clusters.items():
 
+            # edge from transport app joint node to ts app
+            G.add_edge(
+                (transport, "approval joint node"),
+                (transport, "approval")
+            )
+
             # edge from transport app to transport cluster FID joint node
             G.add_edge(
                 (transport, "approval"),
@@ -490,11 +513,10 @@ def projEdges(G: nx.DiGraph):
                     (capture, "definition"),
                     (capture, joint_naming("definition"))
                 )
-
-                # edge from joint def to ts app
+                # edge from joint def to ts app joint node
                 G.add_edge(
                     (capture, joint_naming("definition")),
-                    (transport, "approval")
+                    (transport, "approval joint node")
                 )
 
                 # edge from joint def to cap app
@@ -543,7 +565,9 @@ def is_threshold_joint(G: nx.DiGraph, node):
     Args: G, node
     Returns: True or False
     '''
-    return G.nodes[node].get("tech") == "joint" and G.nodes[node].get("stage") == "FID joint node"
+    return G.nodes[node].get("tech") == "joint" and (
+        G.nodes[node].get("stage") == "FID joint node" 
+        or G.nodes[node].get("stage") == "approval joint node")
 
 def gather_input_specs(G: nx.DiGraph, joint):
     '''
@@ -623,7 +647,7 @@ def CPM(G: nx.DiGraph):
             G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
 
 #==================================================================
-# CALCULATING PROJECT DELAYS 
+# CALCULATING PROJECT DELAYS (NEED TO EDIT)
 #==================================================================
 
 def cluster_ts(project):
@@ -685,7 +709,7 @@ def stage_delay(G: nx.DiGraph, node):
     return max_delay
 
 #==================================================================
-# PROJECT ABANDONMENT
+# PROJECT ABANDONMENT (NEED TO EDIT)
 #==================================================================
 
 def calculate_attrition_probability(delay, tech):
