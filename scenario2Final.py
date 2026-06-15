@@ -769,11 +769,11 @@ def apply_attrition(G: nx.DiGraph):
     abandoned_transport_clusters = {}
     abandoned_storage_clusters = {}
     
-    for stage in STAGES:
-        for storage in CLUSTERS.keys():
-            if storage in abandoned_storage_clusters:
+    for storage in CLUSTERS.keys():
+        if storage in abandoned_storage_clusters:
                 continue
-
+        
+        for stage in STAGES:
             for transport in CLUSTERS[storage].keys():
                 if transport in abandoned_transport_clusters:
                     continue
@@ -808,24 +808,25 @@ def apply_attrition(G: nx.DiGraph):
                 if trans_dies:
                     mark_abandonment(G, transport, stage)
                     abandoned_transport_clusters[transport] = stage
-
-            CPM(G) # re-run the CPM to re-time before going to storage 
             
-            # threshold checking at storage cluster joint FID node
-            storage_fid_joint = (cluster_naming(storage), "FID joint node")
+        CPM(G) # re-run the CPM to re-time before going to storage 
+        
+        # threshold checking at storage cluster joint FID node
+        storage_fid_joint = (cluster_naming(storage), "FID joint node")
 
-            if threshold_failed(G, storage_fid_joint):
-                mark_abandonment(G, storage, stage)
-                abandoned_storage_clusters[storage] = stage
-                continue
+        if threshold_failed(G, storage_fid_joint):
+            mark_abandonment(G, storage, "FID joint node")
+            abandoned_storage_clusters[storage] = "approval"
+            continue
 
-            # stochastic abandonment if volumetric threshold is cleared
-            stor_delay = stage_delay(G, (storage, stage))
-            stor_prob = calculate_attrition_probability(stor_delay, "storage")
-            stor_dies = rng.random() < stor_prob
-            if stor_dies:
-                mark_abandonment(G, storage, stage)
-                abandoned_storage_clusters[storage] = stage
+        # stochastic abandonment if volumetric threshold is cleared
+        stor_delay = stage_delay(G, (storage, "approval"))
+        stor_prob = calculate_attrition_probability(stor_delay, "storage")
+        stor_dies = rng.random() < stor_prob
+        if stor_dies:
+            mark_abandonment(G, storage, "approval")
+            abandoned_storage_clusters[storage] = "approval"
+            
 
 #==================================================================
 # RUNNING THE MODEL
