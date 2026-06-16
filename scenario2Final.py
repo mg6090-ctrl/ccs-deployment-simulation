@@ -3,6 +3,7 @@ import random
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import hashlib
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -99,6 +100,54 @@ TRANSPORT_TOLERANCE = 24
 SCALE = 60
 
 #==================================================================
+# STOCHASTIC DURATION SAMPLING
+#==================================================================
+
+DURATION_SAMPLING = {
+    "dist": "lognormal",    # "lognormal" | "normal" | "uniform"
+    "cv": 0.20,             # coefficient of variation: std = cv * mean (spread knob)
+    "min_months": 1,        # floor after sampling
+}
+
+def _stable_seed(project, stage, replication_seed=0):
+    '''
+    Deterministic per-(project, stage) seed via blake2b (Python's hash() is
+    randomized per process, so we can't use it for reproducibility).
+    Mixing in replication_seed lets a multi-run sweep get different draws.
+    '''
+    key = f"{project}|{stage}|{replication_seed}"
+    digest = hashlib.blake2b(key.encode(), digest_size=8).digest()
+    return int.from_bytes(digest, "big")
+
+def sample_duration(mean, project, stage, replication_seed=0, sampling = False):
+    '''
+    Sample one stage duration, centered on `mean` (the fixed duration).
+    Returns a positive integer (months).
+    '''
+    # if 
+    if not DURATION_SAMPLING["enabled"] or mean <= 0:
+        return mean
+
+    rng = np.random.default_rng(_stable_seed(project, stage, replication_seed))
+    cv = DURATION_SAMPLING["cv"]
+    std = cv * mean
+    dist = DURATION_SAMPLING["dist"]
+
+    if dist == "normal":
+        sample = rng.normal(mean, std)
+    elif dist == "lognormal":
+        # convert desired mean/std into lognormal's underlying mu/sigma
+        sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
+        mu = np.log(mean) - 0.5 * sigma ** 2
+        sample = rng.lognormal(mu, sigma)
+    elif dist == "uniform":
+        sample = rng.uniform(mean - std, mean + std)
+    else:
+        raise ValueError(f"unknown dist {dist}")
+
+    return int(max(DURATION_SAMPLING["min_months"], round(sample)))
+
+#==================================================================
 # BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
 #==================================================================
 
@@ -127,7 +176,7 @@ def make_base_graph():
                     EF = 0.0,
                     volume = STORAGE_VOLUMES[storage],
                     s_cluster = storage_cluster,
-                    transport_cluster = None,
+                    t_cluster = None,
                     abandoned = None
                 )
             
@@ -141,7 +190,7 @@ def make_base_graph():
                 EF = 0.0,
                 volume = STORAGE_VOLUMES[storage],
                 s_cluster = storage_cluster,
-                transport_cluster = None,
+                t_cluster = None,
                 abandoned = None
             )
 
@@ -252,7 +301,7 @@ def joint_naming(stage):
 def cluster_naming(cluster):
     return cluster + " cluster"
 
-def projGraph():
+def projGraph(replication_seed=0, sampling=False):
     '''
     Description: creating graph and adding nodes
     Returns: directed acyclic graph G
@@ -265,9 +314,10 @@ def projGraph():
         storage_cluster = cluster_naming(storage) # naming the overarching storage cluster
 
         for stage, dur in STORAGE[storage].items():
+            sampled = sample_duration(dur, capture, stage, replication_seed, sampling)
             G.add_node(
                 (storage, stage),
-                duration = dur,
+                duration = sampled,
                 stage = stage,
                 tech = "storage",
                 ES = 0.0,
@@ -276,14 +326,14 @@ def projGraph():
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 s_cluster = storage_cluster,
-                transport_cluster = None,
+                t_cluster = None,
                 abandoned = None
                 )
             
         # add storage commissioning node
         G.add_node(
             (storage, "commissioning"),
-            duration = 0,
+            duration = 0.0,
             stage = "commissioning",
             tech = "storage",
             ES = 0.0,
@@ -292,7 +342,7 @@ def projGraph():
             actual_volume = 0.0,
             committed_volume = 0.0,
             s_cluster = storage_cluster,
-            transport_cluster = None,
+            t_cluster = None,
             abandoned = None
         )
 
@@ -321,7 +371,7 @@ def projGraph():
             for stage, dur in TRANSPORT[transport].items():
                 G.add_node(
                     (transport, stage),
-                    duration = dur,
+                    duration = sampled,
                     stage = stage,
                     tech = "transport",
                     ES = 0.0,
@@ -354,7 +404,7 @@ def projGraph():
             # add transport commissioning node
             G.add_node(
                 (transport, "commissioning"),
-                duration = 0,
+                duration = 0.0,
                 stage = "commissioning",
                 tech = "transport",
                 ES = 0.0,
@@ -389,7 +439,7 @@ def projGraph():
                 for stage, dur in CAPTURE[capture].items():
                     G.add_node(
                         (capture, stage),
-                        duration = dur,
+                        duration = sampled,
                         stage = stage,
                         tech = "capture",
                         ES = 0.0,
@@ -693,9 +743,9 @@ def storage_coordination_delay(G: nx.DiGraph, project):
     Works for storage and for transports (both wait here for the cluster to commit).
     Slip = (storage FID fire time) - (party's own ready time at this gate).
     '''
-    s_cluster = G.nodes[(project, "definition")]
+    s_cluster = G.nodes[(project, "definition")]["s_cluster"]
     storage_fid = (s_cluster, "FID joint node")
-    gate_ef = G.nodes[(s_cluster, "FID joint node")]["EF"]
+    gate_ef = G.nodes[storage_fid]["EF"]
 
     tech = G.nodes[(project, "definition")]["tech"]
     if tech == "storage":
@@ -818,7 +868,7 @@ def time_slip_at_gate(G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned
             mark_abandonment(G, project, stage)
             record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c) 
 
-def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandoned_s):
+def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandoned_s, abandoned_c):
     '''
     time slip specifically at the storage cluster FID joint node 
     '''
@@ -829,7 +879,7 @@ def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandone
         prob = calculate_attrition_probability(delay, tech)
         if rng.random() < prob:
             mark_abandonment(G, project, "approval")
-            record_abandonment(project, tech, "approval", abandoned_t, abandoned_s) 
+            record_abandonment(project, tech, "approval", abandoned_t, abandoned_s, abandoned_c) 
 
 
 def threshold_test_at_gate (G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c):
@@ -897,7 +947,7 @@ def apply_attrition (G: nx.DiGraph):
         # 8. time-slip abandonment at s_cluster joint FID node
         survivors = [(t, "transport") for t in CLUSTERS[storage] if t not in abandoned_t]
         parties = parties = [(storage, "storage")] + survivors
-        time_slip_at_storage_gate(G, rng, parties, abandoned_t, abandoned_s)
+        time_slip_at_storage_gate(G, rng, parties, abandoned_t, abandoned_s, abandoned_c)
         
         # 9. re-run the CPM
         CPM(G)
@@ -912,7 +962,7 @@ def apply_attrition (G: nx.DiGraph):
 # RUNNING THE MODEL
 #==================================================================
 
-def buildmodel():
+def buildmodel(replication_seed=0, sampling=False):
     '''
     Description: runs the process 1) building graph and add nodes 
     -> 2) add intra-project edges
@@ -921,7 +971,7 @@ def buildmodel():
     Returns: G
     '''
 
-    G = projGraph()
+    G = projGraph(replication_seed, sampling)
     projEdges(G)
 
     return G
@@ -1048,4 +1098,6 @@ CPM(G_actual)
 G_base = make_base_graph()
 CPM(G_base)
 
-visualize(G_actual, storage_filter="projS1")
+print(apply_attrition(G_actual))
+
+print(G_actual.nodes[(cluster_naming("projS1"), "FID joint node")]["below_threshold"])
