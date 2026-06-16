@@ -151,7 +151,7 @@ def sample_duration(mean, project, stage, replication_seed=0, sampling = False):
 # BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
 #==================================================================
 
-def make_base_graph():
+def make_base_graph(replication_seed=0, sampling=False):
     '''
     Description: builds intra-project DAG without joint nodes
     Returns: G_indep
@@ -167,9 +167,10 @@ def make_base_graph():
             storage_cluster = storage + " cluster" # naming the overarching storage cluster
 
             for stage, dur in STORAGE[storage].items():
+                sampled = sample_duration(dur, capture, stage, replication_seed, sampling)
                 G.add_node(
                     (storage, stage),
-                    duration = dur,
+                    duration = sampled,
                     stage = stage,
                     tech = "storage",
                     ES = 0.0,
@@ -183,7 +184,7 @@ def make_base_graph():
             # add storage commissioning node
             G.add_node(
                 (storage, "commissioning"),
-                duration = 0,
+                duration = 0.0,
                 stage = "commissioning",
                 tech = "storage",
                 ES = 0.0,
@@ -202,7 +203,7 @@ def make_base_graph():
                 for stage, dur in TRANSPORT[transport].items():
                     G.add_node(
                         (transport, stage),
-                        duration = dur,
+                        duration = sampled,
                         stage = stage,
                         tech = "transport",
                         ES = 0.0,
@@ -216,7 +217,7 @@ def make_base_graph():
                 # add transport commissioning node
                 G.add_node(
                     (transport, "commissioning"),
-                    duration = 0,
+                    duration = 0.0,
                     stage = "commissioning",
                     tech = "transport",
                     ES = 0.0,
@@ -232,7 +233,7 @@ def make_base_graph():
                     for stage, dur in CAPTURE[capture].items():
                         G.add_node(
                             (capture, stage),
-                            duration = dur,
+                            duration = sampled,
                             stage = stage,
                             tech = "capture",
                             ES = 0.0,
