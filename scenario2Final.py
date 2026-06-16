@@ -687,6 +687,27 @@ def target_node(G: nx.DiGraph, project, stage):
 
     raise ValueError(f"no target for tech={tech}, stage={stage}")
 
+def storage_coordination_delay(G: nx.DiGraph, project):
+    '''
+    Slip for a party waiting at the STORAGE FID joint (the shared coordination node).
+    Works for storage and for transports (both wait here for the cluster to commit).
+    Slip = (storage FID fire time) - (party's own ready time at this gate).
+    '''
+    s_cluster = G.nodes[(project, "definition")]
+    storage_fid = (s_cluster, "FID joint node")
+    gate_ef = G.nodes[(s_cluster, "FID joint node")]["EF"]
+
+    tech = G.nodes[(project, "definition")]["tech"]
+    if tech == "storage":
+        own_ef = G.nodes[(project, "approval")]["EF"]
+    else:
+        t_cluster = G.nodes[(project, "definition")]["t_cluster"]
+        own_ef = G.nodes[(t_cluster, "FID joint node")]["EF"]
+    
+    delay = gate_ef - own_ef
+
+    return delay if delay > 0 else 0
+
 # WILL NEED TO UPDATE THIS!
 def stage_delay(G: nx.DiGraph, node):
     '''
@@ -759,14 +780,14 @@ def mark_abandonment(G: nx.DiGraph, project, stage):
             if G.nodes[node]["s_cluster"] == storage_cluster:
                 G.nodes[node]["abandoned"] = True
 
-def already_abandoned(G: nx.DiGraph, project, stage):
+def already_abandoned(G: nx.DiGraph, project):
     '''
     checks if a project has already been abandoned
     Returns True if project has been abandoned
     '''
-    return G.nodes[(project, stage)]["abandoned"]
+    return G.nodes[(project, "definition")]["abandoned"] is not None
 
-def record_abandonment(project, tech, stage, abandoned_t, abandoned_s):
+def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c):
     '''
     records the project as abandoned (include stage of abandonment)
     '''
@@ -774,34 +795,51 @@ def record_abandonment(project, tech, stage, abandoned_t, abandoned_s):
         abandoned_t[project] = [stage]
     
     elif tech == "storage":
-        abandoned_t[project] = [stage]
+        abandoned_s[project] = [stage]
+
+    elif tech == "capture":
+        abandoned_c[project] = [stage]
 
 def threshold_failed(G, joint_node):
     return G.nodes[joint_node]["below_threshold"] == True
 
-def time_slip_at_gate (G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned_s):
+def time_slip_at_gate(G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned_s, abandoned_c):
     '''
     For each tech in parties, calculates delays and rolls abandonment at this stage
     parties comes in [(project, tech)] format for each project
     '''
 
     for (project, tech) in parties:
-        if already_abandoned(G, project): # NOTE: NEED TO WRITE THIS UTILITY 
+        if already_abandoned(G, project): 
             continue 
         delay = stage_delay(G, (project, stage))
         prob = calculate_attrition_probability(delay, tech)
         if rng.random() < prob:
             mark_abandonment(G, project, stage)
-            record_abandonment(project, tech, stage, abandoned_t, abandoned_s) # NOTE: NEED TO WRITE THIS UTILITY
+            record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c) 
 
-def threshold_test_at_gate (G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s):
+def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandoned_s):
+    '''
+    time slip specifically at the storage cluster FID joint node 
+    '''
+    for (project, tech) in parties:
+        if already_abandoned(G, project):
+            continue
+        delay = storage_coordination_delay(G, project)
+        prob = calculate_attrition_probability(delay, tech)
+        if rng.random() < prob:
+            mark_abandonment(G, project, "approval")
+            record_abandonment(project, tech, "approval", abandoned_t, abandoned_s) 
+
+
+def threshold_test_at_gate (G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c):
     '''
     If threshold test is not met, return True and collapse the owner of the joint_node 
     Otherwise, return False
     '''
     if threshold_failed(G, joint_node):
         mark_abandonment(G, owner, stage)
-        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s)
+        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c)
         return True
     
     return False
@@ -814,7 +852,7 @@ def apply_attrition (G: nx.DiGraph):
     Apply attrition to the graph
     '''
     rng = random.Random(SEED)
-    abandoned_t, abandoned_s = {}, {}
+    abandoned_t, abandoned_s, abandoned_c = {}, {}, {}
 
     for storage in CLUSTERS:
         if storage in abandoned_s:
@@ -828,25 +866,27 @@ def apply_attrition (G: nx.DiGraph):
             #-------- Definition joint nodes ----------
 
             # 1. time-slip abandonment at joint def nodes
-            time_slip_at_gate(G, rng, parties, "definition", abandoned_t, abandoned_s)
+            captures = CLUSTERS[storage][transport]
+            parties = [(c, "capture") for c in captures] + [(transport, "transport")]
+            time_slip_at_gate(G, rng, parties, "definition", abandoned_t, abandoned_s, abandoned_c)
             
             # 2. re-run the CPM
             CPM(G)
 
             # 3. threshold check for the joint app node
-            if threshold_test_at_gate(G, (transport, "approval joint node"), transport, "definition", abandoned_t, abandoned_s):
+            if threshold_test_at_gate(G, (transport, "approval joint node"), transport, "definition", abandoned_t, abandoned_s, abandoned_c):
                 continue # transport has collapsed
             
             #-------- Transport cluster FID joint nodes ----------
 
             # 4. time-slip abandonment at t_cluster joint FID node
-            time_slip_at_gate(G, rng, parties, "approval", abandoned_t, abandoned_s)
+            time_slip_at_gate(G, rng, parties, "approval", abandoned_t, abandoned_s, abandoned_c)
             
             # 5. re-reun the CPM
             CPM(G)
             
             # 6. threshold check for the t_cluster joint FID node
-            if threshold_test_at_gate(G, (cluster_naming(transport), "FID joint node"), transport, "approval", abandoned_t, abandoned_s):
+            if threshold_test_at_gate(G, (cluster_naming(transport), "FID joint node"), transport, "approval", abandoned_t, abandoned_s, abandoned_c):
                 continue # transport cluster has collapsed
         
         #-------- Storage cluster FID joint node ----------
@@ -857,16 +897,16 @@ def apply_attrition (G: nx.DiGraph):
         # 8. time-slip abandonment at s_cluster joint FID node
         survivors = [(t, "transport") for t in CLUSTERS[storage] if t not in abandoned_t]
         parties = parties = [(storage, "storage")] + survivors
-        time_slip_at_gate(G, rng, parties, "approval", abandoned_t, abandoned_s)
+        time_slip_at_storage_gate(G, rng, parties, abandoned_t, abandoned_s)
         
         # 9. re-run the CPM
         CPM(G)
 
         # 10. threshold check for the s_cluster joint FID node
-        if threshold_test_at_gate(G, (cluster_naming(storage), "FID joint node"), storage, "approval", abandoned_t, abandoned_s):
+        if threshold_test_at_gate(G, (cluster_naming(storage), "FID joint node"), storage, "approval", abandoned_t, abandoned_s, abandoned_c):
             continue # storage cluster has collapsed
     
-    return abandoned_s, abandoned_t
+    return abandoned_s, abandoned_t, abandoned_c
 
 #==================================================================
 # RUNNING THE MODEL
