@@ -428,8 +428,8 @@ def projGraph():
                         tech = "joint",
                         ES = 0.0,
                         EF = 0.0,
-                        volume = TRANSPORT_VOLUMES[transport],
-                        actual_volume = 0.0,
+                        volume = CAPTURE_VOLUMES[capture], # this needs to be cap vol
+                        actual_volume = CAPTURE_VOLUMES[capture], # this is set because def joints sync (aren't threshold)
                         committed_volume = 0.0,
                         t_cluster = transport_cluster,
                         s_cluster = storage_cluster,
