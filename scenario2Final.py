@@ -618,7 +618,7 @@ def threshold_gating(arrivals, capacity, fraction):
 
 def CPM(G: nx.DiGraph):
     '''
-    Description: runs critical path method (CPM), updating ES and EF 
+    Description: runs critical path method (CPM), updating ES and EF and checking thresholds 
     Args: G
     '''
     for node in nx.topological_sort(G):
