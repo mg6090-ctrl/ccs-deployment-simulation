@@ -125,3 +125,40 @@ def apply_attrition(G: nx.DiGraph):
         if stor_dies:
             mark_abandonment(G, storage, "approval")
             abandoned_storage_clusters[storage] = "approval"
+
+
+#==================================================================
+# SCENARIO 1 FINAL RENDITION DAG BUILDING
+#==================================================================
+
+    # OLD CODE
+    # adding in the interdependencies
+    for storage, t_clusters in CLUSTERS.items():
+        
+        for transport, captures in t_clusters.items():
+
+            for capture in captures:
+                # in each storage cluster:
+                # add edges from storage app to each cap cons
+                G.add_edge(
+                    (storage, "approval"),
+                    (capture, "construction")
+                )
+
+                # add storage cons to each cap cons
+                G.add_edge(
+                    (storage, "construction"),
+                    (capture, "construction")
+                )
+
+                # add edges from transport app to cap cons
+                G.add_edge(
+                    (transport, "approval"),
+                    (capture, "construction")
+                )
+
+                 # add edges from transport cons to cap cons
+                G.add_edge(
+                    (transport, "construction"),
+                    (capture, "construction")
+                )
