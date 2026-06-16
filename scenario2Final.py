@@ -761,72 +761,20 @@ def mark_abandonment(G: nx.DiGraph, project, stage):
 def threshold_failed(G, joint_node):
     return G.nodes[joint_node]["below_threshold"] == True
 
-def apply_attrition(G: nx.DiGraph):
-    # random seed
-    rng = random.Random(SEED)
+def time_slip_at_gate (G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned_s):
+    '''
+    For each tech in parties, calculates delays and rolls abandonment at this stage
+    '''
 
-    # empty lists for storing abandoned_clusters (DO I NEED THIS?)
-    abandoned_transport_clusters = {}
-    abandoned_storage_clusters = {}
-    
-    for storage in CLUSTERS.keys():
-        if storage in abandoned_storage_clusters:
-                continue
+def threshold_test_at_gate (G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s):
+    '''
+    If threshold test is not met, collapse the owner of the joint_node 
+    '''
+
         
-        for stage in STAGES:
-            for transport in CLUSTERS[storage].keys():
-                if transport in abandoned_transport_clusters:
-                    continue
-                
-                for capture in CLUSTERS[storage][transport]:
-                    cap_delay = stage_delay(G, (capture, stage))
-                    cap_prob = calculate_attrition_probability(cap_delay, "capture")
-                    capture_dies = rng.random() < cap_prob
-                    if capture_dies:
-                        mark_abandonment(G, capture, stage)
-                
-                CPM(G) # re-run the CPM to re-time before going into transport
-                
-                # joint node checking after CPM run 
-                approval_joint = (transport, "approval joint node")
-                transport_fid_joint = (cluster_naming(transport), "FID joint node")
-                
-                if stage == "definition" and threshold_failed(G, approval_joint):
-                    mark_abandonment(G, transport, stage)
-                    abandoned_transport_clusters[transport] = stage
-                    continue
 
-                if stage == "approval" and threshold_failed(G, transport_fid_joint):
-                    mark_abandonment(G, transport, stage)
-                    abandoned_transport_clusters[transport] = stage
-                    continue
-                
-                # stochastic abandonment for transport nodes if threshold is cleared
-                trans_delay = stage_delay(G, (transport, stage))
-                trans_prob = calculate_attrition_probability(trans_delay, "transport")
-                trans_dies = rng.random() < trans_prob
-                if trans_dies:
-                    mark_abandonment(G, transport, stage)
-                    abandoned_transport_clusters[transport] = stage
             
-        CPM(G) # re-run the CPM to re-time before going to storage 
         
-        # threshold checking at storage cluster joint FID node
-        storage_fid_joint = (cluster_naming(storage), "FID joint node")
-
-        if threshold_failed(G, storage_fid_joint):
-            mark_abandonment(G, storage, "FID joint node")
-            abandoned_storage_clusters[storage] = "approval"
-            continue
-
-        # stochastic abandonment if volumetric threshold is cleared
-        stor_delay = stage_delay(G, (storage, "approval"))
-        stor_prob = calculate_attrition_probability(stor_delay, "storage")
-        stor_dies = rng.random() < stor_prob
-        if stor_dies:
-            mark_abandonment(G, storage, "approval")
-            abandoned_storage_clusters[storage] = "approval"
-            
 
 #==================================================================
 # RUNNING THE MODEL
