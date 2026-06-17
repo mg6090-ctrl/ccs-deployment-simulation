@@ -704,7 +704,7 @@ def CPM(G: nx.DiGraph):
             G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
 
 #==================================================================
-# CALCULATING PROJECT DELAYS (NEED TO EDIT)
+# CALCULATING PROJECT DELAYS
 #==================================================================
 
 def transport_captures(G: nx.DiGraph, transport):
@@ -780,7 +780,7 @@ def stage_delay(G: nx.DiGraph, node):
     return max_delay
 
 #==================================================================
-# PROJECT ABANDONMENT (NEED TO EDIT)
+# PROJECT ABANDONMENT 
 #==================================================================
 
 def calculate_attrition_probability(delay, tech): 

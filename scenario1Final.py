@@ -1,5 +1,7 @@
 import networkx as nx
 import random
+import hashlib
+import numpy as np
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -86,14 +88,68 @@ CLUSTERS = {
 # fraction split
 FRAC_SPLIT = (0.2, 0.8)
 
-# seed for shuffling before frac_split 
+# seed for shuffling before frac_split
 SEED = 42
+
+# attrition
+BASE_RATE = 0.05
+
+#==================================================================
+# STOCHASTIC DURATION SAMPLING
+#==================================================================
+
+DURATION_SAMPLING = {
+    "dist": "lognormal",    # "lognormal" | "normal" | "uniform"
+    "cv": 0.20,             # coefficient of variation: std = cv * mean (spread knob)
+    "min_months": 1,        # floor after sampling
+}
+
+def stable_seed(project, stage, replication_seed=0):
+    '''
+    Deterministic per-(project, stage) seed via blake2b (Python's hash() is
+    randomized per process, so we can't use it for reproducibility).
+    Mixing in replication_seed lets a multi-run sweep get different draws.
+    '''
+    key = f"{project}|{stage}|{replication_seed}" # we use the | dividers to separate out components cleanly
+    digest = hashlib.blake2b(key.encode(), digest_size=8).digest() 
+    return int.from_bytes(digest, "big") # interpets 8 bytes as an integer; "big" means read bytes from most significant digit
+
+def sample_duration(mean, project, stage, replication_seed=0, sampling = False):
+    '''
+    Sample one stage duration, centered on `mean` (the fixed duration).
+    Returns a positive integer (months).
+    '''
+    # fixed guard — this allows us to fall back to default durations when we are not sampling
+    if not sampling or mean <= 0:
+        return mean
+
+    # create the random number generator -> hash gives seed number, which seeds a random number generator
+    rng = np.random.default_rng(stable_seed(project, stage, replication_seed)) 
+    cv = DURATION_SAMPLING["cv"]
+    std = cv * mean
+    dist = DURATION_SAMPLING["dist"]
+    
+    # conversions for the different distributions
+    if dist == "normal":
+        sample = rng.normal(mean, std)
+    elif dist == "lognormal":
+        # convert desired mean/std into lognormal's underlying mu/sigma
+        sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
+        mu = np.log(mean) - 0.5 * sigma ** 2
+        sample = rng.lognormal(mu, sigma)
+    elif dist == "uniform":
+        sample = rng.uniform(mean - std, mean + std)
+    else:
+        raise ValueError(f"unknown dist {dist}")
+
+    # cleans up — ensures an integer number of months above minimum is returned
+    return int(max(DURATION_SAMPLING["min_months"], round(sample)))
 
 #==================================================================
 # BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
 #==================================================================
 
-def make_base_graph():
+def make_base_graph(replication_seed=0, sampling=False):
     '''
     Description: builds intra-project DAG without joint nodes
     Returns: G_indep
@@ -111,7 +167,7 @@ def make_base_graph():
             for stage, dur in STORAGE[storage].items():
                 G.add_node(
                     (storage, stage),
-                    duration = dur,
+                    duration = sample_duration(dur, storage, stage, replication_seed, sampling),
                     stage = stage,
                     tech = "storage",
                     ES = 0.0,
@@ -144,7 +200,7 @@ def make_base_graph():
                 for stage, dur in TRANSPORT[transport].items():
                     G.add_node(
                         (transport, stage),
-                        duration = dur,
+                        duration = sample_duration(dur, transport, stage, replication_seed, sampling),
                         stage = stage,
                         tech = "transport",
                         ES = 0.0,
@@ -174,7 +230,7 @@ def make_base_graph():
                     for stage, dur in CAPTURE[capture].items():
                         G.add_node(
                             (capture, stage),
-                            duration = dur,
+                            duration = sample_duration(dur, capture, stage, replication_seed, sampling),
                             stage = stage,
                             tech = "capture",
                             ES = 0.0,
@@ -255,9 +311,9 @@ def get_transport(G, capture):
                 if cap == capture:
                     return transport
 
-def projGraph():
+def projGraph(replication_seed=0, sampling=False):
     # building the base graph with intra-project edges
-    G = make_base_graph()
+    G = make_base_graph(replication_seed, sampling)
 
     for storage, t_cluster in CLUSTERS.items():
         cluster_captures = [c for caps in t_cluster.values() for c in caps]
@@ -317,8 +373,37 @@ def CPM(G: nx.DiGraph):
         G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"] 
 
 #==================================================================
+# PROJECT ABANDONMENT 
+#==================================================================
+
+def mark_capture_abandoned(G: nx.DiGraph, capture, stage):
+    G.nodes[(capture, stage)]["abandoned"] = True
+
+def apply_attrition (G: nx.DiGraph, replication_seed = 0):
+
+    # NOTE: here we only roll abandonment for the first two stages so we are consistent with 
+    # the base roll for S2
+    ROLL_STAGES = ["definition", "approval"]
+
+    # a generator for the whole pass — does not hash per item, just one stream.
+    # this is because the order is fixed
+    rng = random.Random(SEED + replication_seed)
+    abandoned_c = {}
+    for storage, t_clusters in CLUSTERS.items():
+        for transport, captures in t_clusters.items():
+            for capture in captures:
+                for stage in ROLL_STAGES:
+                    if rng.random() < BASE_RATE:
+                        mark_capture_abandoned(G, capture, stage)
+                        abandoned_c[capture] = stage
+                        break # once a project dies, don't need to roll future stage
+    
+    return abandoned_c
+
+#==================================================================
 # RUNNING THE MODEL
 #==================================================================
+
 
 
 #==================================================================
@@ -327,3 +412,4 @@ def CPM(G: nx.DiGraph):
 
 G = projGraph()
 CPM(G)
+print(apply_attrition(G, 0))
