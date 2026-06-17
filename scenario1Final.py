@@ -401,6 +401,37 @@ def apply_attrition (G: nx.DiGraph, replication_seed = 0):
     return abandoned_c
 
 #==================================================================
+# MONTE CARLO
+#==================================================================
+
+def monte_carlo(n_reps, sampling = True):
+    results = []
+    for rep in range(n_reps):
+        G = projGraph(replication_seed = rep, sampling = sampling)
+        CPM(G)
+        abandoned = apply_attrition(G, replication_seed = rep)
+        results.append({
+                "rep": rep,
+                "n_abandoned": len(abandoned),
+                "completion": max(G.nodes[n]["EF"] for n in G.nodes)
+            }
+        )
+    return results
+
+def analyze_monte_carlo(results):
+    cum_abandoned = 0.0
+    cum_time = 0.0
+
+    for rep in results:
+        cum_abandoned += rep["n_abandoned"]
+        cum_time += rep["completion"]
+
+    avg_abandoned = cum_abandoned/len(results)
+    avg_time = cum_time/len(results)
+
+    return ("average no. abandoned: ", avg_abandoned, "average completion time: ", avg_time)
+
+#==================================================================
 # RUNNING THE MODEL
 #==================================================================
 
@@ -410,6 +441,5 @@ def apply_attrition (G: nx.DiGraph, replication_seed = 0):
 # MAIN (EXECUTION)
 #==================================================================
 
-G = projGraph()
-CPM(G)
-print(apply_attrition(G, 0))
+results = monte_carlo(300)
+print(analyze_monte_carlo(results))
