@@ -125,7 +125,7 @@ def sample_duration(mean, project, stage, replication_seed=0, sampling = False):
     Returns a positive integer (months).
     '''
     # if 
-    if not DURATION_SAMPLING["enabled"] or mean <= 0:
+    if not sampling or mean <= 0:
         return mean
 
     rng = np.random.default_rng(_stable_seed(project, stage, replication_seed))
@@ -315,10 +315,9 @@ def projGraph(replication_seed=0, sampling=False):
         storage_cluster = cluster_naming(storage) # naming the overarching storage cluster
 
         for stage, dur in STORAGE[storage].items():
-            sampled = sample_duration(dur, capture, stage, replication_seed, sampling)
             G.add_node(
                 (storage, stage),
-                duration = sampled,
+                duration = sample_duration(dur, storage, stage, replication_seed, sampling),
                 stage = stage,
                 tech = "storage",
                 ES = 0.0,
@@ -372,7 +371,7 @@ def projGraph(replication_seed=0, sampling=False):
             for stage, dur in TRANSPORT[transport].items():
                 G.add_node(
                     (transport, stage),
-                    duration = sampled,
+                    duration = sample_duration(dur, transport, stage, replication_seed, sampling),
                     stage = stage,
                     tech = "transport",
                     ES = 0.0,
@@ -440,7 +439,7 @@ def projGraph(replication_seed=0, sampling=False):
                 for stage, dur in CAPTURE[capture].items():
                     G.add_node(
                         (capture, stage),
-                        duration = sampled,
+                        duration = sample_duration(dur, capture, stage, replication_seed, sampling),
                         stage = stage,
                         tech = "capture",
                         ES = 0.0,
@@ -843,13 +842,26 @@ def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned
     records the project as abandoned (include stage of abandonment)
     '''
     if tech == "transport":
-        abandoned_t[project] = [stage]
+        abandoned_t[project] = stage
+        # record the captures projects in the cluster as abandoned
+        for s, t_clusters in CLUSTERS.items():
+            for transport, captures in t_clusters.items():
+                if transport == project:
+                    for capture in captures:
+                        abandoned_c[capture] = stage 
     
     elif tech == "storage":
-        abandoned_s[project] = [stage]
+        abandoned_s[project] = stage
+        # record all dependent transport and capture as abandoned
+        for storage, t_clusters in CLUSTERS.items():
+            for transport, captures in t_clusters.items():
+                if storage == project:
+                    abandoned_t[transport] = stage
+                    for capture in captures:
+                        abandoned_c[capture] = stage
 
     elif tech == "capture":
-        abandoned_c[project] = [stage]
+        abandoned_c[project] = stage
 
 def threshold_failed(G, joint_node):
     return G.nodes[joint_node]["below_threshold"] == True
@@ -968,7 +980,6 @@ def buildmodel(replication_seed=0, sampling=False):
     Description: runs the process 1) building graph and add nodes 
     -> 2) add intra-project edges
     -> 3) add inter-project edges
-    -> 4) run CPM
     Returns: G
     '''
 
@@ -1089,16 +1100,52 @@ def visualize(G, storage_filter=None):
     plt.show()
 
 #==================================================================
+# MONTE CARLO
+#==================================================================
+
+def monte_carlo(n_reps, sampling = True):
+    results = []
+    for rep in range(n_reps):
+        G = buildmodel(replication_seed = rep, sampling = sampling)
+        CPM(G)
+        a_s, a_t, a_c = apply_attrition(G)
+        finite = [G.nodes[n]["EF"] for n in G.nodes
+                if G.nodes[n]["EF"] != float("inf") and G.nodes[n]["abandoned"] is None]
+        results.append({
+                "rep": rep,
+                "supply abandoned": len(a_s),
+                "transport abandoned": len(a_t),
+                "capture abandoned": len(a_c),
+                "completion": max(finite) if finite else 0
+            }
+        )
+    return results
+
+def analyze_monte_carlo(results):
+    cum_s_abandoned = 0.0
+    cum_t_abandoned = 0.0
+    cum_c_abandoned = 0.0
+    cum_time = 0.0
+
+    for rep in results:
+        cum_s_abandoned += rep["supply abandoned"]
+        cum_t_abandoned += rep["transport abandoned"]
+        cum_c_abandoned += rep["capture abandoned"]
+        cum_time += rep["completion"]
+
+    avg_s_abandoned = cum_s_abandoned/len(results)
+    avg_t_abandoned = cum_t_abandoned/len(results)
+    avg_c_abandoned = cum_c_abandoned/len(results)
+    avg_time = cum_time/len(results)
+
+    return ("average no. storage abandoned: ", avg_s_abandoned, 
+            "average no. transport abandoned:", avg_t_abandoned,
+            "average no. capture abandoned:", avg_c_abandoned,
+            "average completion time: ", avg_time)
+
+#==================================================================
 # MAIN (EXECUTION)
 #==================================================================
 
-G_actual = buildmodel()
-CPM(G_actual)
-
-# make DAG with no joint nodes (no interdependencies) and run CPM
-G_base = make_base_graph()
-CPM(G_base)
-
-print(apply_attrition(G_actual))
-
-print(G_actual.nodes[(cluster_naming("projS1"), "FID joint node")]["below_threshold"])
+results = monte_carlo(10, sampling = True)
+print(analyze_monte_carlo(results))
