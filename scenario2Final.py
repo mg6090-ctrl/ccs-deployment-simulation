@@ -93,11 +93,10 @@ SEED = 42
 # constants for the abandonment function
 THRESHOLD_FRAC = 0.5
 BASE_RATE = 0.05
-MAX_RATE = 0.7
-CAPTURE_TOLERANCE = 24
+MAX_RATE = 0.4
+CAPTURE_TOLERANCE = 36
 STORAGE_TOLERANCE = 36
-TRANSPORT_TOLERANCE = 24
-SCALE = 60
+TRANSPORT_TOLERANCE = 36
 
 #==================================================================
 # STOCHASTIC DURATION SAMPLING
@@ -799,8 +798,8 @@ def calculate_attrition_probability(delay, tech):
     if delay < tolerance:
         return BASE_RATE
     else:
-        delay_factor = (delay - tolerance)/SCALE
-        return min(MAX_RATE, BASE_RATE + (MAX_RATE - BASE_RATE) * (1 - np.exp(-delay_factor)))
+        delay_factor = delay/ tolerance
+        return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
 
 def mark_abandonment(G: nx.DiGraph, project, stage):
     '''
