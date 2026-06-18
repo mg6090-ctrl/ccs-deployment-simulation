@@ -1146,5 +1146,6 @@ def analyze_monte_carlo(results):
 # MAIN (EXECUTION)
 #==================================================================
 
-results = monte_carlo(10, sampling = True)
-print(analyze_monte_carlo(results))
+if __name__ == "__main__":
+    results = monte_carlo(10, sampling = True)
+    print(analyze_monte_carlo(results))
