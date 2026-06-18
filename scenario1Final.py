@@ -435,5 +435,6 @@ def analyze_monte_carlo(results):
 # MAIN (EXECUTION)
 #==================================================================
 
-results = monte_carlo(300)
-print(analyze_monte_carlo(results))
+if __name__ == "__main__":
+    results = monte_carlo(300)
+    print(analyze_monte_carlo(results))
