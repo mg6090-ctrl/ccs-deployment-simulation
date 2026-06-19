@@ -65,8 +65,7 @@ TRANSPORT_VOLUMES = {
     "projT5": 600, "projT6": 600, "projT7": 250,
 }
 
-# NOTE: THE CLUSTER LOGIC HAS CHANGED HERE! NEED TO ENSURE THE FUTURE CODE ALIGNS WITH THE NEW 
-# DATA STRUCTURE HERE!
+# clusters
 CLUSTERS = {
     "projS1":  {
         "projT1": ["projC1", "projC2"], 
@@ -281,22 +280,6 @@ def make_base_graph(replication_seed=0, sampling=False):
 # BUILDING THE DAG WITH INTERDEPENDENCIES
 #==================================================================
 
-def fracSplit(captures):
-        '''
-        Description: helper method that splits capture into two batches based on risk aversion level
-        Returns: tuple of ([approval pids], [construction pids])
-        '''
-        # seeding and introducing randomness
-        rng = random.Random(SEED)
-        shuffled = list(captures)
-        rng.shuffle(shuffled)
-
-        # number of capture projects in approval batch (risk-tolerant)
-        approv_num = round(len(shuffled)*FRAC_SPLIT[0])
-
-        # cuts the list of pids in two for the two sets (go ahead at approval and construction)
-        return shuffled[:approv_num], shuffled[approv_num:]
-
 def get_storage(G, capture):
     for storage, t_clusters in CLUSTERS.items():
         for transport, captures in t_clusters.items():
@@ -315,32 +298,6 @@ def projGraph(replication_seed=0, sampling=False):
     # building the base graph with intra-project edges
     G = make_base_graph(replication_seed, sampling)
 
-    for storage, t_cluster in CLUSTERS.items():
-        cluster_captures = [c for caps in t_cluster.values() for c in caps]
-        approval, construction = fracSplit(cluster_captures)
-
-        for capture in approval:
-            G.add_edge(
-                (get_storage(G, capture), "approval"), 
-                (capture, "approval")
-            )
-
-            G.add_edge(
-                (get_transport(G, capture), "approval"),
-                (capture, "approval")
-            )
-
-        for capture in construction:
-            G.add_edge(
-                (get_storage(G, capture), "construction"), 
-                (capture, "approval")
-            )
-
-            G.add_edge(
-                (get_transport(G, capture), "construction"),
-                (capture, "approval")
-            )
-    
     # commissioning cascade: storage -> transport -> capture
     for storage, t_cluster in CLUSTERS.items():
         for transport, captures in t_cluster.items():
@@ -376,65 +333,15 @@ def CPM(G: nx.DiGraph):
 # PROJECT ABANDONMENT 
 #==================================================================
 
-def mark_capture_abandoned(G: nx.DiGraph, capture, stage):
-    G.nodes[(capture, stage)]["abandoned"] = True
-
-def apply_attrition (G: nx.DiGraph, replication_seed = 0):
-
-    # NOTE: here we only roll abandonment for the first two stages so we are consistent with 
-    # the base roll for S2
-    ROLL_STAGES = ["definition", "approval"]
-
-    # a generator for the whole pass — does not hash per item, just one stream.
-    # this is because the order is fixed
-    rng = random.Random(SEED + replication_seed)
-    abandoned_c = {}
-    for storage, t_clusters in CLUSTERS.items():
-        for transport, captures in t_clusters.items():
-            for capture in captures:
-                for stage in ROLL_STAGES:
-                    if rng.random() < BASE_RATE:
-                        mark_capture_abandoned(G, capture, stage)
-                        abandoned_c[capture] = stage
-                        break # once a project dies, don't need to roll future stage
-    
-    return abandoned_c
 
 #==================================================================
 # MONTE CARLO
 #==================================================================
 
-def monte_carlo(n_reps, sampling = True):
-    results = []
-    for rep in range(n_reps):
-        G = projGraph(replication_seed = rep, sampling = sampling)
-        CPM(G)
-        abandoned = apply_attrition(G, replication_seed = rep)
-        results.append({
-                "rep": rep,
-                "n_abandoned": len(abandoned),
-                "completion": max(G.nodes[n]["EF"] for n in G.nodes)
-            }
-        )
-    return results
-
-def analyze_monte_carlo(results):
-    cum_abandoned = 0.0
-    cum_time = 0.0
-
-    for rep in results:
-        cum_abandoned += rep["n_abandoned"]
-        cum_time += rep["completion"]
-
-    avg_abandoned = cum_abandoned/len(results)
-    avg_time = cum_time/len(results)
-
-    return ("average no. abandoned: ", avg_abandoned, "average completion time: ", avg_time)
 
 #==================================================================
 # MAIN (EXECUTION)
 #==================================================================
 
 if __name__ == "__main__":
-    results = monte_carlo(300)
-    print(analyze_monte_carlo(results))
+    G = projGraph(replication_seed=100, sampling=True)
