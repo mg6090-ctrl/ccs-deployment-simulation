@@ -1117,12 +1117,12 @@ def monte_carlo(n_reps, sampling = True):
         finite = [G.nodes[n]["EF"] for n in G.nodes
                 if G.nodes[n]["EF"] != float("inf") and G.nodes[n]["abandoned"] is None]
         
+        # getting the final survived volume from unabandoned storage FID joint nodes 
         final_vol = 0
         for storage, t_clusters in CLUSTERS.items():
-            for transport, captures in t_clusters.items():
-                for capture in captures:
-                    if not G.nodes[(capture, "commissioning")]["abandoned"]:
-                        final_vol += G.nodes[(capture, "commissioning")]['volume']
+            fid = (cluster_naming(storage), "FID joint node")
+            if not G.nodes[fid]["below_threshold"] and G.nodes[fid]["abandoned"] is None:
+                final_vol += G.nodes[fid]["actual_volume"]
         
         results.append({
                 "rep": rep,
