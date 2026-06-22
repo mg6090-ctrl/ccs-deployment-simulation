@@ -377,7 +377,8 @@ def CPM(G: nx.DiGraph):
 #==================================================================
 
 def mark_capture_abandoned(G: nx.DiGraph, capture, stage):
-    G.nodes[(capture, stage)]["abandoned"] = True
+    for stage in STAGES4:
+        G.nodes[(capture, stage)]["abandoned"] = True
 
 def apply_attrition (G: nx.DiGraph, replication_seed = 0):
 
@@ -409,11 +410,21 @@ def monte_carlo(n_reps, sampling = True):
     for rep in range(n_reps):
         G = projGraph(replication_seed = rep, sampling = sampling)
         CPM(G)
+
         abandoned = apply_attrition(G, replication_seed = rep)
+
+        final_vol = 0
+        for storage, t_clusters in CLUSTERS.items():
+            for transport, captures in t_clusters.items():
+                for capture in captures:
+                    if not G.nodes[(capture, "commissioning")]["abandoned"]:
+                        final_vol += G.nodes[(capture, "commissioning")]['volume']
+
         results.append({
                 "rep": rep,
                 "n_abandoned": len(abandoned),
-                "completion": max(G.nodes[n]["EF"] for n in G.nodes)
+                "completion": max(G.nodes[n]["EF"] for n in G.nodes),
+                "final volume": final_vol
             }
         )
     return results
@@ -421,15 +432,20 @@ def monte_carlo(n_reps, sampling = True):
 def analyze_monte_carlo(results):
     cum_abandoned = 0.0
     cum_time = 0.0
+    cum_vol = 0.0
 
     for rep in results:
         cum_abandoned += rep["n_abandoned"]
         cum_time += rep["completion"]
+        cum_vol += rep["final volume"]
 
     avg_abandoned = cum_abandoned/len(results)
     avg_time = cum_time/len(results)
+    avg_vol = cum_vol/len(results)
 
-    return ("average no. abandoned: ", avg_abandoned, "average completion time: ", avg_time)
+    return ("average no. abandoned: ", avg_abandoned, 
+            "average completion time: ", avg_time,
+            "average final volume: ", avg_vol)
 
 #==================================================================
 # MAIN (EXECUTION)

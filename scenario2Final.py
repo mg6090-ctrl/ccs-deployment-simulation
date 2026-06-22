@@ -670,6 +670,7 @@ def CPM(G: nx.DiGraph):
     Description: runs critical path method (CPM), updating ES and EF and checking thresholds 
     Args: G
     '''
+
     for node in nx.topological_sort(G):
         # case where it is a volumetric control gate (FID joint nodes)
         if is_threshold_joint(G, node):
@@ -700,6 +701,8 @@ def CPM(G: nx.DiGraph):
             # update the ES and EF of each node
             G.nodes[node]["ES"] = updated_ES
             G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
+
+            # update the actual volume passing through each node 
 
 #==================================================================
 # CALCULATING PROJECT DELAYS
@@ -1106,16 +1109,28 @@ def monte_carlo(n_reps, sampling = True):
     results = []
     for rep in range(n_reps):
         G = buildmodel(replication_seed = rep, sampling = sampling)
+        
         CPM(G)
+       
         a_s, a_t, a_c = apply_attrition(G)
+       
         finite = [G.nodes[n]["EF"] for n in G.nodes
                 if G.nodes[n]["EF"] != float("inf") and G.nodes[n]["abandoned"] is None]
+        
+        final_vol = 0
+        for storage, t_clusters in CLUSTERS.items():
+            for transport, captures in t_clusters.items():
+                for capture in captures:
+                    if not G.nodes[(capture, "commissioning")]["abandoned"]:
+                        final_vol += G.nodes[(capture, "commissioning")]['volume']
+        
         results.append({
                 "rep": rep,
                 "supply abandoned": len(a_s),
                 "transport abandoned": len(a_t),
                 "capture abandoned": len(a_c),
-                "completion": max(finite) if finite else 0
+                "completion": max(finite) if finite else 0,
+                "final volume": final_vol
             }
         )
     return results
@@ -1124,6 +1139,7 @@ def analyze_monte_carlo(results):
     cum_s_abandoned = 0.0
     cum_t_abandoned = 0.0
     cum_c_abandoned = 0.0
+    cum_vol = 0.0
     cum_time = 0.0
 
     for rep in results:
@@ -1131,16 +1147,19 @@ def analyze_monte_carlo(results):
         cum_t_abandoned += rep["transport abandoned"]
         cum_c_abandoned += rep["capture abandoned"]
         cum_time += rep["completion"]
+        cum_vol += rep["final volume"]
 
     avg_s_abandoned = cum_s_abandoned/len(results)
     avg_t_abandoned = cum_t_abandoned/len(results)
     avg_c_abandoned = cum_c_abandoned/len(results)
-    avg_time = cum_time/len(results)
+    avg_vol = cum_vol/len(results)
+    avg_time = cum_time/len(results)    
 
     return ("average no. storage abandoned: ", avg_s_abandoned, 
-            "average no. transport abandoned:", avg_t_abandoned,
-            "average no. capture abandoned:", avg_c_abandoned,
-            "average completion time: ", avg_time)
+            "average no. transport abandoned: ", avg_t_abandoned,
+            "average no. capture abandoned: ", avg_c_abandoned,
+            "average completion time: ", avg_time,
+            "average final vol of capture: ", avg_vol)
 
 #==================================================================
 # MAIN (EXECUTION)
