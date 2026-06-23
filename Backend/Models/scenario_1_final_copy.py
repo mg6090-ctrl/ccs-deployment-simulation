@@ -149,7 +149,17 @@ def sample_duration(mean, project, stage, replication_seed=0, sampling = False):
 # BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
 #==================================================================
 
-def make_base_graph(replication_seed=0, sampling=False):
+def make_base_graph(
+        replication_seed=0, 
+        clusters = CLUSTERS, 
+        caps = CAPTURE,
+        caps_vol = CAPTURE_VOLUMES,
+        trans = TRANSPORT,
+        trans_vol = TRANSPORT_VOLUMES,
+        stor = STORAGE,
+        stor_vol = STORAGE_VOLUMES,
+        sampling=False
+        ):
     '''
     Description: builds intra-project DAG without joint nodes
     Returns: G_indep
@@ -160,11 +170,11 @@ def make_base_graph(replication_seed=0, sampling=False):
         # make one large graph
         G = nx.DiGraph()
 
-        for storage, transport_clusters in CLUSTERS.items():
+        for storage, transport_clusters in clusters.items():
             # layer 1: storage nodes
             storage_cluster = storage + " cluster" # naming the overarching storage cluster
 
-            for stage, dur in STORAGE[storage].items():
+            for stage, dur in stor[storage].items():
                 G.add_node(
                     (storage, stage),
                     duration = sample_duration(dur, storage, stage, replication_seed, sampling),
@@ -172,7 +182,7 @@ def make_base_graph(replication_seed=0, sampling=False):
                     tech = "storage",
                     ES = 0.0,
                     EF = 0.0,
-                    volume = STORAGE_VOLUMES[storage],
+                    volume = stor_vol[storage],
                     s_cluster = storage_cluster,
                     t_cluster = None,
                     abandoned = None
@@ -186,7 +196,7 @@ def make_base_graph(replication_seed=0, sampling=False):
                 tech = "storage",
                 ES = 0.0,
                 EF = 0.0,
-                volume = STORAGE_VOLUMES[storage],
+                volume = stor_vol[storage],
                 s_cluster = storage_cluster,
                 t_cluster = None,
                 abandoned = None
@@ -197,7 +207,7 @@ def make_base_graph(replication_seed=0, sampling=False):
                 transport_cluster =  transport + " cluster"
 
                 # add transport nodes
-                for stage, dur in TRANSPORT[transport].items():
+                for stage, dur in trans[transport].items():
                     G.add_node(
                         (transport, stage),
                         duration = sample_duration(dur, transport, stage, replication_seed, sampling),
@@ -205,7 +215,7 @@ def make_base_graph(replication_seed=0, sampling=False):
                         tech = "transport",
                         ES = 0.0,
                         EF = 0.0,
-                        volume = TRANSPORT_VOLUMES[transport],
+                        volume = trans_vol[transport],
                         t_cluster = transport_cluster,
                         s_cluster = storage_cluster,
                         abandoned = None
@@ -219,7 +229,7 @@ def make_base_graph(replication_seed=0, sampling=False):
                     tech = "transport",
                     ES = 0.0,
                     EF = 0.0,
-                    volume = TRANSPORT_VOLUMES[transport],
+                    volume = trans_vol[transport],
                     t_cluster = transport_cluster,
                     s_cluster = storage_cluster,
                     abandoned = None
@@ -227,7 +237,7 @@ def make_base_graph(replication_seed=0, sampling=False):
 
                 for capture in captures:
                     # add capture nodes
-                    for stage, dur in CAPTURE[capture].items():
+                    for stage, dur in caps[capture].items():
                         G.add_node(
                             (capture, stage),
                             duration = sample_duration(dur, capture, stage, replication_seed, sampling),
@@ -235,7 +245,7 @@ def make_base_graph(replication_seed=0, sampling=False):
                             tech = "capture",
                             ES = 0.0,
                             EF = 0.0,
-                            volume = CAPTURE_VOLUMES[capture],
+                            volume = caps_vol[capture],
                             t_cluster = transport_cluster,
                             s_cluster = storage_cluster,
                             abandoned = None
@@ -249,7 +259,7 @@ def make_base_graph(replication_seed=0, sampling=False):
                         tech = "capture",
                         ES = 0.0,
                         EF = 0.0,
-                        volume = CAPTURE_VOLUMES[capture],
+                        volume = caps_vol[capture],
                         t_cluster = transport_cluster,
                         s_cluster = storage_cluster,
                         abandoned = None
@@ -259,12 +269,12 @@ def make_base_graph(replication_seed=0, sampling=False):
 
     # helper method for drawing intra-project edges only
     # this method works for 1:multiple already
-    def intra_edges(G: nx.DiGraph):
+    def intra_edges(G: nx.DiGraph, clusters):
         def graphEdges(G, pid):
             for a, b in zip(STAGES4[:-1], STAGES4[1:]):
                 G.add_edge((pid, a), (pid, b))
         
-        for storage, transport_clusters in CLUSTERS.items():
+        for storage, transport_clusters in clusters.items():
             graphEdges(G, storage)
             for transport, captures in transport_clusters.items():
                 graphEdges(G, transport)
@@ -273,7 +283,7 @@ def make_base_graph(replication_seed=0, sampling=False):
 
     # make a NEW graph without interdependent edges to evaluate baseline ES/EF
     G_indep = intra_nodes()
-    intra_edges(G_indep)
+    intra_edges(G_indep, clusters)
 
     return G_indep
 
@@ -281,7 +291,7 @@ def make_base_graph(replication_seed=0, sampling=False):
 # BUILDING THE DAG WITH INTERDEPENDENCIES
 #==================================================================
 
-def fracSplit(captures):
+def fracSplit(captures, frac_split = FRAC_SPLIT):
         '''
         Description: helper method that splits capture into two batches based on risk aversion level
         Returns: tuple of ([approval pids], [construction pids])
@@ -292,57 +302,79 @@ def fracSplit(captures):
         rng.shuffle(shuffled)
 
         # number of capture projects in approval batch (risk-tolerant)
-        approv_num = round(len(shuffled)*FRAC_SPLIT[0])
+        approv_num = round(len(shuffled)*frac_split[0])
 
         # cuts the list of pids in two for the two sets (go ahead at approval and construction)
         return shuffled[:approv_num], shuffled[approv_num:]
 
-def get_storage(G, capture):
-    for storage, t_clusters in CLUSTERS.items():
+def get_storage(G, capture, clusters):
+    for storage, t_clusters in clusters.items():
         for transport, captures in t_clusters.items():
             for cap in captures:
                 if cap == capture:
                     return storage
 
-def get_transport(G, capture):
-    for storage, t_clusters in CLUSTERS.items():
+def get_transport(G, capture, clusters):
+    for storage, t_clusters in clusters.items():
         for transport, captures in t_clusters.items():
             for cap in captures:
                 if cap == capture:
                     return transport
 
-def projGraph(replication_seed=0, sampling=False):
+def projGraph(
+        replication_seed=0, 
+        clusters = CLUSTERS, 
+        caps = CAPTURE,
+        caps_vol = CAPTURE_VOLUMES,
+        trans = TRANSPORT,
+        trans_vol = TRANSPORT_VOLUMES,
+        stor = STORAGE,
+        stor_vol = STORAGE_VOLUMES,
+        frac_split = FRAC_SPLIT,
+        sampling = False
+        ):
+    
     # building the base graph with intra-project edges
-    G = make_base_graph(replication_seed, sampling)
+    G = make_base_graph(
+        replication_seed, 
+        clusters, 
+        caps,
+        caps_vol,
+        trans,
+        trans_vol,
+        stor,
+        stor_vol,
+        sampling
+        )
 
-    for storage, t_cluster in CLUSTERS.items():
+    for storage, t_cluster in clusters.items():
         cluster_captures = [c for caps in t_cluster.values() for c in caps]
-        approval, construction = fracSplit(cluster_captures)
+        approval, construction = fracSplit(cluster_captures, frac_split)
 
         for capture in approval:
             G.add_edge(
-                (get_storage(G, capture), "approval"), 
+                (get_storage(G, capture, clusters), "approval"), 
                 (capture, "approval")
             )
 
             G.add_edge(
-                (get_transport(G, capture), "approval"),
+                (get_transport(G, capture, clusters), "approval"),
                 (capture, "approval")
             )
 
         for capture in construction:
             G.add_edge(
-                (get_storage(G, capture), "construction"), 
+                (get_storage(G, capture, clusters), "construction"), 
                 (capture, "approval")
             )
 
             G.add_edge(
-                (get_transport(G, capture), "construction"),
+                (get_transport(G, capture, clusters), "construction"),
                 (capture, "approval")
             )
     
     # commissioning cascade: storage -> transport -> capture
-    for storage, t_cluster in CLUSTERS.items():
+    for storage, t_cluster in clusters.items():
         for transport, captures in t_cluster.items():
             G.add_edge((storage, "commissioning"), (transport, "commissioning"))
             for capture in captures:
@@ -380,7 +412,12 @@ def mark_capture_abandoned(G: nx.DiGraph, capture, stage):
     for stage in STAGES4:
         G.nodes[(capture, stage)]["abandoned"] = True
 
-def apply_attrition (G: nx.DiGraph, replication_seed = 0):
+def apply_attrition(
+        G: nx.DiGraph, 
+        base_rate = BASE_RATE,
+        clusters = CLUSTERS, 
+        replication_seed = 0
+        ):
 
     # NOTE: here we only roll abandonment for the first two stages so we are consistent with 
     # the base roll for S2
@@ -390,11 +427,11 @@ def apply_attrition (G: nx.DiGraph, replication_seed = 0):
     # this is because the order is fixed
     rng = random.Random(SEED + replication_seed)
     abandoned_c = {}
-    for storage, t_clusters in CLUSTERS.items():
+    for storage, t_clusters in clusters.items():
         for transport, captures in t_clusters.items():
             for capture in captures:
                 for stage in ROLL_STAGES:
-                    if rng.random() < BASE_RATE:
+                    if rng.random() < base_rate:
                         mark_capture_abandoned(G, capture, stage)
                         abandoned_c[capture] = stage
                         break # once a project dies, don't need to roll future stage
@@ -405,16 +442,48 @@ def apply_attrition (G: nx.DiGraph, replication_seed = 0):
 # MONTE CARLO
 #==================================================================
 
-def monte_carlo(n_reps, sampling = True):
+def monte_carlo(
+        n_reps, 
+        base_rate = BASE_RATE, 
+        replication_seed=0, 
+        clusters = CLUSTERS, 
+        caps = CAPTURE,
+        caps_vol = CAPTURE_VOLUMES,
+        trans = TRANSPORT,
+        trans_vol = TRANSPORT_VOLUMES,
+        stor = STORAGE,
+        stor_vol = STORAGE_VOLUMES,
+        frac_split = FRAC_SPLIT,
+        sampling = True
+    ):
+    
     results = []
     for rep in range(n_reps):
-        G = projGraph(replication_seed = rep, sampling = sampling)
+
+        G = projGraph(
+            replication_seed, 
+            clusters, 
+            caps,
+            caps_vol,
+            trans,
+            trans_vol,
+            stor,
+            stor_vol,
+            frac_split,
+            sampling
+        )
+
         CPM(G)
 
-        abandoned = apply_attrition(G, replication_seed = rep)
+        abandoned = apply_attrition(
+                        G, 
+                        base_rate, 
+                        clusters, 
+                        replication_seed = rep
+                    )
 
         final_vol = 0
-        for storage, t_clusters in CLUSTERS.items():
+        for storage, t_clusters in clusters.items():
             for transport, captures in t_clusters.items():
                 for capture in captures:
                     if not G.nodes[(capture, "commissioning")]["abandoned"]:
@@ -452,5 +521,5 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    results = monte_carlo(300)
-    print(analyze_monte_carlo(results))
+    print("default:", analyze_monte_carlo(monte_carlo(300)))
+    print("high base_rate:", analyze_monte_carlo(monte_carlo(300, base_rate=0.3)))
