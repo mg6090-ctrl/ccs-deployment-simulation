@@ -147,139 +147,6 @@ def sample_duration(mean, project, stage, replication_seed=0, sampling = False):
     return int(max(DURATION_SAMPLING["min_months"], round(sample)))
 
 #==================================================================
-# BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
-#==================================================================
-
-def make_base_graph(replication_seed=0, sampling=False):
-    '''
-    Description: builds intra-project DAG without joint nodes
-    Returns: G_indep
-    '''
-    # helper method for drawing project nodes only (no joint nodes)
-
-    def intra_nodes():
-        # make one large graph
-        G = nx.DiGraph()
-
-        for storage, transport_clusters in CLUSTERS.items():
-            # layer 1: storage nodes
-            storage_cluster = storage + " cluster" # naming the overarching storage cluster
-
-            for stage, dur in STORAGE[storage].items():
-                sampled = sample_duration(dur, capture, stage, replication_seed, sampling)
-                G.add_node(
-                    (storage, stage),
-                    duration = sampled,
-                    stage = stage,
-                    tech = "storage",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = STORAGE_VOLUMES[storage],
-                    s_cluster = storage_cluster,
-                    t_cluster = None,
-                    abandoned = None
-                )
-            
-            # add storage commissioning node
-            G.add_node(
-                (storage, "commissioning"),
-                duration = 0.0,
-                stage = "commissioning",
-                tech = "storage",
-                ES = 0.0,
-                EF = 0.0,
-                volume = STORAGE_VOLUMES[storage],
-                s_cluster = storage_cluster,
-                t_cluster = None,
-                abandoned = None
-            )
-
-            for transport, captures in transport_clusters.items():
-                # cluster number is determined by ts project
-                transport_cluster =  transport + " cluster"
-
-                # add transport nodes
-                for stage, dur in TRANSPORT[transport].items():
-                    G.add_node(
-                        (transport, stage),
-                        duration = sampled,
-                        stage = stage,
-                        tech = "transport",
-                        ES = 0.0,
-                        EF = 0.0,
-                        volume = TRANSPORT_VOLUMES[transport],
-                        t_cluster = transport_cluster,
-                        s_cluster = storage_cluster,
-                        abandoned = None
-                    )
-
-                # add transport commissioning node
-                G.add_node(
-                    (transport, "commissioning"),
-                    duration = 0.0,
-                    stage = "commissioning",
-                    tech = "transport",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = TRANSPORT_VOLUMES[transport],
-                    t_cluster = transport_cluster,
-                    s_cluster = storage_cluster,
-                    abandoned = None
-                )
-
-                for capture in captures:
-                    # add capture nodes
-                    for stage, dur in CAPTURE[capture].items():
-                        G.add_node(
-                            (capture, stage),
-                            duration = sampled,
-                            stage = stage,
-                            tech = "capture",
-                            ES = 0.0,
-                            EF = 0.0,
-                            volume = CAPTURE_VOLUMES[capture],
-                            t_cluster = transport_cluster,
-                            s_cluster = storage_cluster,
-                            abandoned = None
-                        )
-            
-                    # add capture commissioning node
-                    G.add_node(
-                        (capture, "commissioning"),
-                        duration = 0.0,
-                        stage = "commissioning",
-                        tech = "capture",
-                        ES = 0.0,
-                        EF = 0.0,
-                        volume = CAPTURE_VOLUMES[capture],
-                        t_cluster = transport_cluster,
-                        s_cluster = storage_cluster,
-                        abandoned = None
-                    )
-
-        return G
-
-    # helper method for drawing intra-project edges only
-    # this method works for 1:multiple already
-    def intra_edges(G: nx.DiGraph):
-        def graphEdges(G, pid):
-            for a, b in zip(STAGES4[:-1], STAGES4[1:]):
-                G.add_edge((pid, a), (pid, b))
-        
-        for storage, transport_clusters in CLUSTERS.items():
-            graphEdges(G, storage)
-            for transport, captures in transport_clusters.items():
-                graphEdges(G, transport)
-                for capture in captures:
-                    graphEdges(G, capture)
-
-    # make a NEW graph without interdependent edges to evaluate baseline ES/EF
-    G_indep = intra_nodes()
-    intra_edges(G_indep)
-
-    return G_indep
-
-#==================================================================
 # BUILDING THE DAG WITH INTERDEPENDENCIES
 #==================================================================
 
@@ -301,19 +168,22 @@ def joint_naming(stage):
 def cluster_naming(cluster):
     return cluster + " cluster"
 
-def projGraph(replication_seed=0, sampling=False):
+def projGraph(replication_seed=0, sampling=False,
+              clusters=CLUSTERS, capture_durations=CAPTURE, capture_volumes=CAPTURE_VOLUMES,
+              storage_durations=STORAGE, storage_volumes=STORAGE_VOLUMES,
+              transport_durations=TRANSPORT, transport_volumes=TRANSPORT_VOLUMES):
     '''
     Description: creating graph and adding nodes
     Returns: directed acyclic graph G
     '''
     # make one large graph
     G = nx.DiGraph()
-        
-    for storage, transport_clusters in CLUSTERS.items():
+
+    for storage, transport_clusters in clusters.items():
         # layer 1: storage nodes
         storage_cluster = cluster_naming(storage) # naming the overarching storage cluster
 
-        for stage, dur in STORAGE[storage].items():
+        for stage, dur in storage_durations[storage].items():
             G.add_node(
                 (storage, stage),
                 duration = sample_duration(dur, storage, stage, replication_seed, sampling),
@@ -321,14 +191,14 @@ def projGraph(replication_seed=0, sampling=False):
                 tech = "storage",
                 ES = 0.0,
                 EF = 0.0,
-                volume = STORAGE_VOLUMES[storage],
+                volume = storage_volumes[storage],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 s_cluster = storage_cluster,
                 t_cluster = None,
                 abandoned = None
                 )
-            
+
         # add storage commissioning node
         G.add_node(
             (storage, "commissioning"),
@@ -337,7 +207,7 @@ def projGraph(replication_seed=0, sampling=False):
             tech = "storage",
             ES = 0.0,
             EF = 0.0,
-            volume = STORAGE_VOLUMES[storage],
+            volume = storage_volumes[storage],
             actual_volume = 0.0,
             committed_volume = 0.0,
             s_cluster = storage_cluster,
@@ -353,7 +223,7 @@ def projGraph(replication_seed=0, sampling=False):
             tech = "joint",
             ES = 0.0,
             EF = 0.0,
-            volume = STORAGE_VOLUMES[storage],
+            volume = storage_volumes[storage],
             actual_volume = 0.0,
             committed_volume = 0.0,
             t_cluster = None,
@@ -364,10 +234,10 @@ def projGraph(replication_seed=0, sampling=False):
 
         for transport, captures in transport_clusters.items():
             # cluster number is determined by ts project
-            transport_cluster =  cluster_naming(transport)
+            transport_cluster = cluster_naming(transport)
 
             # add transport nodes
-            for stage, dur in TRANSPORT[transport].items():
+            for stage, dur in transport_durations[transport].items():
                 G.add_node(
                     (transport, stage),
                     duration = sample_duration(dur, transport, stage, replication_seed, sampling),
@@ -375,14 +245,14 @@ def projGraph(replication_seed=0, sampling=False):
                     tech = "transport",
                     ES = 0.0,
                     EF = 0.0,
-                    volume = TRANSPORT_VOLUMES[transport],
+                    volume = transport_volumes[transport],
                     actual_volume = 0.0,
                     committed_volume = 0.0,
                     t_cluster = transport_cluster,
                     s_cluster = storage_cluster,
                     abandoned = None
                 )
-            
+
             # adding a volumetric-gating node before transport approval
             G.add_node(
                 (transport, "approval joint node"),
@@ -391,7 +261,7 @@ def projGraph(replication_seed=0, sampling=False):
                 tech = "joint",
                 ES = 0.0,
                 EF = 0.0,
-                volume = TRANSPORT_VOLUMES[transport],
+                volume = transport_volumes[transport],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 t_cluster = transport_cluster,
@@ -408,7 +278,7 @@ def projGraph(replication_seed=0, sampling=False):
                 tech = "transport",
                 ES = 0.0,
                 EF = 0.0,
-                volume = TRANSPORT_VOLUMES[transport],
+                volume = transport_volumes[transport],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 t_cluster = transport_cluster,
@@ -424,7 +294,7 @@ def projGraph(replication_seed=0, sampling=False):
                 tech = "joint",
                 ES = 0.0,
                 EF = 0.0,
-                volume = TRANSPORT_VOLUMES[transport],
+                volume = transport_volumes[transport],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 t_cluster = transport_cluster,
@@ -435,7 +305,7 @@ def projGraph(replication_seed=0, sampling=False):
 
             for capture in captures:
                 # add capture nodes
-                for stage, dur in CAPTURE[capture].items():
+                for stage, dur in capture_durations[capture].items():
                     G.add_node(
                         (capture, stage),
                         duration = sample_duration(dur, capture, stage, replication_seed, sampling),
@@ -443,14 +313,14 @@ def projGraph(replication_seed=0, sampling=False):
                         tech = "capture",
                         ES = 0.0,
                         EF = 0.0,
-                        volume = CAPTURE_VOLUMES[capture],
+                        volume = capture_volumes[capture],
                         actual_volume = 0.0,
                         committed_volume = 0.0,
                         t_cluster = transport_cluster,
                         s_cluster = storage_cluster,
                         abandoned = None
                     )
-            
+
                 # add capture commissioning node
                 G.add_node(
                     (capture, "commissioning"),
@@ -459,7 +329,7 @@ def projGraph(replication_seed=0, sampling=False):
                     tech = "capture",
                     ES = 0.0,
                     EF = 0.0,
-                    volume = CAPTURE_VOLUMES[capture],
+                    volume = capture_volumes[capture],
                     actual_volume = 0.0,
                     committed_volume = 0.0,
                     t_cluster = transport_cluster,
@@ -477,23 +347,23 @@ def projGraph(replication_seed=0, sampling=False):
                         tech = "joint",
                         ES = 0.0,
                         EF = 0.0,
-                        volume = CAPTURE_VOLUMES[capture], # this needs to be cap vol
-                        actual_volume = CAPTURE_VOLUMES[capture], # this is set because def joints sync (aren't threshold)
+                        volume = capture_volumes[capture], # this needs to be cap vol
+                        actual_volume = capture_volumes[capture], # this is set because def joints sync (aren't threshold)
                         committed_volume = 0.0,
                         t_cluster = transport_cluster,
                         s_cluster = storage_cluster,
                         abandoned = None
                     )
-        
+
     return G
 
-def projEdges(G: nx.DiGraph):
+def projEdges(G: nx.DiGraph, clusters=CLUSTERS):
     '''
     Description: adds intra-project edges to G
     Args: G
     '''
     # edges between the storage nodes
-    for storage, transport_clusters in CLUSTERS.items():
+    for storage, transport_clusters in clusters.items():
        
         # edge from storage def to storage app
         G.add_edge(
@@ -665,9 +535,9 @@ def threshold_gating(arrivals, capacity, fraction):
             return arrival_time
     return None # if the capacity is never filled, then the gate won't fire
 
-def CPM(G: nx.DiGraph):
+def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
     '''
-    Description: runs critical path method (CPM), updating ES and EF and checking thresholds 
+    Description: runs critical path method (CPM), updating ES and EF and checking thresholds
     Args: G
     '''
 
@@ -676,7 +546,7 @@ def CPM(G: nx.DiGraph):
         if is_threshold_joint(G, node):
             arrivals = gather_input_specs(G, node)
             capacity = G.nodes[node]["volume"]
-            fire = threshold_gating(arrivals, capacity, THRESHOLD_FRAC)
+            fire = threshold_gating(arrivals, capacity, threshold_frac)
             if fire is None:
                 G.nodes[node]["ES"] = float("inf")
                 G.nodes[node]["EF"] = float("inf")
@@ -708,8 +578,8 @@ def CPM(G: nx.DiGraph):
 # CALCULATING PROJECT DELAYS
 #==================================================================
 
-def transport_captures(G: nx.DiGraph, transport):
-    for storage, t_cluster in CLUSTERS.items():
+def transport_captures(G: nx.DiGraph, transport, clusters=CLUSTERS):
+    for storage, t_cluster in clusters.items():
         if transport in t_cluster:
             return t_cluster[transport]
 
@@ -784,7 +654,10 @@ def stage_delay(G: nx.DiGraph, node):
 # PROJECT ABANDONMENT 
 #==================================================================
 
-def calculate_attrition_probability(delay, tech): 
+def calculate_attrition_probability(delay, tech, base_rate=BASE_RATE, max_rate=MAX_RATE,
+                                    capture_tolerance=CAPTURE_TOLERANCE,
+                                    transport_tolerance=TRANSPORT_TOLERANCE,
+                                    storage_tolerance=STORAGE_TOLERANCE):
     '''
     Description: returns attrition probability based on delay and tech
     Principle: slip past partner wait baseline
@@ -792,17 +665,17 @@ def calculate_attrition_probability(delay, tech):
     Returns: probability
     '''
     if tech == "capture":
-        tolerance = CAPTURE_TOLERANCE
+        tolerance = capture_tolerance
     elif tech == "transport":
-        tolerance = TRANSPORT_TOLERANCE
+        tolerance = transport_tolerance
     else:
-        tolerance = STORAGE_TOLERANCE
-    
+        tolerance = storage_tolerance
+
     if delay < tolerance:
-        return BASE_RATE
+        return base_rate
     else:
-        delay_factor = delay/ tolerance
-        return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
+        delay_factor = delay / tolerance
+        return min(max_rate, base_rate * (1 + np.exp(delay_factor)))
 
 def mark_abandonment(G: nx.DiGraph, project, stage):
     '''
@@ -839,23 +712,23 @@ def already_abandoned(G: nx.DiGraph, project):
     '''
     return G.nodes[(project, "definition")]["abandoned"] is not None
 
-def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c):
+def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c, clusters=CLUSTERS):
     '''
     records the project as abandoned (include stage of abandonment)
     '''
     if tech == "transport":
         abandoned_t[project] = stage
         # record the captures projects in the cluster as abandoned
-        for s, t_clusters in CLUSTERS.items():
+        for s, t_clusters in clusters.items():
             for transport, captures in t_clusters.items():
                 if transport == project:
                     for capture in captures:
-                        abandoned_c[capture] = stage 
-    
+                        abandoned_c[capture] = stage
+
     elif tech == "storage":
         abandoned_s[project] = stage
         # record all dependent transport and capture as abandoned
-        for storage, t_clusters in CLUSTERS.items():
+        for storage, t_clusters in clusters.items():
             for transport, captures in t_clusters.items():
                 if storage == project:
                     abandoned_t[transport] = stage
@@ -868,125 +741,145 @@ def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned
 def threshold_failed(G, joint_node):
     return G.nodes[joint_node]["below_threshold"] == True
 
-def time_slip_at_gate(G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned_s, abandoned_c):
+def time_slip_at_gate(G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned_s, abandoned_c,
+                      base_rate=BASE_RATE, max_rate=MAX_RATE,
+                      capture_tolerance=CAPTURE_TOLERANCE, transport_tolerance=TRANSPORT_TOLERANCE,
+                      storage_tolerance=STORAGE_TOLERANCE, clusters=CLUSTERS):
     '''
     For each tech in parties, calculates delays and rolls abandonment at this stage
     parties comes in [(project, tech)] format for each project
     '''
 
     for (project, tech) in parties:
-        if already_abandoned(G, project): 
-            continue 
+        if already_abandoned(G, project):
+            continue
         delay = stage_delay(G, (project, stage))
-        prob = calculate_attrition_probability(delay, tech)
+        prob = calculate_attrition_probability(delay, tech, base_rate, max_rate,
+                                               capture_tolerance, transport_tolerance, storage_tolerance)
         if rng.random() < prob:
             mark_abandonment(G, project, stage)
-            record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c) 
+            record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c, clusters)
 
-def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandoned_s, abandoned_c):
+def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandoned_s, abandoned_c,
+                               base_rate=BASE_RATE, max_rate=MAX_RATE,
+                               capture_tolerance=CAPTURE_TOLERANCE, transport_tolerance=TRANSPORT_TOLERANCE,
+                               storage_tolerance=STORAGE_TOLERANCE, clusters=CLUSTERS):
     '''
-    time slip specifically at the storage cluster FID joint node 
+    time slip specifically at the storage cluster FID joint node
     '''
     for (project, tech) in parties:
         if already_abandoned(G, project):
             continue
         delay = storage_coordination_delay(G, project)
-        prob = calculate_attrition_probability(delay, tech)
+        prob = calculate_attrition_probability(delay, tech, base_rate, max_rate,
+                                               capture_tolerance, transport_tolerance, storage_tolerance)
         if rng.random() < prob:
             mark_abandonment(G, project, "approval")
-            record_abandonment(project, tech, "approval", abandoned_t, abandoned_s, abandoned_c) 
+            record_abandonment(project, tech, "approval", abandoned_t, abandoned_s, abandoned_c, clusters)
 
 
-def threshold_test_at_gate (G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c):
+def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, clusters=CLUSTERS):
     '''
-    If threshold test is not met, return True and collapse the owner of the joint_node 
+    If threshold test is not met, return True and collapse the owner of the joint_node
     Otherwise, return False
     '''
     if threshold_failed(G, joint_node):
         mark_abandonment(G, owner, stage)
-        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c)
+        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c, clusters)
         return True
-    
+
     return False
 
 def get_tech(G: nx.DiGraph, project):
     return G.nodes[(project, "definition")]["tech"] # this isn't very elegant (I hard-coded for def) but I think it works
 
-def apply_attrition (G: nx.DiGraph):
+def apply_attrition(G: nx.DiGraph, base_rate=BASE_RATE, threshold_frac=THRESHOLD_FRAC,
+                    max_rate=MAX_RATE, capture_tolerance=CAPTURE_TOLERANCE,
+                    transport_tolerance=TRANSPORT_TOLERANCE, storage_tolerance=STORAGE_TOLERANCE,
+                    clusters=CLUSTERS):
     '''
     Apply attrition to the graph
     '''
     rng = random.Random(SEED)
     abandoned_t, abandoned_s, abandoned_c = {}, {}, {}
 
-    for storage in CLUSTERS:
+    for storage in clusters:
         if storage in abandoned_s:
             continue
-        
-        for transport in CLUSTERS[storage]:
+
+        for transport in clusters[storage]:
             if transport in abandoned_t:
                 continue
-            captures = CLUSTERS[storage][transport]
+            captures = clusters[storage][transport]
 
             #-------- Definition joint nodes ----------
 
             # 1. time-slip abandonment at joint def nodes
-            captures = CLUSTERS[storage][transport]
+            captures = clusters[storage][transport]
             parties = [(c, "capture") for c in captures] + [(transport, "transport")]
-            time_slip_at_gate(G, rng, parties, "definition", abandoned_t, abandoned_s, abandoned_c)
-            
+            time_slip_at_gate(G, rng, parties, "definition", abandoned_t, abandoned_s, abandoned_c,
+                              base_rate, max_rate, capture_tolerance, transport_tolerance, storage_tolerance, clusters)
+
             # 2. re-run the CPM
-            CPM(G)
+            CPM(G, threshold_frac)
 
             # 3. threshold check for the joint app node
-            if threshold_test_at_gate(G, (transport, "approval joint node"), transport, "definition", abandoned_t, abandoned_s, abandoned_c):
+            if threshold_test_at_gate(G, (transport, "approval joint node"), transport, "definition", abandoned_t, abandoned_s, abandoned_c, clusters):
                 continue # transport has collapsed
-            
+
             #-------- Transport cluster FID joint nodes ----------
 
             # 4. time-slip abandonment at t_cluster joint FID node
-            time_slip_at_gate(G, rng, parties, "approval", abandoned_t, abandoned_s, abandoned_c)
-            
+            time_slip_at_gate(G, rng, parties, "approval", abandoned_t, abandoned_s, abandoned_c,
+                              base_rate, max_rate, capture_tolerance, transport_tolerance, storage_tolerance, clusters)
+
             # 5. re-reun the CPM
-            CPM(G)
-            
+            CPM(G, threshold_frac)
+
             # 6. threshold check for the t_cluster joint FID node
-            if threshold_test_at_gate(G, (cluster_naming(transport), "FID joint node"), transport, "approval", abandoned_t, abandoned_s, abandoned_c):
+            if threshold_test_at_gate(G, (cluster_naming(transport), "FID joint node"), transport, "approval", abandoned_t, abandoned_s, abandoned_c, clusters):
                 continue # transport cluster has collapsed
-        
+
         #-------- Storage cluster FID joint node ----------
 
         # 7. re-run the CPM
-        CPM(G)
+        CPM(G, threshold_frac)
 
         # 8. time-slip abandonment at s_cluster joint FID node
-        survivors = [(t, "transport") for t in CLUSTERS[storage] if t not in abandoned_t]
+        survivors = [(t, "transport") for t in clusters[storage] if t not in abandoned_t]
         parties = parties = [(storage, "storage")] + survivors
-        time_slip_at_storage_gate(G, rng, parties, abandoned_t, abandoned_s, abandoned_c)
-        
+        time_slip_at_storage_gate(G, rng, parties, abandoned_t, abandoned_s, abandoned_c,
+                                  base_rate, max_rate, capture_tolerance, transport_tolerance, storage_tolerance, clusters)
+
         # 9. re-run the CPM
-        CPM(G)
+        CPM(G, threshold_frac)
 
         # 10. threshold check for the s_cluster joint FID node
-        if threshold_test_at_gate(G, (cluster_naming(storage), "FID joint node"), storage, "approval", abandoned_t, abandoned_s, abandoned_c):
+        if threshold_test_at_gate(G, (cluster_naming(storage), "FID joint node"), storage, "approval", abandoned_t, abandoned_s, abandoned_c, clusters):
             continue # storage cluster has collapsed
-    
+
     return abandoned_s, abandoned_t, abandoned_c
 
 #==================================================================
 # RUNNING THE MODEL
 #==================================================================
 
-def buildmodel(replication_seed=0, sampling=False):
+def buildmodel(replication_seed=0, sampling=False,
+               clusters=CLUSTERS, capture_durations=CAPTURE, capture_volumes=CAPTURE_VOLUMES,
+               storage_durations=STORAGE, storage_volumes=STORAGE_VOLUMES,
+               transport_durations=TRANSPORT, transport_volumes=TRANSPORT_VOLUMES):
     '''
-    Description: runs the process 1) building graph and add nodes 
+    Description: runs the process 1) building graph and add nodes
     -> 2) add intra-project edges
     -> 3) add inter-project edges
     Returns: G
     '''
 
-    G = projGraph(replication_seed, sampling)
-    projEdges(G)
+    G = projGraph(replication_seed, sampling,
+                  clusters, capture_durations, capture_volumes,
+                  storage_durations, storage_volumes,
+                  transport_durations, transport_volumes)
+    projEdges(G, clusters)
 
     return G
 
@@ -1105,21 +998,32 @@ def visualize(G, storage_filter=None):
 # MONTE CARLO
 #==================================================================
 
-def monte_carlo(n_reps, sampling = True):
+def monte_carlo(n_reps, sampling=True, base_rate=BASE_RATE, threshold_frac=THRESHOLD_FRAC,
+                max_rate=MAX_RATE, capture_tolerance=CAPTURE_TOLERANCE,
+                transport_tolerance=TRANSPORT_TOLERANCE, storage_tolerance=STORAGE_TOLERANCE,
+                clusters=CLUSTERS, capture_durations=CAPTURE, capture_volumes=CAPTURE_VOLUMES,
+                storage_durations=STORAGE, storage_volumes=STORAGE_VOLUMES,
+                transport_durations=TRANSPORT, transport_volumes=TRANSPORT_VOLUMES):
     results = []
     for rep in range(n_reps):
-        G = buildmodel(replication_seed = rep, sampling = sampling)
-        
-        CPM(G)
-       
-        a_s, a_t, a_c = apply_attrition(G)
-       
+        G = buildmodel(replication_seed=rep, sampling=sampling,
+                       clusters=clusters, capture_durations=capture_durations,
+                       capture_volumes=capture_volumes, storage_durations=storage_durations,
+                       storage_volumes=storage_volumes, transport_durations=transport_durations,
+                       transport_volumes=transport_volumes)
+
+        CPM(G, threshold_frac)
+
+        a_s, a_t, a_c = apply_attrition(G, base_rate, threshold_frac,
+                                         max_rate, capture_tolerance, transport_tolerance, storage_tolerance,
+                                         clusters)
+
         finite = [G.nodes[n]["EF"] for n in G.nodes
                 if G.nodes[n]["EF"] != float("inf") and G.nodes[n]["abandoned"] is None]
-        
-        # getting the final survived volume from unabandoned storage FID joint nodes 
+
+        # getting the final survived volume from unabandoned storage FID joint nodes
         final_vol = 0
-        for storage, t_clusters in CLUSTERS.items():
+        for storage, t_clusters in clusters.items():
             fid = (cluster_naming(storage), "FID joint node")
             if not G.nodes[fid]["below_threshold"] and G.nodes[fid]["abandoned"] is None:
                 final_vol += G.nodes[fid]["actual_volume"]
@@ -1166,5 +1070,7 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    results = monte_carlo(10, sampling = True)
+    results = monte_carlo(10)
+    results2 = monte_carlo(10, sampling = True, base_rate=0.10)
     print(analyze_monte_carlo(results))
+    print(analyze_monte_carlo(results2))
