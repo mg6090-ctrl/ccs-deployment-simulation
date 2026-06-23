@@ -1,27 +1,31 @@
 from flask import Flask, request, jsonify
+from pathlib import Path
+import os
+import json
+import copy
+import io
+import base64
+from typing import Dict, List, Tuple, Optional
+import pandas as pd
+import random 
 
 app = Flask(__name__)
 
-# This tells Flask: when someone visits http://127.0.0.1:5000/api/double, run this function
-@app.route('/api/run-simulation', methods=['POST'])
+@app.route('/api/defaults', methods=['GET'])
 def double_number():
-    # 1. Grab the JSON data sent to us
     data = request.get_json()
     
-    # 2. Extract specific numbers out of that data
     n_reps = data.get('n_reps', 100)
     sampling = data.get('sampling', 'coordinated')
     threshold_frac = data.get('THRESHOLD_FRAC', 0.5)
     base_rate = data.get('BASE_RATE', 0.05)
 
-    # 3. Simulate math
     realized_volume = n_reps * 15.5 * (1 - base_rate)
     if threshold_frac > 0.6:
-        collapse_rate = 0.45  # High thresholds cause more cluster collapses
+        collapse_rate = 0.45
     else:
         collapse_rate = 0.12
     
-    # 4. Create final dictionary
     results = {
         "capture_survival_count": int(n_reps * (1 - collapse_rate)),
         "realized_volume_million_tonnes": round(realized_volume, 2),
@@ -31,6 +35,16 @@ def double_number():
     }
 
     return jsonify(results)
+
+@app.route('/api/run-model')
+def run_model():
+    data = request.get_json()
+    results = {}
+    return jsonify(results)
+
+@app.route('/api/download-results')
+def download():
+    return 
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
