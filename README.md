@@ -1,5 +1,5 @@
-# 2026SummerResearch
-Developing a CCS simulation for Net Zero California
+# CCS Deployment Simulation
+Modeling CCS deployment strategies for Net Zero California
 
 Three scenarios:
 1. Coordinated
