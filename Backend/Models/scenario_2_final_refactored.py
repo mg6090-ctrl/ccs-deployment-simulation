@@ -495,7 +495,7 @@ def gather_input_specs(G: nx.DiGraph, joint):
     Args: G, joint node
     Returns a list of (volume, arrival_time) to feed into the volumetric gating method
     '''
-    if not is_threshold_joint:
+    if not is_threshold_joint(G, joint):
         raise ValueError(f"{joint} is not a joint node")
     
     arrivals = []
