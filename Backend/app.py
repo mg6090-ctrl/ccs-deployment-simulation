@@ -1,6 +1,6 @@
 from Backend.models import scenario_1_final_refactored
 from flask import Flask, request, jsonify
-from models import scenario_2_final_copy
+from Backend.models import scenario_2_final_refactored
 from pathlib import Path
 import os
 import json
