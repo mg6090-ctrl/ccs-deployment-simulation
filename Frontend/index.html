@@ -6,45 +6,100 @@
         </title>
     </head>
     <body>
-
-        <label> Stochastic duration sampling </label>
-        <input id = "sampling" type = "checkbox"></input>
-
-        <br>
-        <br>
-
-        <label> Base Rate </label>
-        <input id = "base_rate" type = "number" value = "0.1"></input>
         
+        <div id = "scenario_selection">
+            <h3>Scenario Selection</h3>
+            <label> Scenario 1 </label>
+            <input id = "s1_checked" type = "checkbox"></input>
+            <br>
+            <label> Scenario 2 </label>
+            <input id = "s2_checked" type = "checkbox"></input>
+        </div>
+
         <br>
 
-        <label> Number of trials </label>
-        <input id = "n_reps" type = "number" value = "5"></input>
+        <div id = "s1_params">
+            <h3>Scenario 1 Parameters</h3>
+            <label> S1 stochastic duration sampling </label>
+            <input id = "s1_sampling" type = "checkbox"></input>
+            <br>
+            <label> S1 base rate </label>
+            <input id = "s1_base_rate" type = "number" value = "0.05"></input>
+            <br>
+            <label> S1 number of trials </label>
+            <input id = "s1_n_reps" type = "number" value = "5"></input>
+        </div>
+
+        <br>
+
+        <div id = "s2_params">
+            <h3>Scenario 2 Parameters</h3>
+            <label> S2 stochastic duration sampling </label>
+            <input id = "s2_sampling" type = "checkbox"></input>
+            <br>
+            <label> S2 base rate </label>
+            <input id = "s2_base_rate" type = "number" value = "0.05"></input>
+            <label> S2 max rate </label>
+            <input id = "s2_max_rate" type = "number" value = "0.4"></input>
+            <br>
+            <label> S2 threshold fraction </label>
+            <input id = "s2_threshold_frac" type = "number" value = "0.5"></input>
+            <br>
+            <label> S2 capture tolerance </label>
+            <input id = "s2_cap_tol" type = "number" value = "36"></input>
+            <label> S2 transport tolerance </label>
+            <input id = "s2_trans_tol" type = "number" value = "36"></input>
+            <label> S2 storage tolerance </label>
+            <input id = "s2_stor_tol" type = "number" value = "36"></input>
+            <br>
+            <label> S2 number of trials </label>
+            <input id = "s2_n_reps" type = "number" value = "5"></input>
+        </div>
 
         <br>
         <br>
-
-        <button id = "run">Run model</button>
+        <button id = "run">Run Simulation</button>
         <pre id = "output"></pre>
 
         <script>
-            
             // getting the html elements via their id 
             const button = document.getElementById('run')
             const output = document.getElementById('output')
             
             // adding async function to the button
             button.addEventListener('click', async () => {
-                const base_rate = Number(document.getElementById('base_rate').value)
-                const n_reps = parseInt(document.getElementById('n_reps').value)
-                const sampling = document.getElementById('sampling').checked
+                // creating the scenarios list
+                const scenarios = []
+                if (document.getElementById('s1_checked').checked) {
+                    scenarios.push("scenario1")
+                }
+                if (document.getElementById('s2_checked').checked) {
+                    scenarios.push("scenario2")
+                }
+                
+                // filling scenario1 params
+                const scenario1 = {}
+                scenario1["base_rate"] = Number(document.getElementById('s1_base_rate').value)
+                scenario1["n_reps"] = parseInt(document.getElementById('s1_n_reps').value)
+                scenario1["sampling"] = document.getElementById('s1_sampling').checked
+                
+                // filling scenario2 params
+                const scenario2 = {}
+                scenario2["base_rate"] = Number(document.getElementById('s2_base_rate').value)
+                scenario2["n_reps"] = parseInt(document.getElementById('s2_n_reps').value)
+                scenario2["sampling"] = document.getElementById('s2_sampling').checked
+                scenario2["max_rate"] = Number(document.getElementById('s2_max_rate').value)
+                scenario2["threshold_frac"] = Number(document.getElementById('s2_threshold_frac').value)
+                scenario2["cap_tol"] = Number(document.getElementById('s2_cap_tol').value)
+                scenario2["trans_tol"] = Number(document.getElementById('s2_trans_tol').value)
+                scenario2["stor_tol"] = Number(document.getElementById('s2_stor_tol').value)
 
                 const response = await fetch(
-                    "http://localhost:5000/api/run-s1", 
+                    "http://localhost:5000/api/run-model", 
                     {
                         method: 'POST', 
                         headers: {"Content-Type": "application/json"}, 
-                        body: JSON.stringify({n_reps, base_rate, sampling})
+                        body: JSON.stringify({"scenarios": scenarios, "scenario1": scenario1, "scenario2": scenario2})
                     }
                 )
                 const data = await response.json()
