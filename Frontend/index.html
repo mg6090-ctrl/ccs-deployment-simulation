@@ -7,22 +7,19 @@
     </head>
     <body>
 
-        <text> Sampling </text>
-        <input id = "sampling" type = "boolean" value = "True"></input>
-
-        <text> Base Rate </text>
-        <input id = "base_rate" type = "number" value = "0.1"></input>
-        
-        <text> Number of trials </text>
-        <input id = "n_reps" type = "number" value = "100"></input>
+        <label> Stochastic duration sampling </label>
+        <input id = "sampling" type = "checkbox"></input>
 
         <br>
+        <br>
 
-        <!-- <text> Risk tolerance split (tolerant, averse) </text>
-        <input id = "frac_split" type = "string" value = "(0.2, 0.8)"></input> -->
+        <label> Base Rate </label>
+        <input id = "base_rate" type = "number" value = "0.1"></input>
+        
+        <br>
 
-        <text> Replication seed </text>
-        <input id = "replication_seed" type = "number" value = "0"></input>
+        <label> Number of trials </label>
+        <input id = "n_reps" type = "number" value = "5"></input>
 
         <br>
         <br>
@@ -40,16 +37,14 @@
             button.addEventListener('click', async () => {
                 const base_rate = Number(document.getElementById('base_rate').value)
                 const n_reps = parseInt(document.getElementById('n_reps').value)
-                const sampling = Boolean(document.getElementById('sampling').value)
-                const replication_seed = Number(document.getElementById('replication_seed').value)
-                // const frac_split = String(document.getElementById('frac_split').value)
+                const sampling = document.getElementById('sampling').checked
 
                 const response = await fetch(
                     "http://localhost:5000/api/run-s1", 
                     {
                         method: 'POST', 
                         headers: {"Content-Type": "application/json"}, 
-                        body: JSON.stringify({n_reps, base_rate, replication_seed, sampling})
+                        body: JSON.stringify({n_reps, base_rate, sampling})
                     }
                 )
                 const data = await response.json()

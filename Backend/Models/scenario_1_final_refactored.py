@@ -114,7 +114,7 @@ def stable_seed(project, stage, replication_seed=0):
     digest = hashlib.blake2b(key.encode(), digest_size=8).digest() 
     return int.from_bytes(digest, "big") # interpets 8 bytes as an integer; "big" means read bytes from most significant digit
 
-def sample_duration(mean, project, stage, replication_seed=0, sampling = False):
+def sample_duration(mean, project, stage, replication_seed, sampling):
     '''
     Sample one stage duration, centered on `mean` (the fixed duration).
     Returns a positive integer (months).
