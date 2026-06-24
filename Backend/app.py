@@ -1,10 +1,11 @@
 from models import scenario_1_final_refactored as s1
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from models import scenario_2_final_refactored as s2
 
 app = Flask(__name__)
 
-
+CORS(app)
 
 @app.route('/api/run-s1', methods=['GET', 'POST'])
 def double_number():

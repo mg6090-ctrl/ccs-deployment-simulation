@@ -12,9 +12,11 @@
 
         <script>
             
+            // getting the html elements via their id 
             const button = document.getElementById('run')
             const output = document.getElementById('output')
             
+            // adding async function to the button
             button.addEventListener('click', async () => {
                 const response = await fetch(
                     "http://localhost:5000/api/run-s1", 
