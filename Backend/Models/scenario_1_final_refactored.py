@@ -461,7 +461,7 @@ def monte_carlo(
     for rep in range(n_reps):
 
         G = projGraph(
-            replication_seed, 
+            rep, 
             clusters, 
             caps,
             caps_vol,
@@ -492,7 +492,7 @@ def monte_carlo(
         results.append({
                 "rep": rep,
                 "n_abandoned": len(abandoned),
-                "completion": max(G.nodes[n]["EF"] for n in G.nodes),
+                "completion": max(G.nodes[n]["EF"] for n in G.nodes if G.nodes[n]['abandoned'] is None),
                 "final volume": final_vol
             }
         )
