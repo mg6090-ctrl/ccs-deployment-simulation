@@ -59,6 +59,19 @@
         <br>
         <br>
         <button id = "run">Run Simulation</button>
+
+        <div style = "display: flex; gap: 24px;">
+            <div style = "flex: 1;">
+                <h3>Scenario 1 Results</h3>
+                <pre id = "s1_output"></pre>
+            </div>
+
+            <div style = "flex: 2;">
+                <h3>Scenario 2 Results</h3>
+                <pre id = "s2_output"></pre>
+            </div>
+        </div>
+
         <pre id = "output"></pre>
 
         <script>
@@ -70,10 +83,10 @@
             button.addEventListener('click', async () => {
                 // creating the scenarios list
                 const scenarios = []
-                if (document.getElementById('s1_checked').checked) {
+                if (document.getElementById('s1_checked').checked){
                     scenarios.push("scenario1")
                 }
-                if (document.getElementById('s2_checked').checked) {
+                if (document.getElementById('s2_checked').checked){
                     scenarios.push("scenario2")
                 }
                 
@@ -103,8 +116,18 @@
                     }
                 )
                 const data = await response.json()
+                
+                if (data.scenario1){
+                    const s1_summary = data.scenario1.summary
+                    const s1_reps = data.scenario1.reps
+                    s1_output.textContent = JSON.stringify(s1_summary, null, 2)
+                }
 
-                output.textContent = JSON.stringify(data, null, 2)
+                if (data.scenario2){
+                    const s2_summary = data.scenario2.summary
+                    const s2_reps = data.scenario2.reps
+                    s2_output.textContent = JSON.stringify(s2_summary, null, 2)
+                }
             })
             
         </script>
