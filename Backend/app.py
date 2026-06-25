@@ -50,6 +50,7 @@ def run_model():
     # scenario 1 params
     if "scenario1" in scenarios:
         s1_params = data.get('scenario1', {})
+
         s1_n_reps = s1_params.get('n_reps', 10)
         s1_sampling = s1_params.get('sampling', True)
         s1_frac_split = s1_params.get('frac_split', s1.FRAC_SPLIT)
@@ -73,8 +74,14 @@ def run_model():
                        stor_vol = s1_stor_vol, 
                        frac_split = s1_frac_split, 
                        sampling = s1_sampling)
+
+        s1_summary = s1.analyze_monte_carlo(s1_results)
+
+        s1_bundle = {}
+        s1_bundle["summary"] = s1_summary
+        s1_bundle["reps"] = s1_results
         
-        results['scenario1'] = s1_results
+        results['scenario1'] = s1_bundle
         
     if "scenario2" in scenarios:
         s2_params = data.get('scenario2', {})
@@ -110,7 +117,13 @@ def run_model():
                        storage_tolerance = s2_stor_tol,
                        sampling = s2_sampling)
         
-        results['scenario2'] = s2_results
+        s2_summary = s2.analyze_monte_carlo(s2_results)
+        
+        s2_bundle = {}
+        s2_bundle["summary"] = s2_summary
+        s2_bundle["reps"] = s2_results
+
+        results['scenario2'] = s2_bundle
 
     return jsonify(results)
 

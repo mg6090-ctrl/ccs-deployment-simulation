@@ -1098,16 +1098,16 @@ def analyze_monte_carlo(results):
     else:
         avg_time = -1
     
-    return ("average no. capture abandoned: ", avg_c_abandoned,
-            "average capture abandonment rate: ", avg_c_abandon_rate,
-            "average no. transport abandoned: ", avg_t_abandoned,
-            "average transport abandonment rate: ", avg_t_abandon_rate,
-            "average no. storage abandoned: ", avg_s_abandoned, 
-            "average storage abandonment rate: ", avg_s_abandon_rate,
-            "all abandoned: ", all_abandoned,
-            "all abandoned rate: ", collapse_rate,
-            "average completion time of survived: ", avg_time,
-            "average final vol of capture: ", avg_vol)
+    return {"average no. capture abandoned": avg_c_abandoned,
+            "average capture abandonment rate": avg_c_abandon_rate,
+            "average no. transport abandoned": avg_t_abandoned,
+            "average transport abandonment rate": avg_t_abandon_rate,
+            "average no. storage abandoned": avg_s_abandoned, 
+            "average storage abandonment rate": avg_s_abandon_rate,
+            "all abandoned": all_abandoned,
+            "all abandoned rate": collapse_rate,
+            "average completion time of survived": avg_time,
+            "average final vol of capture": avg_vol}
 
 # NOTE: can also return the list of abandonment rates for data analysis
 
