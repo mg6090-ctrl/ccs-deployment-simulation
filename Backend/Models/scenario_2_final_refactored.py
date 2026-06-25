@@ -765,11 +765,11 @@ def get_tech(G: nx.DiGraph, project):
 def apply_attrition(G: nx.DiGraph, base_rate=BASE_RATE, threshold_frac=THRESHOLD_FRAC,
                     max_rate=MAX_RATE, capture_tolerance=CAPTURE_TOLERANCE,
                     transport_tolerance=TRANSPORT_TOLERANCE, storage_tolerance=STORAGE_TOLERANCE,
-                    clusters=CLUSTERS):
+                    clusters=CLUSTERS, replication_seed = 0):
     '''
     Apply attrition to the graph
     '''
-    rng = random.Random(SEED)
+    rng = random.Random(SEED + replication_seed)
     abandoned_t, abandoned_s, abandoned_c = {}, {}, {}
 
     for storage in clusters:
@@ -990,7 +990,7 @@ def monte_carlo(n_reps, sampling=True, base_rate=BASE_RATE, threshold_frac=THRES
 
         a_s, a_t, a_c = apply_attrition(G, base_rate, threshold_frac,
                                          max_rate, capture_tolerance, transport_tolerance, storage_tolerance,
-                                         clusters)
+                                         clusters, replication_seed = rep)
 
         finite = [G.nodes[n]["EF"] for n in G.nodes
                 if G.nodes[n]["EF"] != float("inf") and G.nodes[n]["abandoned"] is None]
