@@ -458,6 +458,9 @@ def monte_carlo(
     ):
     
     results = []
+
+    num_cap = len(caps)
+
     for rep in range(n_reps):
 
         G = projGraph(
@@ -491,7 +494,8 @@ def monte_carlo(
 
         results.append({
                 "rep": rep,
-                "n_abandoned": len(abandoned),
+                "num_cap": num_cap,
+                "n_c_abandoned": len(abandoned),
                 "completion": max(G.nodes[n]["EF"] for n in G.nodes if G.nodes[n]['abandoned'] is None),
                 "final volume": final_vol
             }
@@ -502,19 +506,25 @@ def analyze_monte_carlo(results):
     cum_abandoned = 0.0
     cum_time = 0.0
     cum_vol = 0.0
+    cap_abandon_rate = []
+    cum_c_rate = 0.0
 
     for rep in results:
-        cum_abandoned += rep["n_abandoned"]
+        cum_abandoned += rep["n_c_abandoned"]
         cum_time += rep["completion"]
         cum_vol += rep["final volume"]
-
+        cap_abandon_rate.append(rep["n_c_abandoned"]/rep["num_cap"])
+        cum_c_rate += rep["n_c_abandoned"]/rep["num_cap"]
+    
     avg_abandoned = cum_abandoned/len(results)
+    avg_c_abandon_rate = cum_c_rate/len(results)
     avg_time = cum_time/len(results)
     avg_vol = cum_vol/len(results)
 
-    return ("average no. abandoned: ", avg_abandoned, 
-            "average completion time: ", avg_time,
-            "average final volume: ", avg_vol)
+    return {"average no. capture abandoned": avg_abandoned, 
+            "average capture abandonment rate": avg_c_abandon_rate,
+            "average completion time": avg_time,
+            "average final volume": avg_vol}
 
 #==================================================================
 # MAIN (EXECUTION)
