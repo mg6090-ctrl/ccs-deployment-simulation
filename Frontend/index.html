@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>
-            CCS Model
-        </title>
+        <title>CCS Deployment Simulation</title>
+        <script src = "https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
     </head>
     <body>
         
@@ -20,7 +19,7 @@
 
         <div id = "s1_params">
             <h3>Scenario 1 Parameters</h3>
-            <label> S1 stochastic duration sampling </label>
+            <label> S1 stochastic lognormal duration sampling </label>
             <input id = "s1_sampling" type = "checkbox"></input>
             <br>
             <label> S1 base rate </label>
@@ -34,7 +33,7 @@
 
         <div id = "s2_params">
             <h3>Scenario 2 Parameters</h3>
-            <label> S2 stochastic duration sampling </label>
+            <label> S2 stochastic lognormal duration sampling </label>
             <input id = "s2_sampling" type = "checkbox"></input>
             <br>
             <label> S2 base rate </label>
@@ -59,6 +58,20 @@
         <br>
         <br>
         <button id = "run">Run Simulation</button>
+    
+        <h3>Scenario Comparisons</h3>
+        <div style = "display: flex; gap: 18px; width: 100%">
+            <div style = "flex: 1; min-width: 0;">
+                <div id = "chart_c_abandon" style = "height: 400px;"></div>
+            </div>
+            <div style = "flex: 1; min-width: 0;">
+                <div id = "chart_final_vol" style = "height: 400px;"></div>
+            </div>
+            <div style = "flex: 1; min-width: 0;">
+                <div id = "chart_time" style = "height: 400px;"></div>
+            </div>
+        </div>
+        
 
         <div style = "display: flex; gap: 24px;">
             <div style = "flex: 1;">
@@ -117,17 +130,62 @@
                 )
                 const data = await response.json()
                 
+                x_c_abandon = []
+                y_c_abandon = []
+
+                x_c_final_vol = []
+                y_c_final_vol = []
+
+                x_c_time = []
+                y_c_time = []
+
                 if (data.scenario1){
                     const s1_summary = data.scenario1.summary
                     const s1_reps = data.scenario1.reps
                     s1_output.textContent = JSON.stringify(s1_summary, null, 2)
+
+                    x_c_abandon.push("Scenario 1")
+                    y_c_abandon.push(data.scenario1.summary["average capture abandonment rate"])
+
+                    x_c_final_vol.push("Scenario 1")
+                    y_c_final_vol.push(data.scenario1.summary["average final volume"])
+
+                    x_c_time.push("Scenario 1")
+                    y_c_time.push(data.scenario1.summary["average completion time"])
                 }
 
                 if (data.scenario2){
                     const s2_summary = data.scenario2.summary
                     const s2_reps = data.scenario2.reps
                     s2_output.textContent = JSON.stringify(s2_summary, null, 2)
+
+                    x_c_abandon.push("Scenario 2")
+                    y_c_abandon.push(data.scenario2.summary["average capture abandonment rate"])
+
+                    x_c_final_vol.push("Scenario 2")
+                    y_c_final_vol.push(data.scenario2.summary["average final vol of capture"])
+
+                    x_c_time.push("Scenario 2")
+                    y_c_time.push(data.scenario2.summary["average completion time of survived"])
                 }
+
+                Plotly.newPlot(
+                    "chart_c_abandon", 
+                    [{x: x_c_abandon, y: y_c_abandon, type: "bar"}],
+                    {title: {text: "Average capture project abandonment rate"}}
+                )
+
+                Plotly.newPlot(
+                    "chart_final_vol",
+                    [{x: x_c_final_vol, y: y_c_final_vol, type: "bar"}],
+                    {title: {text: "Average final volume captured"}}
+                )
+
+                Plotly.newPlot(
+                    "chart_time",
+                    [{x: x_c_time, y:y_c_time, type: "bar"}],
+                    {title: {text: "Average completion time of survived clusters"}}
+                )
             })
             
         </script>

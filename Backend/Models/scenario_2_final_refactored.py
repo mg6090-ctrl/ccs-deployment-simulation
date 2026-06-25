@@ -13,78 +13,47 @@ import hashlib
 STAGES = ["definition", "approval", "construction"]
 STAGES4 = ["definition", "approval", "construction", "commissioning"]
 
-# dictionary for capture projects
 CAPTURE = {
-    "projC1":  {"definition": 12, "approval": 24, "construction": 48},
-    "projC2":  {"definition": 30, "approval": 48, "construction": 60},
-    "projC3":  {"definition": 24, "approval": 24, "construction": 36},
-    "projC4":  {"definition": 50, "approval": 40, "construction": 80},
-    "projC5":  {"definition": 46, "approval": 34, "construction": 62},
-    "projC6":  {"definition": 10, "approval": 18, "construction": 30},
-    "projC7":  {"definition": 20, "approval": 30, "construction": 44},
-    "projC8":  {"definition": 36, "approval": 30, "construction": 54},
-    "projC9":  {"definition": 14, "approval": 20, "construction": 34},
-    "projC10": {"definition": 60, "approval": 44, "construction": 90},
-    "projC11": {"definition": 28, "approval": 36, "construction": 50},
-    "projC12": {"definition": 18, "approval": 22, "construction": 40},
+    "projC1":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC2":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC3":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC4":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC5":  {"definition": 6, "approval": 9, "construction": 12},
+    "projC6":  {"definition": 6, "approval": 9, "construction": 12},
+    "projC7":  {"definition": 6, "approval": 6, "construction": 6},
+    "projC8":  {"definition": 6, "approval": 6, "construction": 6},
 }
 
-# capture volumes
 CAPTURE_VOLUMES = {
-    "projC1": 300, "projC2": 300, "projC3": 250,    # projS1 cluster — clears (oversubscribes T1)
-    "projC4": 120, "projC5": 110, "projC6": 80, "projC7": 80,   # projS2 — T3 fails, S2 fails (cascade)
-    "projC8": 400, "projC9": 200, "projC10": 250,   # projS3 cluster — clears
-    "projC11": 45, "projC12": 50,                    # projS4 — starved, fails
+    "projC1": 1.469847, "projC2": 1.112612, "projC3": 0.823186, "projC4": 0.241809, 
+    "projC5": 0.060437, "projC6": 0.114565, 
+    "projC7": 1.011104, "projC8": 0.059286                  
 }
 
 # dictionary for storage projects
 STORAGE = {
-    "projS1":  {"definition": 48, "approval": 36, "construction": 72},  
-    "projS2":  {"definition": 30, "approval": 50, "construction": 64},  
-    "projS3":  {"definition": 48, "approval": 24, "construction": 60},   
-    "projS4":  {"definition": 14, "approval": 20, "construction": 40},   
+    "projS1":  {"definition": 24, "approval": 30, "construction": 24}   
 }
 
 # capture volumes
 STORAGE_VOLUMES = {
-    "projS1": 1000, "projS2": 2500, "projS3": 1500, "projS4": 3000,
+    "projS1": 6
 }
 
 # dictionary for transport projects
 TRANSPORT = {
-    "projT1":  {"definition": 24, "approval": 12, "construction": 72},  
-    "projT2":  {"definition": 32, "approval": 18, "construction": 64},  
-    "projT3":  {"definition": 46, "approval": 25, "construction": 60},   
-    "projT4":  {"definition": 18, "approval": 18, "construction": 40},   
-    "projT5":  {"definition": 12, "approval": 42, "construction": 60},   
-    "projT6":  {"definition": 64, "approval": 36, "construction": 110}, 
-    "projT7":  {"definition": 48, "approval": 24, "construction": 56},   
+    "projT1":  {"definition": 9, "approval": 36, "construction": 30}
 }
 
 # transport volumes
 TRANSPORT_VOLUMES = {
-    "projT1": 500, "projT2": 400, "projT3": 550, "projT4": 200,
-    "projT5": 600, "projT6": 600, "projT7": 250,
+    "projT1": 6
 }
 
-# NOTE: THE CLUSTER LOGIC HAS CHANGED HERE! NEED TO ENSURE THE FUTURE CODE ALIGNS WITH THE NEW 
-# DATA STRUCTURE HERE!
 CLUSTERS = {
     "projS1":  {
-        "projT1": ["projC1", "projC2"], 
-        "projT2": ["projC3"]
-        },    
-    "projS2":  {
-        "projT3": ["projC4", "projC5"], 
-        "projT4": ["projC6", "projC7"],
-    },   
-    "projS3":  {
-        "projT5": ["projC8"],
-        "projT6": ["projC9", "projC10"]
-    },    
-    "projS4":  {
-        "projT7":  ["projC11", "projC12"]
-    }
+        "projT1": ["projC1", "projC2", "projC3", "projC4", "projC5", "projC6", "projC7", "projC8"]
+        }
 }
 
 # seed for shuffling before frac_split 
@@ -1118,5 +1087,6 @@ def analyze_monte_carlo(results):
 if __name__ == "__main__":
     results = monte_carlo(10)
     results2 = monte_carlo(10, sampling = True, base_rate=0.10)
+    print(results)
     print(analyze_monte_carlo(results))
     print(analyze_monte_carlo(results2))
