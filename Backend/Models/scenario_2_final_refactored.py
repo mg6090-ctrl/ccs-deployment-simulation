@@ -1005,6 +1005,11 @@ def monte_carlo(n_reps, sampling=True, base_rate=BASE_RATE, threshold_frac=THRES
                 storage_durations=STORAGE, storage_volumes=STORAGE_VOLUMES,
                 transport_durations=TRANSPORT, transport_volumes=TRANSPORT_VOLUMES):
     results = []
+
+    num_cap = len(capture_volumes)
+    num_trans = len(transport_volumes)
+    num_stor = len(storage_volumes)
+
     for rep in range(n_reps):
         G = buildmodel(replication_seed=rep, sampling=sampling,
                        clusters=clusters, capture_durations=capture_durations,
@@ -1030,8 +1035,11 @@ def monte_carlo(n_reps, sampling=True, base_rate=BASE_RATE, threshold_frac=THRES
         
         results.append({
                 "rep": rep,
-                "supply abandoned": len(a_s),
+                "num_stor": num_stor,
+                "storage abandoned": len(a_s),
+                "num_trans": num_trans,
                 "transport abandoned": len(a_t),
+                "num_cap": num_cap,
                 "capture abandoned": len(a_c),
                 "completion": max(finite) if finite else 0,
                 "final volume": final_vol
@@ -1045,25 +1053,63 @@ def analyze_monte_carlo(results):
     cum_c_abandoned = 0.0
     cum_vol = 0.0
     cum_time = 0.0
+    cap_abandon_rate = []
+    trans_abandon_rate = []
+    stor_abandon_rate = []
+    cum_c_rate = 0.0
+    cum_t_rate = 0.0
+    cum_s_rate = 0.0
+    all_abandoned = 0.0
 
     for rep in results:
-        cum_s_abandoned += rep["supply abandoned"]
+        cum_s_abandoned += rep["storage abandoned"]
         cum_t_abandoned += rep["transport abandoned"]
         cum_c_abandoned += rep["capture abandoned"]
+
         cum_time += rep["completion"]
+        if rep["completion"] == 0:
+            all_abandoned += 1
+
         cum_vol += rep["final volume"]
+
+        cap_abandon_rate.append(rep["capture abandoned"]/rep["num_cap"])
+        cum_c_rate += rep["capture abandoned"]/rep["num_cap"]
+        trans_abandon_rate.append(rep["transport abandoned"]/rep["num_trans"])
+        cum_t_rate += rep["transport abandoned"]/rep["num_trans"]
+        stor_abandon_rate.append(rep["storage abandoned"]/rep["num_stor"])
+        cum_s_rate += rep["storage abandoned"]/rep["num_stor"]
 
     avg_s_abandoned = cum_s_abandoned/len(results)
     avg_t_abandoned = cum_t_abandoned/len(results)
     avg_c_abandoned = cum_c_abandoned/len(results)
     avg_vol = cum_vol/len(results)
-    avg_time = cum_time/len(results)    
 
-    return ("average no. storage abandoned: ", avg_s_abandoned, 
+    collapse_rate = all_abandoned/len(results)
+
+    # abandonment rates
+    avg_c_abandon_rate = cum_c_rate/len(results)
+    avg_t_abandon_rate = cum_t_rate/len(results)
+    avg_s_abandon_rate = cum_s_rate/len(results)
+
+    # average time taken for completed projects — so denom can only include completed ones
+    surviving = len(results) - all_abandoned
+    if surviving > 0:
+        avg_time = cum_time/surviving 
+    else:
+        avg_time = -1
+    
+    return ("average no. capture abandoned: ", avg_c_abandoned,
+            "average capture abandonment rate: ", avg_c_abandon_rate,
             "average no. transport abandoned: ", avg_t_abandoned,
-            "average no. capture abandoned: ", avg_c_abandoned,
-            "average completion time: ", avg_time,
+            "average transport abandonment rate: ", avg_t_abandon_rate,
+            "average no. storage abandoned: ", avg_s_abandoned, 
+            "average storage abandonment rate: ", avg_s_abandon_rate,
+            "all abandoned: ", all_abandoned,
+            "all abandoned rate: ", collapse_rate,
+            "average completion time of survived: ", avg_time,
             "average final vol of capture: ", avg_vol)
+
+# NOTE: can also return the list of abandonment rates for data analysis
 
 #==================================================================
 # MAIN (EXECUTION)
