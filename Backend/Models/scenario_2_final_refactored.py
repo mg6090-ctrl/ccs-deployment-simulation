@@ -599,7 +599,6 @@ def storage_coordination_delay(G: nx.DiGraph, project):
 
     return delay if delay > 0 else 0
 
-# WILL NEED TO UPDATE THIS!
 def stage_delay(G: nx.DiGraph, node):
     '''
     Description: calculates delay at a specific stage
@@ -608,7 +607,6 @@ def stage_delay(G: nx.DiGraph, node):
     Returns: the stage delay at that specific node 
     '''
     # Looks up target node via target_node(), allows it to accommodate multiple successors
-    # robust for 1: multiple configuration 
     project, stage = node[0], node[1]
     targets = target_node(G, project, stage)
     max_delay = 0
@@ -620,7 +618,7 @@ def stage_delay(G: nx.DiGraph, node):
     return max_delay
 
 #==================================================================
-# PROJECT ABANDONMENT 
+# PROJECT ABANDONMENT NOTE: EDIT THE ATTRITION PROB FUNCTION
 #==================================================================
 
 def calculate_attrition_probability(delay, tech, base_rate=BASE_RATE, max_rate=MAX_RATE,
@@ -640,11 +638,8 @@ def calculate_attrition_probability(delay, tech, base_rate=BASE_RATE, max_rate=M
     else:
         tolerance = storage_tolerance
 
-    if delay < tolerance:
-        return base_rate
-    else:
-        delay_factor = delay / tolerance
-        return min(max_rate, base_rate * (1 + np.exp(delay_factor)))
+    delay_factor = delay / tolerance
+    return min(max_rate, base_rate * (np.exp(delay_factor)))
 
 def mark_abandonment(G: nx.DiGraph, project, stage):
     '''

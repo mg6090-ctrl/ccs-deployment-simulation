@@ -798,11 +798,9 @@ def calculate_attrition_probability(delay, tech):
     else:
         tolerance = STORAGE_TOLERANCE
     
-    if delay < tolerance:
-        return BASE_RATE
-    else:
-        delay_factor = delay/ tolerance
-        return min(MAX_RATE, BASE_RATE * (1 + np.exp(delay_factor)))
+    
+    delay_factor = delay/ tolerance
+    return min(MAX_RATE, BASE_RATE * (np.exp(delay_factor)))
 
 def mark_abandonment(G: nx.DiGraph, project, stage):
     '''
