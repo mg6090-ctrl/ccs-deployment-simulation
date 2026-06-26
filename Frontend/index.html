@@ -27,8 +27,11 @@
             <label> S1 max rate </label>
             <input id = "s1_max_rate" type = "number" value = "0.4"></input>
             <br>
+            <label> S1 risk-tolerant fraction </label>
+            <input id = "s1_frac_split_approval" type = "number" value = "0.2"></input>
+            <br>
             <label> S1 capture tolerance </label>
-            <input id = "s1_cap_tol" type = "number" value = "48"></input>
+            <input id = "s1_cap_tol" type = "number" min = "0.001" value = "48"></input>
             <br>
             <label> S1 number of trials </label>
             <input id = "s1_n_reps" type = "number" value = "100"></input>
@@ -50,11 +53,11 @@
             <input id = "s2_threshold_frac" type = "number" value = "0.5"></input>
             <br>
             <label> S2 capture tolerance </label>
-            <input id = "s2_cap_tol" type = "number" value = "36"></input>
+            <input id = "s2_cap_tol" type = "number" min = "0.001" value = "36"></input>
             <label> S2 transport tolerance </label>
-            <input id = "s2_trans_tol" type = "number" value = "36"></input>
+            <input id = "s2_trans_tol" type = "number" min = "0.001" value = "36"></input>
             <label> S2 storage tolerance </label>
-            <input id = "s2_stor_tol" type = "number" value = "36"></input>
+            <input id = "s2_stor_tol" type = "number" min = "0.001" value = "36"></input>
             <br>
             <label> S2 number of trials </label>
             <input id = "s2_n_reps" type = "number" value = "100"></input>
@@ -115,6 +118,7 @@
                 scenario1["sampling"] = document.getElementById('s1_sampling').checked
                 scenario1["s1_max_rate"] = Number(document.getElementById('s1_max_rate').value)
                 scenario1["s1_cap_tol"] = Number(document.getElementById('s1_cap_tol').value)
+                scenario1["frac_split_app"] = Number(document.getElementById('s1_frac_split_approval').value)
                 
                 // filling scenario2 params
                 const scenario2 = {}

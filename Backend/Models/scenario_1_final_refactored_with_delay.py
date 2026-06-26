@@ -533,7 +533,7 @@ def monte_carlo(
                 "rep": rep,
                 "num_cap": num_cap,
                 "n_c_abandoned": len(abandoned),
-                "completion": max(G.nodes[n]["EF"] for n in G.nodes if G.nodes[n]['abandoned'] is None),
+                "completion": max((G.nodes[n]["EF"] for n in G.nodes if G.nodes[n]['abandoned'] is None), default = 0),
                 "final volume": final_vol
             }
         )

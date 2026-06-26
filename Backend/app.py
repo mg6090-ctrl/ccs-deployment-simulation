@@ -32,6 +32,12 @@ def run_model():
         s1_stor_vol = s1_params.get('stor_vol', s1.STORAGE_VOLUMES)
         max_rate = s1_params.get('s1_max_rate', s1.MAX_RATE)
         cap_tolerance = s1_params.get('s1_cap_tol', s1.CAPTURE_TOLERANCE)
+        s1_frac_split_approval = s1_params.get('frac_split_app', s1.FRAC_SPLIT[0])
+
+        if cap_tolerance <= 0:
+            return jsonify({"error": "capture tolerance must be greater than 0"}), 400
+
+        s1_frac_split = [s1_frac_split_approval, 1-s1_frac_split_approval]
 
         s1_results = s1.monte_carlo(n_reps = s1_n_reps, 
                        base_rate = s1_base_rate, 
@@ -72,6 +78,13 @@ def run_model():
         s2_cap_tol = s2_params.get('cap_tol', s2.CAPTURE_TOLERANCE)
         s2_trans_tol = s2_params.get('trans_tol', s2.TRANSPORT_TOLERANCE)
         s2_stor_tol = s2_params.get('stor_tol', s2.STORAGE_TOLERANCE)
+
+        if s2_cap_tol <= 0:
+            return jsonify({"error": "capture tolerance must be greater than 0"}), 400
+        if s2_trans_tol <= 0:
+            return jsonify({"error": "transport tolerance must be greater than 0"}), 400
+        if s2_stor_tol <= 0:
+            return jsonify({"error": "storage tolerance must be greater than 0"}), 400
 
         s2_results = s2.monte_carlo(n_reps = s2_n_reps, 
                        base_rate = s2_base_rate, 
