@@ -69,10 +69,23 @@ CAPTURE_TOLERANCE = 48
 # STOCHASTIC DURATION SAMPLING
 #==================================================================
 
+# note, cv is coefficient of variation, taken as sd/mean
+CV_BY_TECH = {
+    "capture": {"definition": {"cv": 0.2, "min": 1, "max": 100}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100},
+                "construction": {"cv": 0.2, "min": 1, "max": 100}},
+    
+    "transport": {"definition": {"cv": 0.2, "min": 1, "max": 100}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100},
+                "construction": {"cv": 0.2, "min": 1, "max": 100}},
+    
+    "storage": {"definition": {"cv": 0.2, "min": 1, "max": 100}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100},
+                "construction": {"cv": 0.2, "min": 1, "max": 100}}
+}
+
 DURATION_SAMPLING = {
-    "dist": "lognormal",    # "lognormal" | "normal" | "uniform"
-    "cv": 0.20,             # coefficient of variation: std = cv * mean (spread knob)
-    "min_months": 1,        # floor after sampling
+    "dist": "lognormal"    # "lognormal" | "normal" | "uniform"
 }
 
 def stable_seed(project, stage, replication_seed=0):
@@ -85,7 +98,7 @@ def stable_seed(project, stage, replication_seed=0):
     digest = hashlib.blake2b(key.encode(), digest_size=8).digest() 
     return int.from_bytes(digest, "big") # interpets 8 bytes as an integer; "big" means read bytes from most significant digit
 
-def sample_duration(mean, project, stage, replication_seed, sampling):
+def sample_duration(mean, project, stage, tech, replication_seed, sampling):
     '''
     Sample one stage duration, centered on `mean` (the fixed duration).
     Returns a positive integer (months).
@@ -96,7 +109,11 @@ def sample_duration(mean, project, stage, replication_seed, sampling):
 
     # create the random number generator -> hash gives seed number, which seeds a random number generator
     rng = np.random.default_rng(stable_seed(project, stage, replication_seed)) 
-    cv = DURATION_SAMPLING["cv"]
+
+    cv = CV_BY_TECH[tech][stage]["cv"]
+    minimum = CV_BY_TECH[tech][stage]["min"]
+    maximum = CV_BY_TECH[tech][stage]["max"]
+
     std = cv * mean
     dist = DURATION_SAMPLING["dist"]
     
@@ -113,8 +130,13 @@ def sample_duration(mean, project, stage, replication_seed, sampling):
     else:
         raise ValueError(f"unknown dist {dist}")
 
-    # cleans up — ensures an integer number of months above minimum is returned
-    return int(max(DURATION_SAMPLING["min_months"], round(sample)))
+    # check that it is within bounds
+    if round(sample) >= maximum:
+        return maximum
+    elif round(sample) <= minimum:
+        return minimum
+    else:
+        return round(sample)
 
 #==================================================================
 # BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
@@ -148,7 +170,7 @@ def make_base_graph(
             for stage, dur in stor[storage].items():
                 G.add_node(
                     (storage, stage),
-                    duration = sample_duration(dur, storage, stage, replication_seed, sampling),
+                    duration = sample_duration(dur, storage, stage, "storage", replication_seed, sampling),
                     stage = stage,
                     tech = "storage",
                     ES = 0.0,
@@ -181,7 +203,7 @@ def make_base_graph(
                 for stage, dur in trans[transport].items():
                     G.add_node(
                         (transport, stage),
-                        duration = sample_duration(dur, transport, stage, replication_seed, sampling),
+                        duration = sample_duration(dur, transport, stage, "transport", replication_seed, sampling),
                         stage = stage,
                         tech = "transport",
                         ES = 0.0,
@@ -211,7 +233,7 @@ def make_base_graph(
                     for stage, dur in caps[capture].items():
                         G.add_node(
                             (capture, stage),
-                            duration = sample_duration(dur, capture, stage, replication_seed, sampling),
+                            duration = sample_duration(dur, capture, stage, "capture", replication_seed, sampling),
                             stage = stage,
                             tech = "capture",
                             ES = 0.0,
