@@ -24,6 +24,11 @@
             <br>
             <label> S1 base rate </label>
             <input id = "s1_base_rate" type = "number" value = "0.05"></input>
+            <label> S1 max rate </label>
+            <input id = "s1_max_rate" type = "number" value = "0.4"></input>
+            <br>
+            <label> S1 capture tolerance </label>
+            <input id = "s1_cap_tol" type = "number" value = "48"></input>
             <br>
             <label> S1 number of trials </label>
             <input id = "s1_n_reps" type = "number" value = "5"></input>
@@ -108,6 +113,8 @@
                 scenario1["base_rate"] = Number(document.getElementById('s1_base_rate').value)
                 scenario1["n_reps"] = parseInt(document.getElementById('s1_n_reps').value)
                 scenario1["sampling"] = document.getElementById('s1_sampling').checked
+                scenario1["s1_max_rate"] = Number(document.getElementById('s1_max_rate').value)
+                scenario1["s1_cap_tol"] = Number(document.getElementById('s1_cap_tol').value)
                 
                 // filling scenario2 params
                 const scenario2 = {}

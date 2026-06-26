@@ -1,4 +1,4 @@
-from models import scenario_1_final_refactored as s1
+from models import scenario_1_final_refactored_with_delay as s1
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models import scenario_2_final_refactored as s2
@@ -23,9 +23,13 @@ def run_s1():
     trans_vol = data.get('trans_vol', s1.TRANSPORT_VOLUMES)
     stor = data.get('stor', s1.STORAGE)
     stor_vol = data.get('stor_vol', s1.STORAGE_VOLUMES)
-    
+    max_rate = data.get('s1_max_rate', s1.MAX_RATE)
+    cap_tolerance = data.get('s1_cap_tol', s1.CAPTURE_TOLERANCE)
+
     results = s1.monte_carlo(n_reps = n_reps, 
                        base_rate = base_rate, 
+                       max_rate = max_rate,
+                       cap_tolerance = cap_tolerance,
                        replication_seed = replication_seed, 
                        clusters = clusters, 
                        caps = caps, 
