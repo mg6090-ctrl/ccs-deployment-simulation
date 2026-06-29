@@ -1024,6 +1024,9 @@ def monte_carlo(n_reps, sampling=True, base_rate=BASE_RATE, threshold_frac=THRES
                 final_vol += G.nodes[fid]["actual_volume"]
         
         results.append({
+                "a_c": a_c,
+                "a_t": a_t,
+                "a_s": a_s,
                 "rep": rep,
                 "num_stor": num_stor,
                 "storage abandoned": len(a_s),
