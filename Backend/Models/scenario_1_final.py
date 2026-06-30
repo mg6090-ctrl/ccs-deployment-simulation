@@ -576,5 +576,78 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    print("default:", analyze_monte_carlo(monte_carlo(300)))
-    print("high base_rate:", analyze_monte_carlo(monte_carlo(300, base_rate=0.3)))
+    # CORE FUNCTIONALITY TESTS
+
+    TEST_CLUSTER = {
+        "projS1": {"projT1": {"projC1", "projC2"}}
+    }
+    TEST_CAPS = {"projC1": {"definition": 5, "approval": 10, "construction": 10}, 
+                 "projC2": {"definition": 5, "approval": 10, "construction": 10}}
+    TEST_CAP_VOLS = {"projC1": 2, "projC2": 1}
+    TEST_TRANS = {"projT1": {"definition": 5, "approval": 10, "construction": 10}}
+    TEST_TRANS_VOLS = {"projT1": 4}
+    TEST_STORS = {"projS1": {"definition": 5, "approval": 10, "construction": 10}}
+    TEST_STORS_VOLS = {"projS1": 8}
+
+    G = projGraph(
+        replication_seed=0, 
+        clusters = TEST_CLUSTER, 
+        caps = TEST_CAPS,
+        caps_vol = TEST_CAP_VOLS,
+        trans = TEST_TRANS,
+        trans_vol = TEST_TRANS_VOLS,
+        stor = TEST_STORS,
+        stor_vol = TEST_STORS_VOLS,
+        frac_split = (1, 0), # testing the case where all captures are gated on approval (all risk tolerant)
+        sampling = False
+    )
+
+    # Test 1: CPM on a simple chain
+    # before running the CPM
+    print("Before running CPM: \n")
+    for node in G.nodes():
+        print(node, "ES:", G.nodes[node]["ES"], "EF:", G.nodes[node]["EF"])
+
+    # after running the CPM
+    CPM(G)
+    print("After running CPM: \n")
+    for node in G.nodes():
+        print(node, "ES:", G.nodes[node]["ES"], "EF:", G.nodes[node]["EF"])
+
+    # Test 2: single abandonment
+    c_abandon_1 = apply_attrition(
+            G, 
+            base_rate = 0, # if 0, expect no abandonment. if 1, expect all to abandoned
+            clusters = TEST_CLUSTER, 
+            replication_seed = 0,
+            max_rate = 1,
+            cap_tolerance = 1
+    )
+
+    c_abandon_2 = apply_attrition(
+            G, 
+            base_rate = 1, # if 0, expect no abandonment. if 1, expect all to abandoned
+            clusters = TEST_CLUSTER, 
+            replication_seed = 0,
+            max_rate = 1,
+            cap_tolerance = 1
+    )
+
+    c_abandon_3 = apply_attrition(
+            G, 
+            base_rate = 0.05, # if 0, expect no abandonment. if 1, expect all to abandoned
+            clusters = TEST_CLUSTER, 
+            replication_seed = 0,
+            max_rate = 0.4,
+            cap_tolerance = 10
+    )
+
+    print("Expected: no abandonment. Actual:", c_abandon_1)
+    print("Expected: all abandon. Actual:", c_abandon_2)
+    print("Expected: random. Actual:", c_abandon_3)
+    
+    # Test 3: monte carlo seed reproducibility (test both duration sampling per run and abandonment between runs)
+
+
+    # print("default:", analyze_monte_carlo(monte_carlo(300)))
+    # print("high base_rate:", analyze_monte_carlo(monte_carlo(300, base_rate=0.3)))
