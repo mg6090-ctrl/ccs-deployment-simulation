@@ -389,7 +389,7 @@ def CPM(G: nx.DiGraph):
         preds = list(G.predecessors(node))
 
         # the new ES is the max of the EF of the preceeding node(s) and the original ES
-        max_preds = max((G.nodes[p]["EF"] for p in preds), default = 0.0)
+        max_preds = max((G.nodes[p]["EF"] for p in preds if G.nodes[p]["abandoned"] is None), default = 0.0)
 
         updated_ES = max(max_preds, G.nodes[node].get("ES", 0.0))
         
@@ -526,6 +526,8 @@ def monte_carlo(
                         max_rate = max_rate,
                         cap_tolerance = cap_tolerance
                     )
+
+        CPM(G)
 
         final_vol = 0
         for storage, t_clusters in clusters.items():

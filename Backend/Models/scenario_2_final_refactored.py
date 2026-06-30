@@ -534,6 +534,8 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
 
     for node in nx.topological_sort(G):
         # case where it is a volumetric control gate (FID joint nodes)
+        if G.nodes[node].get("abandoned") is not None:
+            continue # abandoned nodes do not participate in scheduling
         if is_threshold_joint(G, node):
             arrivals = gather_input_specs(G, node)
             capacity = G.nodes[node]["volume"]
@@ -555,7 +557,8 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
             preds = list(G.predecessors(node))
 
             # the new ES is the max of the EF of the preceeding node(s) and the original ES
-            max_preds = max((G.nodes[p]["EF"] for p in preds), default = 0.0)
+            # we make sure to only read the EF of preceding nodes that have not been marked abandoned
+            max_preds = max((G.nodes[p]["EF"] for p in preds if G.nodes[p].get("abandoned") is None), default = 0.0)
 
             updated_ES = max(max_preds, G.nodes[node].get("ES", 0.0))
             
