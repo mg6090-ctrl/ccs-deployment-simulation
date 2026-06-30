@@ -1,7 +1,7 @@
-from models import scenario_1_final_refactored_with_delay as s1
+from models import scenario_1_final as s1
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from models import scenario_2_final_refactored as s2
+from models import scenario_2_final as s2
 
 app = Flask(__name__)
 
