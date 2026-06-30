@@ -539,15 +539,15 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
         if is_threshold_joint(G, node):
             arrivals = gather_input_specs(G, node)
             capacity = G.nodes[node]["volume"]
-            fire = threshold_gating(arrivals, capacity, threshold_frac)
-            if fire is None:
+            fire_time = threshold_gating(arrivals, capacity, threshold_frac)
+            if fire_time is None:
                 G.nodes[node]["ES"] = float("inf")
                 G.nodes[node]["EF"] = float("inf")
                 G.nodes[node]["below_threshold"] = True
                 G.nodes[node]["actual_volume"] = 0.0
             else:
-                G.nodes[node]["ES"] = fire
-                G.nodes[node]["EF"] = fire
+                G.nodes[node]["ES"] = fire_time
+                G.nodes[node]["EF"] = fire_time
                 G.nodes[node]["below_threshold"] = False
                 G.nodes[node]["committed_volume"] = sum(v for v,t in arrivals) # realized throughput
                 G.nodes[node]["actual_volume"] = min(
@@ -768,7 +768,6 @@ def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandone
         if rng.random() < prob:
             mark_abandonment(G, project, "approval")
             record_abandonment(project, tech, "approval", abandoned_t, abandoned_s, abandoned_c, clusters)
-
 
 def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, clusters=CLUSTERS):
     '''
@@ -1152,15 +1151,132 @@ def analyze_monte_carlo(results):
 # NOTE: can also return the list of abandonment rates for data analysis
 
 #==================================================================
+# CORE FUNCTIONALITY TESTS
+#==================================================================
+
+# CORE FUNCTIONALITY TESTS
+TEST_CLUSTER = {
+    "projS1": {"projT1": {"projC1", "projC2"}}
+}
+TEST_CAPS = {"projC1": {"definition": 5, "approval": 10, "construction": 10}, 
+                "projC2": {"definition": 5, "approval": 10, "construction": 10}}
+TEST_CAP_VOLS = {"projC1": 2, "projC2": 1}
+TEST_TRANS = {"projT1": {"definition": 5, "approval": 10, "construction": 10}}
+TEST_TRANS_VOLS = {"projT1": 4}
+TEST_STORS = {"projS1": {"definition": 5, "approval": 10, "construction": 10}}
+TEST_STORS_VOLS = {"projS1": 8}
+
+def build_test_graph():
+    G = projGraph(replication_seed=0, sampling=False,
+              clusters=TEST_CLUSTER, capture_durations=TEST_CAPS, capture_volumes=TEST_CAP_VOLS,
+              storage_durations=TEST_STORS, storage_volumes=TEST_STORS_VOLS,
+              transport_durations=TEST_TRANS, transport_volumes=TEST_TRANS_VOLS)
+    
+    return G
+
+# check functions
+def check(description, output, expected):
+    check = False
+    if output == expected:
+        check = True
+    print (description, "expected: ", expected, "got: ", output, "pass: ", check)
+
+# tests
+def test_threshold_gating():
+    arrivals = [(1.0, 5), (1.0, 8), (2.0, 10)]   # total volume 4.0
+    # needs 4*0.5 = 2.0. Sorted by time: 1.0@5, 1.0@8 -> cum 2.0 at t=8.
+    check("Checking threshold gating:", threshold_gating(arrivals, capacity=4, fraction=0.5), 8)
+
+    # needs 20*0.5 = 10.0, but total is only 4.0 -> never fires
+    check("returns None when threshold never reached", threshold_gating(arrivals, capacity=20, fraction=0.5), None)
+ 
+    # needs 1*0.5 = 0.5, first arrival (1.0@5) already exceeds -> fires at 5
+    check("fires at first arrival when threshold is tiny", threshold_gating(arrivals, capacity=1, fraction=0.5), 5)
+ 
+    # ordering matters: an early small + late large should fire at the time
+    # the cumulative crosses, not at the largest volume's time.
+    out_of_order = [(3.0, 20), (1.0, 2), (1.0, 5)]   # need 2.0
+    # sorted by time: 1.0@2, 1.0@5 -> cum 2.0 at t=5
+    check("uses arrival-time order, not list order", threshold_gating(out_of_order, capacity=4, fraction=0.5), 5)
+
+def test_cpm(G):
+    CPM(G, 0.5)
+    # before running the CPM
+    print("Before running CPM: \n")
+    for node in G.nodes():
+        print(node, "ES:", G.nodes[node]["ES"], "EF:", G.nodes[node]["EF"])
+
+    # after running the CPM
+    CPM(G)
+    print("After running CPM: \n")
+    for node in G.nodes():
+        print(node, "ES:", G.nodes[node]["ES"], "EF:", G.nodes[node]["EF"])
+
+def test_threshold_joints(G):
+    CPM(G, threshold_frac=0.5)
+    # Transport approval-joint: needs transport_vol*0.5 = 4*0.5 = 2.0.
+    # Captures supply 2 + 1 = 3.0 >= 2.0 -> should FIRE (not below threshold).
+    check("transport approval joint fires (supply 3 >= need 2)",
+          G.nodes[("projT1", "approval joint node")]["below_threshold"], True)
+
+    # Storage FID: needs storage_vol*0.5 = 8*0.5 = 4.0.
+    # The transport cluster forwards its actual_volume (capped at transport vol 4,
+    # committed 3) = 3.0 < 4.0 -> should be BELOW threshold (never fires).
+    check("storage FID below threshold (supply 3 < need 4)",
+          G.nodes[("projS1 cluster", "FID joint node")]["below_threshold"], True)
+    
+    # Now raise the fraction so even the transport joint fails:
+    # need 4*0.9 = 3.6 > supply 3.0 -> transport approval joint below threshold.
+    G2 = G
+    CPM(G2, threshold_frac=0.9)
+    check("transport approval joint fails at high fraction (need 3.6 > 3)",
+          G2.nodes[("projT1", "approval joint node")]["below_threshold"], True)
+
+def test_stage_delay(G):
+    CPM(G, 0.5)
+
+    # A capture's definition delay = (its definition joint EF) - (its own def EF).
+    # The definition joint waits for max(capture def, transport def). Both are 5,
+    # so the joint fires at 5, and the capture's own def EF is 5 -> delay 0.
+    d = stage_delay(G, ("projC1", "definition"))
+    check("capture definition delay >= 0", d >= 0, True)
+ 
+def test_attrition_prob():
+    base, max, tol = 0.05, 0.4, 36
+
+    # delay 0 -> base_rate * exp(0) = base_rate exactly
+    p0 = calculate_attrition_probability(
+        delay=0, tech="capture", base_rate=base, max_rate=max,
+        capture_tolerance=tol, transport_tolerance=tol, storage_tolerance=tol)
+    check("delay 0 -> base rate: ", p0, base)
+
+    p_big = calculate_attrition_probability(
+        delay=100000, tech="capture", base_rate=base, max_rate=max,
+        capture_tolerance=tol, transport_tolerance=tol, storage_tolerance=tol)
+    check("delay -> very large: ", p_big, max)
+
+    p_cap = calculate_attrition_probability(
+        delay=30, tech="capture", base_rate=base, max_rate=max,
+        capture_tolerance=20, transport_tolerance=60, storage_tolerance=60)
+    p_trans = calculate_attrition_probability(
+        delay=30, tech="transport", base_rate=base, max_rate=max,
+        capture_tolerance=20, transport_tolerance=60, storage_tolerance=60)
+    # smaller tolerance (capture, 20) -> steeper -> higher prob than transport (60)
+    check("smaller tolerance gives higher probability", p_cap > p_trans, True)
+
+#==================================================================
 # MAIN (EXECUTION)
 #==================================================================
 
 if __name__ == "__main__":
-    results2 = monte_carlo(10, sampling = True, base_rate=0.10)
-    print(analyze_monte_carlo(results2))
+    
+    G_test = build_test_graph()
+    
+    test_threshold_gating()
+    test_cpm(G_test)
+    test_threshold_joints(G_test)
+    test_stage_delay(G_test)
+    test_attrition_prob()
 
-    results = monte_carlo(500, base_rate=0.5)
-    def_count = sum(1 for r in results for t, s in r["a_t"].items() if s == "definition")
-    app_count = sum(1 for r in results for t, s in r["a_t"].items() if s == "approval")
-    other = sum(1 for r in results for t, s in r["a_t"].items() if s not in ("definition","approval"))
-    print(f"transport deaths — definition: {def_count}, approval: {app_count}, other: {other}")
+    # results2 = monte_carlo(10, sampling = True, base_rate=0.10)
+    # print(analyze_monte_carlo(results2))

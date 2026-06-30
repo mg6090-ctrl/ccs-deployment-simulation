@@ -579,7 +579,7 @@ if __name__ == "__main__":
     # CORE FUNCTIONALITY TESTS
 
     TEST_CLUSTER = {
-        "projS1": {"projT1": {"projC1", "projC2"}}
+        "projS1": {"projT1": ["projC1", "projC2"]}
     }
     TEST_CAPS = {"projC1": {"definition": 5, "approval": 10, "construction": 10}, 
                  "projC2": {"definition": 5, "approval": 10, "construction": 10}}
