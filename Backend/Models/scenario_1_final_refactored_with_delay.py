@@ -535,6 +535,7 @@ def monte_carlo(
                         final_vol += G.nodes[(capture, "commissioning")]['volume']
 
         results.append({
+                "c_abandon": abandoned,
                 "rep": rep,
                 "num_cap": num_cap,
                 "n_c_abandoned": len(abandoned),

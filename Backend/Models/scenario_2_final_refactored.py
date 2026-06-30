@@ -709,7 +709,8 @@ def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned
             for transport, captures in t_clusters.items():
                 if transport == project:
                     for capture in captures:
-                        abandoned_c[capture] = stage
+                        if capture not in abandoned_c:
+                            abandoned_c[capture] = stage
 
     elif tech == "storage":
         abandoned_s[project] = stage
@@ -717,9 +718,11 @@ def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned
         for storage, t_clusters in clusters.items():
             for transport, captures in t_clusters.items():
                 if storage == project:
-                    abandoned_t[transport] = stage
+                    if transport not in abandoned_t:
+                        abandoned_t[transport] = stage
                     for capture in captures:
-                        abandoned_c[capture] = stage
+                        if capture not in abandoned_c:
+                            abandoned_c[capture] = stage
 
     elif tech == "capture":
         abandoned_c[project] = stage
@@ -1053,6 +1056,8 @@ def analyze_monte_carlo(results):
     cum_t_rate = 0.0
     cum_s_rate = 0.0
     all_abandoned = 0.0
+    c_abandon_at_app = []
+    t_abandon_at_app = []
 
     for rep in results:
         cum_s_abandoned += rep["storage abandoned"]
@@ -1065,6 +1070,31 @@ def analyze_monte_carlo(results):
 
         cum_vol += rep["final volume"]
 
+        a_c = rep["a_c"]
+        a_t = rep["a_t"]
+        a_s = rep["a_s"]
+
+        c_def = 0
+        c_app = 0
+        for captures, stages in a_c.items():
+            if stages == "definition":
+                c_def += 1
+            elif stages == "approval":
+                c_app += 1
+        
+        t_def = 0
+        t_app = 0
+        for captures, stages in a_t.items():
+            if stages == "definition":
+                t_def += 1
+            elif stages == "approval":
+                t_app += 1
+
+        if len(a_c) != 0:
+            c_abandon_at_app.append(c_app/len(a_c))
+        if len(a_t) != 0:
+            t_abandon_at_app.append(t_app/len(a_t))
+        
         cap_abandon_rate.append(rep["capture abandoned"]/rep["num_cap"])
         cum_c_rate += rep["capture abandoned"]/rep["num_cap"]
         trans_abandon_rate.append(rep["transport abandoned"]/rep["num_trans"])
@@ -1091,6 +1121,17 @@ def analyze_monte_carlo(results):
     else:
         avg_time = -1
     
+    # average abandonment stage ratios
+    cum_c_abandon_at_app = 0
+    for rate in c_abandon_at_app:
+        cum_c_abandon_at_app += rate
+    avg_c_abandon_at_app = cum_c_abandon_at_app/len(c_abandon_at_app)
+
+    cum_t_abandon_at_app = 0
+    for rate in t_abandon_at_app:
+        cum_t_abandon_at_app += rate
+    avg_t_abandon_at_app = cum_t_abandon_at_app/len(t_abandon_at_app)
+    
     return {"average no. capture abandoned": avg_c_abandoned,
             "average capture abandonment rate": avg_c_abandon_rate,
             "average no. transport abandoned": avg_t_abandoned,
@@ -1100,7 +1141,10 @@ def analyze_monte_carlo(results):
             "all abandoned": all_abandoned,
             "all abandoned rate": collapse_rate,
             "average completion time of survived": avg_time,
-            "average final vol of capture": avg_vol}
+            "average final vol of capture": avg_vol,
+            "avg percent of capture abandoning at approval": avg_c_abandon_at_app,
+            "avg percent of transport abandoning at approval": avg_t_abandon_at_app,
+            }
 
 # NOTE: can also return the list of abandonment rates for data analysis
 
@@ -1109,8 +1153,11 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    results = monte_carlo(10)
     results2 = monte_carlo(10, sampling = True, base_rate=0.10)
-    print(results)
-    print(analyze_monte_carlo(results))
     print(analyze_monte_carlo(results2))
+
+    results = monte_carlo(500, base_rate=0.5)
+    def_count = sum(1 for r in results for t, s in r["a_t"].items() if s == "definition")
+    app_count = sum(1 for r in results for t, s in r["a_t"].items() if s == "approval")
+    other = sum(1 for r in results for t, s in r["a_t"].items() if s not in ("definition","approval"))
+    print(f"transport deaths — definition: {def_count}, approval: {app_count}, other: {other}")
