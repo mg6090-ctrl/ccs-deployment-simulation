@@ -7,7 +7,6 @@ import project_data as project_data
 #==================================================================
 # CONSTANTS (PARAMETERS)
 #==================================================================
-
 # stages of projects
 STAGES = ["definition", "approval", "construction"]
 STAGES4 = ["definition", "approval", "construction", "commissioning"]
