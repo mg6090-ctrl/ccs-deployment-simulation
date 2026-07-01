@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import hashlib
+import project_data as project_data
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -12,49 +13,6 @@ import hashlib
 # stages of projects
 STAGES = ["definition", "approval", "construction"]
 STAGES4 = ["definition", "approval", "construction", "commissioning"]
-
-CAPTURE = {
-    "projC1":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC2":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC3":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC4":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC5":  {"definition": 6, "approval": 9, "construction": 12},
-    "projC6":  {"definition": 6, "approval": 9, "construction": 12},
-    "projC7":  {"definition": 6, "approval": 6, "construction": 6},
-    "projC8":  {"definition": 6, "approval": 6, "construction": 6},
-}
-
-CAPTURE_VOLUMES = {
-    "projC1": 1.469847, "projC2": 1.112612, "projC3": 0.823186, "projC4": 0.241809, 
-    "projC5": 0.060437, "projC6": 0.114565, 
-    "projC7": 1.011104, "projC8": 0.059286                  
-}
-
-# dictionary for storage projects
-STORAGE = {
-    "projS1":  {"definition": 24, "approval": 30, "construction": 24}   
-}
-
-# capture volumes
-STORAGE_VOLUMES = {
-    "projS1": 6
-}
-
-# dictionary for transport projects
-TRANSPORT = {
-    "projT1":  {"definition": 9, "approval": 36, "construction": 30}
-}
-
-# transport volumes
-TRANSPORT_VOLUMES = {
-    "projT1": 6
-}
-
-CLUSTERS = {
-    "projS1":  {
-        "projT1": ["projC1", "projC2", "projC3", "projC4", "projC5", "projC6", "projC7", "projC8"]
-        }
-}
 
 # seed for shuffling before frac_split 
 SEED = 42
@@ -159,10 +117,15 @@ def joint_naming(stage):
 def cluster_naming(cluster):
     return cluster + " cluster"
 
-def projGraph(replication_seed=0, sampling=False,
-              clusters=CLUSTERS, capture_durations=CAPTURE, capture_volumes=CAPTURE_VOLUMES,
-              storage_durations=STORAGE, storage_volumes=STORAGE_VOLUMES,
-              transport_durations=TRANSPORT, transport_volumes=TRANSPORT_VOLUMES):
+def projGraph(replication_seed=0, 
+              sampling=False,
+              clusters=project_data.CLUSTERS, 
+              capture_durations=project_data.CAPTURE, 
+              capture_volumes=project_data.CAPTURE_VOLUMES,
+              storage_durations=project_data.STORAGE, 
+              storage_volumes=project_data.STORAGE_VOLUMES,
+              transport_durations=project_data.TRANSPORT, 
+              transport_volumes=project_data.TRANSPORT_VOLUMES):
     '''
     Description: creating graph and adding nodes
     Returns: directed acyclic graph G
@@ -348,7 +311,7 @@ def projGraph(replication_seed=0, sampling=False,
 
     return G
 
-def projEdges(G: nx.DiGraph, clusters=CLUSTERS):
+def projEdges(G: nx.DiGraph, clusters=project_data.CLUSTERS):
     '''
     Description: adds intra-project edges to G
     Args: G
@@ -572,7 +535,7 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
 # CALCULATING PROJECT DELAYS
 #==================================================================
 
-def transport_captures(G: nx.DiGraph, transport, clusters=CLUSTERS):
+def transport_captures(G: nx.DiGraph, transport, clusters=project_data.CLUSTERS):
     for storage, t_cluster in clusters.items():
         if transport in t_cluster:
             return t_cluster[transport]
@@ -646,7 +609,8 @@ def stage_delay(G: nx.DiGraph, node):
 # PROJECT ABANDONMENT NOTE: EDIT THE ATTRITION PROB FUNCTION
 #==================================================================
 
-def calculate_attrition_probability(delay, tech, base_rate=BASE_RATE, max_rate=MAX_RATE,
+def calculate_attrition_probability(delay, tech, base_rate=BASE_RATE, 
+                                    max_rate=MAX_RATE,
                                     capture_tolerance=CAPTURE_TOLERANCE,
                                     transport_tolerance=TRANSPORT_TOLERANCE,
                                     storage_tolerance=STORAGE_TOLERANCE):
@@ -701,7 +665,7 @@ def already_abandoned(G: nx.DiGraph, project):
     '''
     return G.nodes[(project, "definition")]["abandoned"] is not None
 
-def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c, clusters=CLUSTERS):
+def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c, clusters=project_data.CLUSTERS):
     '''
     records the project as abandoned (include stage of abandonment)
     '''
@@ -736,7 +700,7 @@ def threshold_failed(G, joint_node):
 def time_slip_at_gate(G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned_s, abandoned_c,
                       base_rate=BASE_RATE, max_rate=MAX_RATE,
                       capture_tolerance=CAPTURE_TOLERANCE, transport_tolerance=TRANSPORT_TOLERANCE,
-                      storage_tolerance=STORAGE_TOLERANCE, clusters=CLUSTERS):
+                      storage_tolerance=STORAGE_TOLERANCE, clusters=project_data.CLUSTERS):
     '''
     For each tech in parties, calculates delays and rolls abandonment at this stage
     parties comes in [(project, tech)] format for each project
@@ -755,7 +719,7 @@ def time_slip_at_gate(G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned
 def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandoned_s, abandoned_c,
                                base_rate=BASE_RATE, max_rate=MAX_RATE,
                                capture_tolerance=CAPTURE_TOLERANCE, transport_tolerance=TRANSPORT_TOLERANCE,
-                               storage_tolerance=STORAGE_TOLERANCE, clusters=CLUSTERS):
+                               storage_tolerance=STORAGE_TOLERANCE, clusters=project_data.CLUSTERS):
     '''
     time slip specifically at the storage cluster FID joint node
     '''
@@ -769,7 +733,7 @@ def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandone
             mark_abandonment(G, project, "approval")
             record_abandonment(project, tech, "approval", abandoned_t, abandoned_s, abandoned_c, clusters)
 
-def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, clusters=CLUSTERS):
+def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, clusters=project_data.CLUSTERS):
     '''
     If threshold test is not met, return True and collapse the owner of the joint_node
     Otherwise, return False
@@ -787,7 +751,7 @@ def get_tech(G: nx.DiGraph, project):
 def apply_attrition(G: nx.DiGraph, base_rate=BASE_RATE, threshold_frac=THRESHOLD_FRAC,
                     max_rate=MAX_RATE, capture_tolerance=CAPTURE_TOLERANCE,
                     transport_tolerance=TRANSPORT_TOLERANCE, storage_tolerance=STORAGE_TOLERANCE,
-                    clusters=CLUSTERS, replication_seed = 0):
+                    clusters=project_data.CLUSTERS, replication_seed = 0):
     '''
     Apply attrition to the graph
     '''
@@ -856,9 +820,9 @@ def apply_attrition(G: nx.DiGraph, base_rate=BASE_RATE, threshold_frac=THRESHOLD
 #==================================================================
 
 def buildmodel(replication_seed=0, sampling=False,
-               clusters=CLUSTERS, capture_durations=CAPTURE, capture_volumes=CAPTURE_VOLUMES,
-               storage_durations=STORAGE, storage_volumes=STORAGE_VOLUMES,
-               transport_durations=TRANSPORT, transport_volumes=TRANSPORT_VOLUMES):
+               clusters=project_data.CLUSTERS, capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,
+               storage_durations=project_data.STORAGE, storage_volumes=project_data.STORAGE_VOLUMES,
+               transport_durations=project_data.TRANSPORT, transport_volumes=project_data.TRANSPORT_VOLUMES):
     '''
     Description: runs the process 1) building graph and add nodes
     -> 2) add intra-project edges
@@ -993,12 +957,21 @@ def visualize(G, storage_filter=None):
 # MONTE CARLO
 #==================================================================
 
-def monte_carlo(n_reps, sampling=True, base_rate=BASE_RATE, threshold_frac=THRESHOLD_FRAC,
-                max_rate=MAX_RATE, capture_tolerance=CAPTURE_TOLERANCE,
-                transport_tolerance=TRANSPORT_TOLERANCE, storage_tolerance=STORAGE_TOLERANCE,
-                clusters=CLUSTERS, capture_durations=CAPTURE, capture_volumes=CAPTURE_VOLUMES,
-                storage_durations=STORAGE, storage_volumes=STORAGE_VOLUMES,
-                transport_durations=TRANSPORT, transport_volumes=TRANSPORT_VOLUMES):
+def monte_carlo(n_reps, 
+                sampling=True, 
+                base_rate=BASE_RATE, 
+                threshold_frac=THRESHOLD_FRAC,
+                max_rate=MAX_RATE, 
+                capture_tolerance=CAPTURE_TOLERANCE,
+                transport_tolerance=TRANSPORT_TOLERANCE, 
+                storage_tolerance=STORAGE_TOLERANCE,
+                clusters=project_data.CLUSTERS, 
+                capture_durations=project_data.CAPTURE, 
+                capture_volumes=project_data.CAPTURE_VOLUMES,
+                storage_durations=project_data.STORAGE, 
+                storage_volumes=project_data.STORAGE_VOLUMES,
+                transport_durations=project_data.TRANSPORT, 
+                transport_volumes=project_data.TRANSPORT_VOLUMES):
     results = []
 
     num_cap = len(capture_volumes)
@@ -1155,5 +1128,5 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    results2 = monte_carlo(10, sampling = True, base_rate=0.10)
+    results2 = monte_carlo(100, sampling = True, base_rate=0.10)
     print(analyze_monte_carlo(results2))

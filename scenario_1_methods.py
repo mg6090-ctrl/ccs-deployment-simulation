@@ -2,57 +2,15 @@ import networkx as nx
 import random
 import hashlib
 import numpy as np
+import project_data as project_data 
 
 #==================================================================
-# CONSTANTS (INPUT DATA AND PARAMETERS)
+# CONSTANTS (PARAMETERS)
 #==================================================================
 
 # stages of projects
 STAGES = ["definition", "approval", "construction"]
 STAGES4 = ["definition", "approval", "construction", "commissioning"]
-
-CAPTURE = {
-    "projC1":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC2":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC3":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC4":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC5":  {"definition": 6, "approval": 9, "construction": 12},
-    "projC6":  {"definition": 6, "approval": 9, "construction": 12},
-    "projC7":  {"definition": 6, "approval": 6, "construction": 6},
-    "projC8":  {"definition": 6, "approval": 6, "construction": 6},
-}
-
-CAPTURE_VOLUMES = {
-    "projC1": 1.469847, "projC2": 1.112612, "projC3": 0.823186, "projC4": 0.241809, 
-    "projC5": 0.060437, "projC6": 0.114565, 
-    "projC7": 1.011104, "projC8": 0.059286                  
-}
-
-# dictionary for storage projects
-STORAGE = {
-    "projS1":  {"definition": 24, "approval": 30, "construction": 24}   
-}
-
-# capture volumes
-STORAGE_VOLUMES = {
-    "projS1": 6
-}
-
-# dictionary for transport projects
-TRANSPORT = {
-    "projT1":  {"definition": 9, "approval": 36, "construction": 30}
-}
-
-# transport volumes
-TRANSPORT_VOLUMES = {
-    "projT1": 6
-}
-
-CLUSTERS = {
-    "projS1":  {
-        "projT1": ["projC1", "projC2", "projC3", "projC4", "projC5", "projC6", "projC7", "projC8"]
-        }
-}
 
 # fraction split
 FRAC_SPLIT = (0.2, 0.8)
@@ -144,13 +102,13 @@ def sample_duration(mean, project, stage, tech, replication_seed, sampling):
 
 def make_base_graph(
         replication_seed=0, 
-        clusters = CLUSTERS, 
-        caps = CAPTURE,
-        caps_vol = CAPTURE_VOLUMES,
-        trans = TRANSPORT,
-        trans_vol = TRANSPORT_VOLUMES,
-        stor = STORAGE,
-        stor_vol = STORAGE_VOLUMES,
+        clusters = project_data.CLUSTERS, 
+        caps = project_data.CAPTURE,
+        caps_vol = project_data.CAPTURE_VOLUMES,
+        trans = project_data.TRANSPORT,
+        trans_vol = project_data.TRANSPORT_VOLUMES,
+        stor = project_data.STORAGE,
+        stor_vol = project_data.STORAGE_VOLUMES,
         sampling=False
         ):
     '''
@@ -316,13 +274,13 @@ def get_transport(G, capture, clusters):
 
 def projGraph(
         replication_seed=0, 
-        clusters = CLUSTERS, 
-        caps = CAPTURE,
-        caps_vol = CAPTURE_VOLUMES,
-        trans = TRANSPORT,
-        trans_vol = TRANSPORT_VOLUMES,
-        stor = STORAGE,
-        stor_vol = STORAGE_VOLUMES,
+        clusters = project_data.CLUSTERS, 
+        caps = project_data.CAPTURE,
+        caps_vol = project_data.CAPTURE_VOLUMES,
+        trans = project_data.TRANSPORT,
+        trans_vol = project_data.TRANSPORT_VOLUMES,
+        stor = project_data.STORAGE,
+        stor_vol = project_data.STORAGE_VOLUMES,
         frac_split = FRAC_SPLIT,
         sampling = False
         ):
@@ -446,7 +404,7 @@ def mark_capture_abandoned(G: nx.DiGraph, capture, stage):
 def apply_attrition(
         G: nx.DiGraph, 
         base_rate = BASE_RATE,
-        clusters = CLUSTERS, 
+        clusters = project_data.CLUSTERS, 
         replication_seed = 0,
         max_rate = MAX_RATE,
         cap_tolerance = CAPTURE_TOLERANCE
@@ -472,11 +430,6 @@ def apply_attrition(
     return abandoned_c
 
 #==================================================================
-# METRICS
-#==================================================================
-
-
-#==================================================================
 # MONTE CARLO
 #==================================================================
 
@@ -486,13 +439,13 @@ def monte_carlo(
         max_rate = MAX_RATE,
         cap_tolerance = CAPTURE_TOLERANCE,
         replication_seed=0, 
-        clusters = CLUSTERS, 
-        caps = CAPTURE,
-        caps_vol = CAPTURE_VOLUMES,
-        trans = TRANSPORT,
-        trans_vol = TRANSPORT_VOLUMES,
-        stor = STORAGE,
-        stor_vol = STORAGE_VOLUMES,
+        clusters = project_data.CLUSTERS, 
+        caps = project_data.CAPTURE,
+        caps_vol = project_data.CAPTURE_VOLUMES,
+        trans = project_data.TRANSPORT,
+        trans_vol = project_data.TRANSPORT_VOLUMES,
+        stor = project_data.STORAGE,
+        stor_vol = project_data.STORAGE_VOLUMES,
         frac_split = FRAC_SPLIT,
         sampling = True,
     ):
