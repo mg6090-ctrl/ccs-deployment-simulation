@@ -1,5 +1,5 @@
-from Backend.models import scenario_1_final as s1
-from Backend.models import scenario_2_final as s2
+import scenario_1_methods as s1
+import scenario_2_methods as s2
 
 #==================================================================
 # CORE FUNCTIONALITY TESTING — CONSTANTS
