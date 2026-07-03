@@ -26,6 +26,23 @@ TRANSPORT_TOLERANCE = 36
 LATE_PENALTY = 0.15
 
 #==================================================================
+# PROJECT DATA
+#==================================================================
+
+# stores the pipe/storage every single transport flows into next
+PIPE_DOWNSTREAM = {"projT1": "projS1"}
+
+# stores the transport every single capture flows into next
+CAPTURE_PIPE = {"projC1": "projT1", 
+                "projC2": "projT1",
+                "projC3": "projT1",
+                "projC4": "projT1",
+                "projC5": "projT1",
+                "projC6": "projT1",
+                "projC7": "projT1",
+                "projC8": "projT1"}
+
+#==================================================================
 # STOCHASTIC DURATION SAMPLING
 #==================================================================
 
@@ -96,7 +113,7 @@ def sample_duration(mean, project, stage, tech, replication_seed=0, sampling = F
         return round(sample)
 
 #==================================================================
-# BUILDING THE DAG WITH INTERDEPENDENCIES
+# DAG CONSTRUCTION
 #==================================================================
 
 def joint_naming(stage):
@@ -117,9 +134,30 @@ def joint_naming(stage):
 def cluster_naming(cluster):
     return cluster + " cluster"
 
+def upstream_project(project, pipe_downstream = PIPE_DOWNSTREAM, capture_pipe = CAPTURE_PIPE):
+    # Returns a list of projects that link directly into the given project
+    direct_upstream = []
+    for upstream, downstream in pipe_downstream.items():
+        if downstream == project:
+            direct_upstream.append(upstream)
+    
+    for capture, transport in capture_pipe.items():
+        if transport == project:
+            direct_upstream.append(capture)
+    
+    return direct_upstream
+
+def capture_storage(capture, pipe_downstream=PIPE_DOWNSTREAM, capture_pipe=CAPTURE_PIPE):
+    # Trace from a capture down through the pipe tree to the storage it feeds.
+    current = capture_pipe[capture]
+    while current in pipe_downstream:      
+        current = pipe_downstream[current] 
+    return current                         
+
 def projGraph(replication_seed=0, 
               sampling=False,
-              clusters=project_data.CLUSTERS, 
+              pipe_downstream = project_data.PIPE_DOWNSTREAM,
+              capture_pipe = project_data.CAPTURE_PIPE,
               capture_durations=project_data.CAPTURE, 
               capture_volumes=project_data.CAPTURE_VOLUMES,
               storage_durations=project_data.STORAGE, 
@@ -133,10 +171,12 @@ def projGraph(replication_seed=0,
     # make one large graph
     G = nx.DiGraph()
 
-    for storage, transport_clusters in clusters.items():
-        # layer 1: storage nodes
-        storage_cluster = cluster_naming(storage) # naming the overarching storage cluster
+    # Step 1: build all the storage nodes
+    for storage in storage_volumes:
+        # name of storage cluster
+        storage_cluster = cluster_naming(storage)
 
+        # create nodes for storage definition, approval, construction
         for stage, dur in storage_durations[storage].items():
             G.add_node(
                 (storage, stage),
@@ -149,11 +189,9 @@ def projGraph(replication_seed=0,
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 s_cluster = storage_cluster,
-                t_cluster = None,
                 abandoned = None
                 )
-
-        # add storage commissioning node
+        # create storage commissioning node
         G.add_node(
             (storage, "commissioning"),
             duration = 0.0,
@@ -165,11 +203,9 @@ def projGraph(replication_seed=0,
             actual_volume = 0.0,
             committed_volume = 0.0,
             s_cluster = storage_cluster,
-            t_cluster = None,
             abandoned = None
         )
-
-        # add storage joint FID node
+        # create storage joint FID node
         G.add_node(
             (storage_cluster, "FID joint node"),
             duration = 0.0,
@@ -180,69 +216,57 @@ def projGraph(replication_seed=0,
             volume = storage_volumes[storage],
             actual_volume = 0.0,
             committed_volume = 0.0,
-            t_cluster = None,
             s_cluster = storage_cluster,
             below_threshold = None,
             abandoned = None
         )
+    
+    # Step 2: build all the transport nodes
+    for transport in transport_volumes:
+        # give a successor attribute to each transport project
+        succ = pipe_downstream[transport]
 
-        for transport, captures in transport_clusters.items():
-            # cluster number is determined by ts project
-            transport_cluster = cluster_naming(transport)
+        # give a predecessor attribute to each transport project
+        preds = upstream_project(transport, pipe_downstream, capture_pipe)
+        
+        transport_cluster = cluster_naming(transport)
 
-            # add transport nodes
-            for stage, dur in transport_durations[transport].items():
-                G.add_node(
-                    (transport, stage),
-                    duration = sample_duration(dur, transport, stage, "transport", replication_seed, sampling),
-                    stage = stage,
-                    tech = "transport",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = transport_volumes[transport],
-                    actual_volume = 0.0,
-                    committed_volume = 0.0,
-                    t_cluster = transport_cluster,
-                    s_cluster = storage_cluster,
-                    abandoned = None
-                )
-
-            # adding a volumetric-gating node before transport approval
+        # create nodes for transport definition, approval, construction
+        for stage, dur in transport_durations[transport].items():
             G.add_node(
-                (transport, "approval joint node"),
-                duration = 0.0,
-                stage = "approval joint node",
-                tech = "joint",
-                ES = 0.0,
-                EF = 0.0,
-                volume = transport_volumes[transport],
-                actual_volume = 0.0,
-                committed_volume = 0.0,
-                t_cluster = transport_cluster,
-                s_cluster = storage_cluster,
-                below_threshold = None,
-                abandoned = None
-            )
-
-            # add transport commissioning node
-            G.add_node(
-                (transport, "commissioning"),
-                duration = 0.0,
-                stage = "commissioning",
+                (transport, stage),
+                duration = sample_duration(dur, transport, stage, "transport", replication_seed, sampling),
+                stage = stage,
                 tech = "transport",
                 ES = 0.0,
                 EF = 0.0,
                 volume = transport_volumes[transport],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
-                t_cluster = transport_cluster,
-                s_cluster = storage_cluster,
+                successor = succ,
+                predecessor = preds,
                 abandoned = None
             )
-
-            # transport cluster joint FID node
+        # create transport commissioning node
+        G.add_node(
+            (transport, "commissioning"),
+            duration = 0.0,
+            stage = "commissioning",
+            tech = "transport",
+            ES = 0.0,
+            EF = 0.0,
+            volume = transport_volumes[transport],
+            actual_volume = 0.0,
+            committed_volume = 0.0,
+            successor = succ,
+            predecessor = preds,
+            t_cluster = transport_cluster,
+            abandoned = None
+        )
+        # built transport joint definition and joint FID nodes
+        for stage in ["definition", "approval"]:
             G.add_node(
-                (transport_cluster, "FID joint node"),
+                (transport_cluster, joint_naming(stage)),
                 duration = 0.0,
                 stage = "FID joint node",
                 tech = "joint",
@@ -252,73 +276,58 @@ def projGraph(replication_seed=0,
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 t_cluster = transport_cluster,
-                s_cluster = storage_cluster,
+                successor = succ,
+                predecessor = preds,
                 below_threshold = None,
                 abandoned = None
             )
 
-            for capture in captures:
-                # add capture nodes
-                for stage, dur in capture_durations[capture].items():
-                    G.add_node(
-                        (capture, stage),
-                        duration = sample_duration(dur, capture, stage, "capture", replication_seed, sampling),
-                        stage = stage,
-                        tech = "capture",
-                        ES = 0.0,
-                        EF = 0.0,
-                        volume = capture_volumes[capture],
-                        actual_volume = 0.0,
-                        committed_volume = 0.0,
-                        t_cluster = transport_cluster,
-                        s_cluster = storage_cluster,
-                        abandoned = None
-                    )
-
-                # add capture commissioning node
-                G.add_node(
-                    (capture, "commissioning"),
-                    duration = 0.0,
-                    stage = "commissioning",
-                    tech = "capture",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = capture_volumes[capture],
-                    actual_volume = 0.0,
-                    committed_volume = 0.0,
-                    t_cluster = transport_cluster,
-                    s_cluster = storage_cluster,
-                    abandoned = None
-                )
-
-                # joint nodes within the transport cluster (between transport and capture)
-                for stage in ['definition']:
-                    joint_name = joint_naming(stage)
-                    G.add_node(
-                        (capture, joint_name),
-                        duration = 0.0,
-                        stage = joint_name,
-                        tech = "joint",
-                        ES = 0.0,
-                        EF = 0.0,
-                        volume = capture_volumes[capture], # this needs to be cap vol
-                        actual_volume = capture_volumes[capture], # this is set because def joints sync (aren't threshold)
-                        committed_volume = 0.0,
-                        t_cluster = transport_cluster,
-                        s_cluster = storage_cluster,
-                        abandoned = None
-                    )
-
+    # Step 3: build all the capture nodes
+    for capture in capture_volumes:
+        immediate_transport = capture_pipe[capture]
+        for stage, dur in capture_durations[capture].items():
+            G.add_node(
+                (capture, stage),
+                duration = sample_duration(dur, capture, stage, "capture", replication_seed, sampling),
+                stage = stage,
+                tech = "capture",
+                ES = 0.0,
+                EF = 0.0,
+                volume = capture_volumes[capture],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
+                immediate_transport = immediate_transport,
+                abandoned = None
+            )
+        
+        # add capture commissioning node
+        G.add_node(
+            (capture, "commissioning"),
+            duration = 0.0,
+            stage = "commissioning",
+            tech = "capture",
+            ES = 0.0,
+            EF = 0.0,
+            volume = capture_volumes[capture],
+            actual_volume = 0.0,
+            committed_volume = 0.0,
+            abandoned = None
+        )
+    
     return G
 
-def projEdges(G: nx.DiGraph, clusters=project_data.CLUSTERS):
+def projEdges(G: nx.DiGraph, 
+              pipe_downstream = project_data.PIPE_DOWNSTREAM, 
+              capture_pipe = project_data.CAPTURE_PIPE,
+              capture_volumes=project_data.CAPTURE_VOLUMES,
+              storage_volumes=project_data.STORAGE_VOLUMES,
+              transport_volumes=project_data.TRANSPORT_VOLUMES):
     '''
     Description: adds intra-project edges to G
     Args: G
     '''
-    # edges between the storage nodes
-    for storage, transport_clusters in clusters.items():
-       
+    # add edges between storage nodes
+    for storage in storage_volumes:
         # edge from storage def to storage app
         G.add_edge(
             (storage, "definition"),
@@ -342,7 +351,12 @@ def projEdges(G: nx.DiGraph, clusters=project_data.CLUSTERS):
             (storage, "construction"),
             (storage, "commissioning")
         )
-        
+    
+    # add edges from storage to 
+
+
+    for storage, transport_clusters in clusters.items():
+       
         for transport, captures in transport_clusters.items():
 
             # edge from transport app joint node to ts app

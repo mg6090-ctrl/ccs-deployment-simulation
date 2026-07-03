@@ -44,3 +44,16 @@ CLUSTERS = {
         "projT1": ["projC1", "projC2", "projC3", "projC4", "projC5", "projC6", "projC7", "projC8"]
         }
 }
+
+# stores the pipe/storage every single transport flows into next
+PIPE_DOWNSTREAM = {"projT1": "projS1"}
+
+# stores the transport every single capture flows into next
+CAPTURE_PIPE = {"projC1": "projT1", 
+                "projC2": "projT1",
+                "projC3": "projT1",
+                "projC4": "projT1",
+                "projC5": "projT1",
+                "projC6": "projT1",
+                "projC7": "projT1",
+                "projC8": "projT1"}
