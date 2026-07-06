@@ -502,7 +502,7 @@ def gather_input_specs(G: nx.DiGraph, joint):
             arrival_time = G.nodes[node]["EF"]
             arrivals.append((volume, arrival_time))
         
-        # this handles actual inputs from the transport cluster FID joint node
+        # this handles actual inputs from the joint nodes
         elif G.nodes[node]["tech"] == "joint":
             volume = G.nodes[node]["actual_volume"]
             arrival_time = G.nodes[node]["EF"]
@@ -531,11 +531,12 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
     Description: runs critical path method (CPM), updating ES and EF and checking thresholds
     Args: G
     '''
-
     for node in nx.topological_sort(G):
-        # case where it is a volumetric control gate (FID joint nodes)
+        
         if G.nodes[node].get("abandoned") is not None:
             continue # abandoned nodes do not participate in scheduling
+
+        # if we encounter a joint node 
         if is_threshold_joint(G, node):
             arrivals = gather_input_specs(G, node)
             capacity = G.nodes[node]["volume"]
@@ -565,8 +566,6 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
             # update the ES and EF of each node
             G.nodes[node]["ES"] = updated_ES
             G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"]
-
-            # update the actual volume passing through each node 
 
 #==================================================================
 # CALCULATING PROJECT DELAYS AND HELPER METHODS
@@ -726,82 +725,77 @@ def time_slip_at_gate(G: nx.DiGraph,
 def threshold_failed(G, joint_node):
     return G.nodes[joint_node]["below_threshold"] == True
 
-def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c):
+def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe):
     '''
     If threshold test is not met, return True and collapse the owner of the joint_node
     Otherwise, return False
     '''
     if threshold_failed(G, joint_node):
-        mark_all_abandonment(G, owner, stage)
-        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c)
+        mark_all_abandonment(G, owner, pipe_downstream, capture_pipe)
+        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe)
         return True
 
     return False
 
-def apply_attrition(G: nx.DiGraph, base_rate=BASE_RATE, threshold_frac=THRESHOLD_FRAC,
-                    max_rate=MAX_RATE, capture_tolerance=CAPTURE_TOLERANCE,
-                    transport_tolerance=TRANSPORT_TOLERANCE, storage_tolerance=STORAGE_TOLERANCE,
-                    clusters=project_data.CLUSTERS, late_penalty=LATE_PENALTY, replication_seed = 0):
+def traversal_order(G, pipe_downstream = PIPE_DOWNSTREAM):
+    '''
+    Produces an ordered list of pipes (and storage) in leaf-to-root order 
+    Helper method for apply attrition
+    '''
+    traverse = []
+    for node in nx.topological_sort(G):
+        if G.nodes[node]["stage"] == "FID joint node":
+            project = cluster_owner(node)
+            traverse.append(project)
+
+    return traverse
+
+def apply_attrition(G: nx.DiGraph, 
+                    pipe_downstream=project_data.PIPE_DOWNSTREAM, 
+                    capture_pipe = project_data.CAPTURE_PIPE,
+                    base_rate=BASE_RATE, 
+                    threshold_frac=THRESHOLD_FRAC,
+                    max_rate=MAX_RATE, 
+                    capture_tolerance=CAPTURE_TOLERANCE,
+                    transport_tolerance=TRANSPORT_TOLERANCE, 
+                    storage_tolerance=STORAGE_TOLERANCE,
+                    late_penalty=LATE_PENALTY, 
+                    replication_seed = 0):
     '''
     Apply attrition to the graph
     '''
     rng = random.Random(SEED + replication_seed)
     abandoned_t, abandoned_s, abandoned_c = {}, {}, {}
 
-    for storage in clusters:
-        if storage in abandoned_s:
+    order = traversal_order(G, pipe_downstream)
+    
+    #-------- Definition joint nodes ----------
+    for project in order:
+        if project in abandoned_t or project in abandoned_s:
             continue
-
-        for transport in clusters[storage]:
-            if transport in abandoned_t:
-                continue
-            captures = clusters[storage][transport]
-
-            #-------- Definition joint nodes ----------
-
-            # 1. time-slip abandonment at joint def nodes
-            captures = clusters[storage][transport]
-            parties = [(c, "capture") for c in captures] + [(transport, "transport")]
-            time_slip_at_gate(G, rng, parties, "definition", abandoned_t, abandoned_s, abandoned_c,
-                              base_rate, max_rate, capture_tolerance, transport_tolerance, storage_tolerance, late_penalty, clusters)
-
-            # 2. re-run the CPM
-            CPM(G, threshold_frac)
-
-            # 3. threshold check for the joint app node
-            if threshold_test_at_gate(G, (transport, "approval joint node"), transport, "definition", abandoned_t, abandoned_s, abandoned_c, clusters):
-                continue # transport has collapsed
-
-            #-------- Transport cluster FID joint nodes ----------
-
-            # 4. time-slip abandonment at t_cluster joint FID node
-            time_slip_at_gate(G, rng, parties, "approval", abandoned_t, abandoned_s, abandoned_c,
-                              base_rate, max_rate, capture_tolerance, transport_tolerance, storage_tolerance, late_penalty, clusters)
-
-            # 5. re-reun the CPM
-            CPM(G, threshold_frac)
-
-            # 6. threshold check for the t_cluster joint FID node
-            if threshold_test_at_gate(G, (cluster_naming(transport), "FID joint node"), transport, "approval", abandoned_t, abandoned_s, abandoned_c, clusters):
-                continue # transport cluster has collapsed
-
-        #-------- Storage cluster FID joint node ----------
-
-        # 7. re-run the CPM
+        if get_tech(G, project) == "storage":
+            continue # because storage projects don't get their own def joint node
+        def_joint_node = (cluster_naming(project), "definition joint node")
+        time_slip_at_gate(G, rng, def_joint_node, abandoned_t, abandoned_s, abandoned_c, 
+                          base_rate, max_rate, capture_tolerance, transport_tolerance, 
+                          storage_tolerance, late_penalty, pipe_downstream, capture_pipe)
         CPM(G, threshold_frac)
+        if threshold_test_at_gate(G, def_joint_node, project, "definition joint node", 
+                                  abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe):
+            continue # if we fail the threshold test, the entire cluster collapses
 
-        # 8. time-slip abandonment at s_cluster joint FID node
-        survivors = [(t, "transport") for t in clusters[storage] if t not in abandoned_t]
-        parties = parties = [(storage, "storage")] + survivors
-        time_slip_at_storage_gate(G, rng, parties, abandoned_t, abandoned_s, abandoned_c,
-                                  base_rate, max_rate, capture_tolerance, transport_tolerance, storage_tolerance, late_penalty, clusters)
-
-        # 9. re-run the CPM
+    #-------- FID joint nodes ----------
+    for project in order:
+        if project in abandoned_t or project in abandoned_s:
+            continue
+        FID_joint_node = (cluster_naming(project), "FID joint node")
+        time_slip_at_gate(G, rng, FID_joint_node, abandoned_t, abandoned_s, abandoned_c, 
+                          base_rate, max_rate, capture_tolerance, transport_tolerance, 
+                          storage_tolerance, late_penalty, pipe_downstream, capture_pipe)
         CPM(G, threshold_frac)
-
-        # 10. threshold check for the s_cluster joint FID node
-        if threshold_test_at_gate(G, (cluster_naming(storage), "FID joint node"), storage, "approval", abandoned_t, abandoned_s, abandoned_c, clusters):
-            continue # storage cluster has collapsed
+        if threshold_test_at_gate(G, FID_joint_node, project, "FID joint node", 
+                                  abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe):
+            continue
 
     return abandoned_s, abandoned_t, abandoned_c
 
@@ -809,8 +803,9 @@ def apply_attrition(G: nx.DiGraph, base_rate=BASE_RATE, threshold_frac=THRESHOLD
 # RUNNING THE MODEL
 #==================================================================
 
-def buildmodel(replication_seed=0, sampling=False,
-               clusters=project_data.CLUSTERS, capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,
+def buildmodel(replication_seed=0, sampling=False, trunks = project_data.TRUNKS,
+               pipe_downstream = project_data.PIPE_DOWNSTREAM, capture_pipe = project_data.CAPTURE_PIPE, 
+               capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,
                storage_durations=project_data.STORAGE, storage_volumes=project_data.STORAGE_VOLUMES,
                transport_durations=project_data.TRANSPORT, transport_volumes=project_data.TRANSPORT_VOLUMES):
     '''
@@ -821,10 +816,10 @@ def buildmodel(replication_seed=0, sampling=False,
     '''
 
     G = projGraph(replication_seed, sampling,
-                  clusters, capture_durations, capture_volumes,
+                  pipe_downstream, capture_pipe, capture_durations, capture_volumes,
                   storage_durations, storage_volumes,
                   transport_durations, transport_volumes)
-    projEdges(G, clusters)
+    projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, trunks)
 
     return G
 
@@ -1007,8 +1002,10 @@ if __name__ == "__main__":
     # results2 = monte_carlo(100, sampling = True, base_rate=0.10)
     # print(analyze_monte_carlo(results2))
 
+    G = buildmodel()
 
-    print(cluster_transport(("projT1 cluster", "FID joint node")))
+    print(traversal_order(G, PIPE_DOWNSTREAM))
+
     print(immediate_upstream_project("projS1"))
     print(immediate_upstream_project("projT1"))
     print(everything_upstream("projS1"))
