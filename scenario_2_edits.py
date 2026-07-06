@@ -42,6 +42,8 @@ CAPTURE_PIPE = {"projC1": "projT1",
                 "projC7": "projT1",
                 "projC8": "projT1"}
 
+TRUNKS = ["projT1"]
+
 #==================================================================
 # STOCHASTIC DURATION SAMPLING
 #==================================================================
@@ -134,25 +136,49 @@ def joint_naming(stage):
 def cluster_naming(cluster):
     return cluster + " cluster"
 
-def upstream_project(project, pipe_downstream = PIPE_DOWNSTREAM, capture_pipe = CAPTURE_PIPE):
+def immediate_upstream_project(project, pipe_downstream = project_data.PIPE_DOWNSTREAM, capture_pipe = project_data.CAPTURE_PIPE):
     # Returns a list of projects that link directly into the given project
-    direct_upstream = []
+    direct_pipes = []
+    direct_captures = []
     for upstream, downstream in pipe_downstream.items():
         if downstream == project:
-            direct_upstream.append(upstream)
+            direct_pipes.append(upstream)
     
     for capture, transport in capture_pipe.items():
         if transport == project:
-            direct_upstream.append(capture)
+            direct_captures.append(capture)
     
-    return direct_upstream
+    return direct_captures, direct_pipes
 
-def capture_storage(capture, pipe_downstream=PIPE_DOWNSTREAM, capture_pipe=CAPTURE_PIPE):
-    # Trace from a capture down through the pipe tree to the storage it feeds.
-    current = capture_pipe[capture]
-    while current in pipe_downstream:      
-        current = pipe_downstream[current] 
-    return current                         
+def everything_upstream(project, pipe_downstream = project_data.PIPE_DOWNSTREAM, capture_pipe = project_data.CAPTURE_PIPE):
+    upstream_pipes = []
+    upstream_captures = []
+
+    direct_captures, direct_pipes = immediate_upstream_project(project, pipe_downstream, capture_pipe)
+    upstream_captures.extend(direct_captures)
+
+    for pipe in direct_pipes:
+        upstream_pipes.append(pipe)
+        caps, pipes = everything_upstream(pipe, pipe_downstream, capture_pipe)
+        upstream_captures.extend(caps)
+        upstream_pipes.extend(pipes)
+    
+    return upstream_captures, upstream_pipes
+
+def project_storage(project, tech, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE):
+    # Trace from a project down through the pipe tree to the storage it feeds
+    if tech == "capture":
+        current = capture_pipe[project]
+        while current in pipe_downstream:      
+            current = pipe_downstream[current] 
+        return current    
+    elif tech == "transport":
+        current = project
+        while current in pipe_downstream:
+            current = pipe_downstream[current]
+        return current 
+    else:
+        return project                   
 
 def projGraph(replication_seed=0, 
               sampling=False,
@@ -227,7 +253,7 @@ def projGraph(replication_seed=0,
         succ = pipe_downstream[transport]
 
         # give a predecessor attribute to each transport project
-        preds = upstream_project(transport, pipe_downstream, capture_pipe)
+        preds = immediate_upstream_project(transport, pipe_downstream, capture_pipe)
         
         transport_cluster = cluster_naming(transport)
 
@@ -268,7 +294,7 @@ def projGraph(replication_seed=0,
             G.add_node(
                 (transport_cluster, joint_naming(stage)),
                 duration = 0.0,
-                stage = "FID joint node",
+                stage = joint_naming(stage),
                 tech = "joint",
                 ES = 0.0,
                 EF = 0.0,
@@ -321,12 +347,14 @@ def projEdges(G: nx.DiGraph,
               capture_pipe = project_data.CAPTURE_PIPE,
               capture_volumes=project_data.CAPTURE_VOLUMES,
               storage_volumes=project_data.STORAGE_VOLUMES,
-              transport_volumes=project_data.TRANSPORT_VOLUMES):
+              transport_volumes=project_data.TRANSPORT_VOLUMES,
+              trunks=project_data.TRUNKS):
     '''
-    Description: adds intra-project edges to G
+    Description: adds edges to G
     Args: G
     '''
-    # add edges between storage nodes
+
+    # Step 1: add edges between storage nodes, from stor cluster joint FID to construction of individual dependent projects
     for storage in storage_volumes:
         # edge from storage def to storage app
         G.add_edge(
@@ -351,98 +379,92 @@ def projEdges(G: nx.DiGraph,
             (storage, "construction"),
             (storage, "commissioning")
         )
-    
-    # add edges from storage to 
 
-
-    for storage, transport_clusters in clusters.items():
-       
-        for transport, captures in transport_clusters.items():
-
-            # edge from transport app joint node to ts app
-            G.add_edge(
-                (transport, "approval joint node"),
-                (transport, "approval")
-            )
-
-            # edge from transport app to transport cluster FID joint node
-            G.add_edge(
-                (transport, "approval"),
-                (cluster_naming(transport), joint_naming("approval"))
-            )
-
-            # edge from storage cluster FID joint node to transport construction
+        # add edges from stor cluster joint FID to construction of individual dependent projects
+        captures, pipes = everything_upstream(storage)
+        for capture in captures:
             G.add_edge(
                 (cluster_naming(storage), joint_naming("approval")),
-                (transport, "construction")
+                (capture, "construction")
             )
-
-            # edge from ts construction to ts commissioning
+        for pipe in pipes:
             G.add_edge(
-                (transport, "construction"),
-                (transport, "commissioning")
+                (cluster_naming(storage), joint_naming("approval")),
+                (pipe, "construction")
             )
 
-            # edge from storage commissioning to transport commissioning
+    # Step 2: add edges in definition and approval stages for transport and capture
+    for stage in ["definition", "approval"]:
+        for transport in transport_volumes:
+            joint_node = (cluster_naming(transport), joint_naming(stage))
+            # add edge from transport def/app to transport def/app joint
             G.add_edge(
-                (storage, "commissioning"),
-                (transport, "commissioning")
+                (transport, stage),
+                joint_node
             )
-
-            for capture in captures:
-                # edge from ts def to joint def
-                G.add_edge(
-                    (transport, "definition"),
-                    (capture, joint_naming("definition"))
-                )
-
-                # edge from cap def to joint def
-                G.add_edge(
-                    (capture, "definition"),
-                    (capture, joint_naming("definition"))
-                )
-                # edge from joint def to ts app joint node
-                G.add_edge(
-                    (capture, joint_naming("definition")),
-                    (transport, "approval joint node")
-                )
-
-                # edge from joint def to cap app
-                G.add_edge(
-                    (capture, joint_naming("definition")),
-                    (capture, "approval")
-                )
-
-                # edge from cap app to transport cluster joint FID
-                G.add_edge(
-                    (capture, "approval"),
-                    (cluster_naming(transport), joint_naming("approval"))
-                )
-
-                # edge from transport cluster joint FID to storage cluster joint FID
-                G.add_edge(
-                    (cluster_naming(transport), joint_naming("approval")),
-                    (cluster_naming(storage), "FID joint node")
-                )
-
-                # edge from storage cluster joint FID to capture cons
-                G.add_edge(
-                    (cluster_naming(storage), joint_naming("approval")),
-                    (capture, "construction")
-                )
-
-                # edge from capture construction to capture commissioning
-                G.add_edge(
-                    (capture, "construction"),
-                    (capture, "commissioning")
-                )
-                
-                # edge from ts construction to capture commissioning
-                G.add_edge(
-                    (transport, "construction"),
-                    (capture, "commissioning")
-                )
             
+            d_caps, d_pipes = immediate_upstream_project(transport, pipe_downstream, capture_pipe)
+            # for each upstream capture, add an edge from cap def/app to the trans def/app joint 
+            for cap in d_caps:
+                G.add_edge(
+                    (cap, stage),
+                    joint_node
+                )
+            # for each upstream transport, add an edge from that transport's joint def to this joint def
+            for pipe in d_pipes:
+                G.add_edge(
+                    (cluster_naming(pipe), joint_naming(stage)),
+                    joint_node
+                )
+
+    # Step 3: add trunk edges  
+    for trunk in trunks:
+        # add edge from trunk def joint to trunk app
+        G.add_edge(
+            (cluster_naming(trunk), joint_naming("definition")),
+            (trunk, "approval")
+        )
+
+        # add edge from trunk def joint to app of every cap/trans project dependency
+        caps, pipes = everything_upstream(trunk, pipe_downstream, capture_pipe)
+        for cap in caps:
+            G.add_edge(
+                (cluster_naming(trunk), joint_naming("definition")),
+                (cap, "approval")
+            )
+        for pipe in pipes:
+            G.add_edge(
+                (cluster_naming(trunk), joint_naming("definition")),
+                (pipe, "approval")
+            )
+        # add edge from trunk FID joint to storage cluster FID joint
+        stor = project_storage(trunk, "transport", pipe_downstream, capture_pipe)
+        G.add_edge(
+            (cluster_naming(trunk), joint_naming("approval")),
+            (cluster_naming(stor), joint_naming("approval"))
+        )
+
+    # Step 4: add edges for cons -> comm for trans/cap, gating edges for commissioning
+    for capture in capture_volumes:
+        G.add_edge(
+            (capture, "construction"),
+            (capture, "commissioning")
+        )
+        G.add_edge(
+            (capture_pipe[capture], "commissioning"),
+            (capture, "commissioning")
+        )
+    
+    for transport in transport_volumes:
+        G.add_edge(
+            (transport, "construction"),
+            (transport, "commissioning")
+        )
+        G.add_edge(
+            (pipe_downstream[transport], "commissioning"),
+            (capture, "commissioning")
+        )
+  
 #==================================================================
 # RUNNING THE CPM
 #==================================================================
@@ -1033,5 +1055,11 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    results2 = monte_carlo(100, sampling = True, base_rate=0.10)
-    print(analyze_monte_carlo(results2))
+    # results2 = monte_carlo(100, sampling = True, base_rate=0.10)
+    # print(analyze_monte_carlo(results2))
+
+    print(immediate_upstream_project("projS1"))
+    print(immediate_upstream_project("projT1"))
+    print(everything_upstream("projS1"))
+    print(everything_upstream("projT1"))
+    
