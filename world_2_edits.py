@@ -636,6 +636,10 @@ def mark_own_abandonment(G:nx.DiGraph, owning_proj):
         # separate case for joint nodes because of different naming
         for s in [joint_naming("definition"), joint_naming("approval")]:
             G.nodes[(cluster_naming(owning_proj), s)]["abandoned"] = True
+    elif get_tech(G, owning_proj) == "storage":
+        for s in ["definition", "approval", "construction", "commissioning"]:
+            G.nodes[(owning_proj, s)]["abandoned"] = True 
+            G.nodes[(cluster_naming(owning_proj), "FID joint node")]["abandoned"] = True
 
 def mark_all_abandonment(G: nx.DiGraph, owning_proj, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE):
     '''
