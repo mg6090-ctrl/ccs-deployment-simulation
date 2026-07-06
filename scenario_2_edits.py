@@ -737,7 +737,7 @@ def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t,
 
     return False
 
-def traversal_order(G, pipe_downstream = PIPE_DOWNSTREAM):
+def traversal_order(G):
     '''
     Produces an ordered list of pipes (and storage) in leaf-to-root order 
     Helper method for apply attrition
@@ -767,7 +767,7 @@ def apply_attrition(G: nx.DiGraph,
     rng = random.Random(SEED + replication_seed)
     abandoned_t, abandoned_s, abandoned_c = {}, {}, {}
 
-    order = traversal_order(G, pipe_downstream)
+    order = traversal_order(G)
     
     #-------- Definition joint nodes ----------
     for project in order:
@@ -829,13 +829,15 @@ def buildmodel(replication_seed=0, sampling=False, trunks = project_data.TRUNKS,
 
 def monte_carlo(n_reps, 
                 sampling=True, 
+                trunks = project_data.TRUNKS,
+                pipe_downstream=project_data.PIPE_DOWNSTREAM,
+                capture_pipe=project_data.CAPTURE_PIPE,
                 base_rate=BASE_RATE, 
                 threshold_frac=THRESHOLD_FRAC,
                 max_rate=MAX_RATE, 
                 capture_tolerance=CAPTURE_TOLERANCE,
                 transport_tolerance=TRANSPORT_TOLERANCE, 
                 storage_tolerance=STORAGE_TOLERANCE,
-                clusters=project_data.CLUSTERS, 
                 capture_durations=project_data.CAPTURE, 
                 capture_volumes=project_data.CAPTURE_VOLUMES,
                 storage_durations=project_data.STORAGE, 
@@ -851,23 +853,24 @@ def monte_carlo(n_reps,
 
     for rep in range(n_reps):
         G = buildmodel(replication_seed=rep, sampling=sampling,
-                       clusters=clusters, capture_durations=capture_durations,
+                       trunks=trunks, pipe_downstream=pipe_downstream, capture_pipe=capture_pipe, 
+                       capture_durations=capture_durations,
                        capture_volumes=capture_volumes, storage_durations=storage_durations,
                        storage_volumes=storage_volumes, transport_durations=transport_durations,
                        transport_volumes=transport_volumes)
 
         CPM(G, threshold_frac)
 
-        a_s, a_t, a_c = apply_attrition(G, base_rate, threshold_frac,
+        a_s, a_t, a_c = apply_attrition(G, pipe_downstream, capture_pipe, base_rate, threshold_frac,
                                          max_rate, capture_tolerance, transport_tolerance, storage_tolerance,
-                                         clusters, late_penalty, replication_seed = rep)
+                                         late_penalty, replication_seed = rep)
 
         finite = [G.nodes[n]["EF"] for n in G.nodes
                 if G.nodes[n]["EF"] != float("inf") and G.nodes[n]["abandoned"] is None]
 
         # getting the final survived volume from unabandoned storage FID joint nodes
         final_vol = 0
-        for storage, t_clusters in clusters.items():
+        for storage in storage_volumes:
             fid = (cluster_naming(storage), "FID joint node")
             if not G.nodes[fid]["below_threshold"] and G.nodes[fid]["abandoned"] is None:
                 final_vol += G.nodes[fid]["actual_volume"]
@@ -971,12 +974,18 @@ def analyze_monte_carlo(results):
     cum_c_abandon_at_app = 0
     for rate in c_abandon_at_app:
         cum_c_abandon_at_app += rate
-    avg_c_abandon_at_app = cum_c_abandon_at_app/len(c_abandon_at_app)
+    if len(c_abandon_at_app) != 0:
+        avg_c_abandon_at_app = cum_c_abandon_at_app/len(c_abandon_at_app)
+    else:
+        avg_c_abandon_at_app = 0
 
     cum_t_abandon_at_app = 0
     for rate in t_abandon_at_app:
         cum_t_abandon_at_app += rate
-    avg_t_abandon_at_app = cum_t_abandon_at_app/len(t_abandon_at_app)
+    if len(t_abandon_at_app) != 0:
+        avg_t_abandon_at_app = cum_t_abandon_at_app/len(t_abandon_at_app)
+    else:
+        avg_t_abandon_at_app = 0
     
     return {"average no. capture abandoned": avg_c_abandoned,
             "average capture abandonment rate": avg_c_abandon_rate,
