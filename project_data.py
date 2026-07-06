@@ -31,14 +31,12 @@ STORAGE_VOLUMES = {
 
 # dictionary for transport projects
 TRANSPORT = {
-    "projT1":  {"definition": 9, "approval": 36, "construction": 30},
-    "projT2":  {"definition": 9, "approval": 36, "construction": 30}
+    "projT1":  {"definition": 9, "approval": 36, "construction": 30}
 }
 
 # transport volumes
 TRANSPORT_VOLUMES = {
-    "projT1": 6,
-    "projT2": 3
+    "projT1": 6
 }
 
 CLUSTERS = {
@@ -48,8 +46,7 @@ CLUSTERS = {
 }
 
 # stores the pipe/storage every single transport flows into next
-PIPE_DOWNSTREAM = {"projT1": "projS1",
-                   "projT2": "projT1"}
+PIPE_DOWNSTREAM = {"projT1": "projS1"}
 
 # stores the transport every single capture flows into next
 CAPTURE_PIPE = {"projC1": "projT1", 
@@ -57,8 +54,8 @@ CAPTURE_PIPE = {"projC1": "projT1",
                 "projC3": "projT1",
                 "projC4": "projT1",
                 "projC5": "projT1",
-                "projC6": "projT2",
-                "projC7": "projT2",
-                "projC8": "projT2"}
+                "projC6": "projT1",
+                "projC7": "projT1",
+                "projC8": "projT1"}
 
 TRUNKS = ["projT1"]

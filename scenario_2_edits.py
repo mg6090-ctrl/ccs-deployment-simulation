@@ -271,6 +271,7 @@ def projGraph(replication_seed=0,
                 committed_volume = 0.0,
                 successor = succ,
                 predecessor = preds,
+                t_cluster = transport_cluster,
                 abandoned = None
             )
         # create transport commissioning node
@@ -477,7 +478,7 @@ def is_threshold_joint(G: nx.DiGraph, node):
     '''
     return G.nodes[node].get("tech") == "joint" and (
         G.nodes[node].get("stage") == "FID joint node" 
-        or G.nodes[node].get("stage") == "approval joint node")
+        or G.nodes[node].get("stage") == "definition joint node")
 
 def gather_input_specs(G: nx.DiGraph, joint):
     '''
@@ -568,81 +569,26 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
             # update the actual volume passing through each node 
 
 #==================================================================
-# CALCULATING PROJECT DELAYS
+# CALCULATING PROJECT DELAYS AND HELPER METHODS
 #==================================================================
 
-def transport_captures(G: nx.DiGraph, transport, clusters=project_data.CLUSTERS):
-    for storage, t_cluster in clusters.items():
-        if transport in t_cluster:
-            return t_cluster[transport]
+def delay_at_joint(G: nx.DiGraph, joint, party_node):
+    return G.nodes[joint]["EF"] - G.nodes[party_node]["EF"]
 
-def target_node(G: nx.DiGraph, project, stage):
-    tech = G.nodes[(project, stage)].get("tech")
-    t_cluster = G.nodes[(project, stage)].get("t_cluster")
-    s_cluster = G.nodes[(project, stage)].get("s_cluster")
-
-    if stage == "construction":
-        return [(project, "commissioning")]
-
-    if tech == "capture":
-        if stage == "definition":
-            return [(project, "definition joint node")]
-        elif stage == "approval":
-            return [(t_cluster, "FID joint node")]
-
-    elif tech == "transport":
-        if stage == "definition":
-            return [(project, "approval joint node")]
-        elif stage == "approval":
-            return [(t_cluster, "FID joint node")]
-
-    elif tech == "storage":
-        # no sync partner until the storage FID joint
-        return [(s_cluster, "FID joint node")]
-
-    raise ValueError(f"no target for tech={tech}, stage={stage}")
-
-def storage_coordination_delay(G: nx.DiGraph, project):
+def cluster_owner(child_joint_node):
     '''
-    Slip for a party waiting at the STORAGE FID joint (the shared coordination node).
-    Works for storage and for transports (both wait here for the cluster to commit).
-    Slip = (storage FID fire time) - (party's own ready time at this gate).
+    Args: joint node
+    Returns: name of transport/storage project defining the joint node
     '''
-    s_cluster = G.nodes[(project, "definition")]["s_cluster"]
-    storage_fid = (s_cluster, "FID joint node")
-    gate_ef = G.nodes[storage_fid]["EF"]
+    cluster_name = child_joint_node[0]
+    owner_name = cluster_name.replace(" cluster", "")
+    return owner_name
 
-    tech = G.nodes[(project, "definition")]["tech"]
-    if tech == "storage":
-        own_ef = G.nodes[(project, "approval")]["EF"]
-    else:
-        t_cluster = G.nodes[(project, "definition")]["t_cluster"]
-        own_ef = G.nodes[(t_cluster, "FID joint node")]["EF"]
-    
-    delay = gate_ef - own_ef
-
-    return delay if delay > 0 else 0
-
-def stage_delay(G: nx.DiGraph, node):
-    '''
-    Description: calculates delay at a specific stage
-    This code works because joint nodes have duration 0
-    Args: constrained graph with interdepencies, node
-    Returns: the stage delay at that specific node 
-    '''
-    # Looks up target node via target_node(), allows it to accommodate multiple successors
-    project, stage = node[0], node[1]
-    targets = target_node(G, project, stage)
-    max_delay = 0
-    for target in targets:
-        delay = G.nodes[target]["EF"] - G.nodes[(project, stage)]["EF"]
-        if delay > max_delay:
-            max_delay = delay
-    
-    return max_delay
+def get_tech(G: nx.DiGraph, project):
+    return G.nodes[(project, "definition")]["tech"] # this isn't very elegant (I hard-coded for def) but I think it works
 
 #==================================================================
-# PROJECT ABANDONMENT NOTE: EDIT THE ATTRITION PROB FUNCTION
+# PROJECT ABANDONMENT 
 #==================================================================
 
 def calculate_attrition_probability(delay, tech, base_rate=BASE_RATE, 
@@ -671,123 +617,126 @@ def calculate_attrition_probability(delay, tech, base_rate=BASE_RATE,
         delay_factor = delay / tolerance
         return min(max_rate, base_rate * (np.exp(delay_factor)))
 
-def mark_abandonment(G: nx.DiGraph, project, stage):
-    '''
-    Description: marks all nodes of all projects in related cluster as abandoned (annotates stage of 
-    abandonment)
-    Args: Graph, storage_cluster, transport_cluster, project, stage
-    Returns: marks nodes as abandoned
-    '''
-    tech = G.nodes[(project, stage)].get("tech")
-    transport_cluster = G.nodes[(project, stage)].get("t_cluster") 
-    storage_cluster = G.nodes[(project, stage)].get("s_cluster")
-
-    # if it is a capture project -> mark all stages of the capture project as abandoned
-    if tech == "capture":
-        for s in ["definition", "approval", "construction", "commissioning"]:
-            G.nodes[(project, s)]["abandoned"] = True
-    
-    # if it is a transport project -> mark every node in the transport cluster as abandoned
-    elif tech == "transport":
-        for node in G.nodes():
-            if G.nodes[node]["t_cluster"] == transport_cluster:
-                G.nodes[node]["abandoned"] = True
-
-    # if it is a storage project -> mark every node in the storage cluster as abandoned
-    elif tech == "storage":
-        for node in G.nodes():
-            if G.nodes[node]["s_cluster"] == storage_cluster:
-                G.nodes[node]["abandoned"] = True
-
-def already_abandoned(G: nx.DiGraph, project):
+def already_abandoned(G: nx.DiGraph, node):
     '''
     checks if a project has already been abandoned
     Returns True if project has been abandoned
     '''
-    return G.nodes[(project, "definition")]["abandoned"] is not None
+    return G.nodes[node]["abandoned"] is not None
 
-def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c, clusters=project_data.CLUSTERS):
+def mark_own_abandonment(G:nx.DiGraph, owning_proj):
+    # capture case
+    if get_tech(G, owning_proj) == "capture":
+        for s in ["definition", "approval", "construction", "commissioning"]:
+                G.nodes[(owning_proj, s)]["abandoned"] = True
+    # transport case
+    elif get_tech(G, owning_proj) == "transport":
+        # mark its own nodes with abandoned = True
+        for s in ["definition", "approval", "construction", "commissioning"]:
+            G.nodes[(owning_proj, s)]["abandoned"] = True 
+        # separate case for joint nodes because of different naming
+        for s in [joint_naming("definition"), joint_naming("approval")]:
+            G.nodes[(cluster_naming(owning_proj), s)]["abandoned"] = True
+
+def mark_all_abandonment(G: nx.DiGraph, owning_proj, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE):
     '''
-    records the project as abandoned (include stage of abandonment)
+    Description: sets "abandoned" = True on graph nodes so they are skipped by the CPM
+    Args: Graph, storage_cluster, transport_cluster, project, stage
+    Returns: marks nodes as abandoned
     '''
-    if tech == "transport":
+    mark_own_abandonment(G, owning_proj)
+    if get_tech(G, owning_proj) != "capture":
+        caps, pipes = everything_upstream(owning_proj, pipe_downstream, capture_pipe)
+        for proj in caps + pipes:
+            mark_own_abandonment(G, proj)
+
+def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE):
+    '''
+    records the project as abandoned (include stage of abandonment) in dictionaries (book-keeping)
+    '''
+    if tech == "capture":
+        abandoned_c[project] = stage
+    
+    elif tech == "transport":
         abandoned_t[project] = stage
-        # record the captures projects in the cluster as abandoned
-        for s, t_clusters in clusters.items():
-            for transport, captures in t_clusters.items():
-                if transport == project:
-                    for capture in captures:
-                        if capture not in abandoned_c:
-                            abandoned_c[capture] = stage
+        # record all dependent transport and capture as abandoned
+        caps, pipes = everything_upstream(project, pipe_downstream, capture_pipe)
+        for cap in caps:
+            if cap not in abandoned_c:
+                abandoned_c[cap] = stage
+        for pipe in pipes:
+            if pipe not in abandoned_t:
+                abandoned_t[pipe] = stage
 
     elif tech == "storage":
         abandoned_s[project] = stage
         # record all dependent transport and capture as abandoned
-        for storage, t_clusters in clusters.items():
-            for transport, captures in t_clusters.items():
-                if storage == project:
-                    if transport not in abandoned_t:
-                        abandoned_t[transport] = stage
-                    for capture in captures:
-                        if capture not in abandoned_c:
-                            abandoned_c[capture] = stage
+        caps, pipes = everything_upstream(project, pipe_downstream, capture_pipe)
+        for cap in caps:
+            if cap not in abandoned_c:
+                abandoned_c[cap] = stage
+        for pipe in pipes:
+            if pipe not in abandoned_t:
+                abandoned_t[pipe] = stage
 
-    elif tech == "capture":
-        abandoned_c[project] = stage
+def time_slip_at_gate(G: nx.DiGraph, 
+                      rng, 
+                      joint_node,
+                      abandoned_t, abandoned_s, abandoned_c,
+                      base_rate = BASE_RATE, 
+                      max_rate = MAX_RATE,
+                      capture_tolerance = CAPTURE_TOLERANCE, 
+                      transport_tolerance = TRANSPORT_TOLERANCE,
+                      storage_tolerance = STORAGE_TOLERANCE, 
+                      late_penalty = LATE_PENALTY, 
+                      pipe_downstream = project_data.PIPE_DOWNSTREAM,
+                      capture_pipe = project_data.CAPTURE_PIPE
+                      ):
+    '''
+    Calculates time-delays and rolls abandonment at this joint node
+    '''
+    # iterate through all the predecessors of the joint node
+    for node in G.predecessors(joint_node):
+        # if the node has already been marked abandoned, we skip it
+        if already_abandoned(G, node):
+            continue
+        
+        # get the stage
+        stage = G.nodes[joint_node]["stage"]
+
+        # get the delay of each predecessor at the joint node
+        delay = delay_at_joint(G, joint_node, node)
+
+        # get tech to calculate attrition probability
+        if G.nodes[node]["tech"] == "joint":
+            owning_project = cluster_owner(node)
+            tech = "transport"
+        
+        else:
+            tech = G.nodes[node]["tech"]
+            owning_project = node[0]
+        
+        prob = calculate_attrition_probability(delay, tech, base_rate, max_rate,
+                                               capture_tolerance, transport_tolerance, storage_tolerance, late_penalty)
+        
+        if rng.random() < prob:
+            mark_all_abandonment(G, owning_project, pipe_downstream, capture_pipe)
+            record_abandonment(owning_project, tech, stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe)
 
 def threshold_failed(G, joint_node):
     return G.nodes[joint_node]["below_threshold"] == True
 
-def time_slip_at_gate(G: nx.DiGraph, rng, parties, stage, abandoned_t, abandoned_s, abandoned_c,
-                      base_rate=BASE_RATE, max_rate=MAX_RATE,
-                      capture_tolerance=CAPTURE_TOLERANCE, transport_tolerance=TRANSPORT_TOLERANCE,
-                      storage_tolerance=STORAGE_TOLERANCE, late_penalty = LATE_PENALTY, clusters=project_data.CLUSTERS):
-    '''
-    For each tech in parties, calculates delays and rolls abandonment at this stage
-    parties comes in [(project, tech)] format for each project
-    '''
-
-    for (project, tech) in parties:
-        if already_abandoned(G, project):
-            continue
-        delay = stage_delay(G, (project, stage))
-        prob = calculate_attrition_probability(delay, tech, base_rate, max_rate,
-                                               capture_tolerance, transport_tolerance, storage_tolerance, late_penalty)
-        if rng.random() < prob:
-            mark_abandonment(G, project, stage)
-            record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned_c, clusters)
-
-def time_slip_at_storage_gate(G: nx.DiGraph, rng, parties, abandoned_t, abandoned_s, abandoned_c,
-                               base_rate=BASE_RATE, max_rate=MAX_RATE,
-                               capture_tolerance=CAPTURE_TOLERANCE, transport_tolerance=TRANSPORT_TOLERANCE,
-                               storage_tolerance=STORAGE_TOLERANCE, late_penalty=LATE_PENALTY, clusters=project_data.CLUSTERS):
-    '''
-    time slip specifically at the storage cluster FID joint node
-    '''
-    for (project, tech) in parties:
-        if already_abandoned(G, project):
-            continue
-        delay = storage_coordination_delay(G, project)
-        prob = calculate_attrition_probability(delay, tech, base_rate, max_rate,
-                                               capture_tolerance, transport_tolerance, storage_tolerance, late_penalty)
-        if rng.random() < prob:
-            mark_abandonment(G, project, "approval")
-            record_abandonment(project, tech, "approval", abandoned_t, abandoned_s, abandoned_c, clusters)
-
-def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, clusters=project_data.CLUSTERS):
+def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c):
     '''
     If threshold test is not met, return True and collapse the owner of the joint_node
     Otherwise, return False
     '''
     if threshold_failed(G, joint_node):
-        mark_abandonment(G, owner, stage)
-        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c, clusters)
+        mark_all_abandonment(G, owner, stage)
+        record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c)
         return True
 
     return False
-
-def get_tech(G: nx.DiGraph, project):
-    return G.nodes[(project, "definition")]["tech"] # this isn't very elegant (I hard-coded for def) but I think it works
 
 def apply_attrition(G: nx.DiGraph, base_rate=BASE_RATE, threshold_frac=THRESHOLD_FRAC,
                     max_rate=MAX_RATE, capture_tolerance=CAPTURE_TOLERANCE,
@@ -1058,6 +1007,8 @@ if __name__ == "__main__":
     # results2 = monte_carlo(100, sampling = True, base_rate=0.10)
     # print(analyze_monte_carlo(results2))
 
+
+    print(cluster_transport(("projT1 cluster", "FID joint node")))
     print(immediate_upstream_project("projS1"))
     print(immediate_upstream_project("projT1"))
     print(everything_upstream("projS1"))
