@@ -96,150 +96,177 @@ def sample_duration(mean, project, stage, tech, replication_seed, sampling):
         return round(sample)
 
 #==================================================================
-# BUILDING THE BASE GRAPH (NO INTERDEPENDENCIES)
+# DAG CONSTRUCTION
 #==================================================================
 
-def make_base_graph(
-        replication_seed=0, 
-        clusters = project_data.CLUSTERS, 
-        caps = project_data.CAPTURE,
-        caps_vol = project_data.CAPTURE_VOLUMES,
-        trans = project_data.TRANSPORT,
-        trans_vol = project_data.TRANSPORT_VOLUMES,
-        stor = project_data.STORAGE,
-        stor_vol = project_data.STORAGE_VOLUMES,
-        sampling=False
-        ):
+def get_tech(G: nx.DiGraph, project):
+    return G.nodes[(project, "definition")]["tech"]
+
+def immediate_upstream_project(project, pipe_downstream = project_data.PIPE_DOWNSTREAM, capture_pipe = project_data.CAPTURE_PIPE):
+    # Returns a list of projects that link directly into the given project
+    direct_pipes = []
+    direct_captures = []
+    for upstream, downstream in pipe_downstream.items():
+        if downstream == project:
+            direct_pipes.append(upstream)
+    
+    for capture, transport in capture_pipe.items():
+        if transport == project:
+            direct_captures.append(capture)
+    
+    return direct_captures, direct_pipes
+
+def everything_upstream(project, pipe_downstream = project_data.PIPE_DOWNSTREAM, capture_pipe = project_data.CAPTURE_PIPE):
+    upstream_pipes = []
+    upstream_captures = []
+
+    direct_captures, direct_pipes = immediate_upstream_project(project, pipe_downstream, capture_pipe)
+    upstream_captures.extend(direct_captures)
+
+    for pipe in direct_pipes:
+        upstream_pipes.append(pipe)
+        caps, pipes = everything_upstream(pipe, pipe_downstream, capture_pipe)
+        upstream_captures.extend(caps)
+        upstream_pipes.extend(pipes)
+    
+    return upstream_captures, upstream_pipes
+
+def project_storage(project, tech, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE):
+    # Trace from a project down through the pipe tree to the storage it feeds
+    if tech == "capture":
+        current = capture_pipe[project]
+        while current in pipe_downstream:      
+            current = pipe_downstream[current] 
+        return current    
+    elif tech == "transport":
+        current = project
+        while current in pipe_downstream:
+            current = pipe_downstream[current]
+        return current 
+    else:
+        return project                   
+
+def projGraph(replication_seed=0, 
+              sampling=False,
+              pipe_downstream = project_data.PIPE_DOWNSTREAM,
+              capture_pipe = project_data.CAPTURE_PIPE,
+              capture_durations=project_data.CAPTURE, 
+              capture_volumes=project_data.CAPTURE_VOLUMES,
+              storage_durations=project_data.STORAGE, 
+              storage_volumes=project_data.STORAGE_VOLUMES,
+              transport_durations=project_data.TRANSPORT, 
+              transport_volumes=project_data.TRANSPORT_VOLUMES):
     '''
-    Description: builds intra-project DAG without joint nodes
-    Returns: G_indep
+    Description: creating graph and adding nodes
+    Returns: directed acyclic graph G
     '''
-    # helper method for drawing project nodes only (no joint nodes)
+    # make one large graph
+    G = nx.DiGraph()
 
-    def intra_nodes():
-        # make one large graph
-        G = nx.DiGraph()
+    # Step 1: build all the storage nodes
+    for storage in storage_volumes:
 
-        for storage, transport_clusters in clusters.items():
-            # layer 1: storage nodes
-            storage_cluster = storage + " cluster" # naming the overarching storage cluster
-
-            for stage, dur in stor[storage].items():
-                G.add_node(
-                    (storage, stage),
-                    duration = sample_duration(dur, storage, stage, "storage", replication_seed, sampling),
-                    stage = stage,
-                    tech = "storage",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = stor_vol[storage],
-                    s_cluster = storage_cluster,
-                    t_cluster = None,
-                    abandoned = None
-                )
-            
-            # add storage commissioning node
+        # create nodes for storage definition, approval, construction
+        for stage, dur in storage_durations[storage].items():
             G.add_node(
-                (storage, "commissioning"),
-                duration = 0.0,
-                stage = "commissioning",
+                (storage, stage),
+                duration = sample_duration(dur, storage, stage, "storage", replication_seed, sampling),
+                stage = stage,
                 tech = "storage",
                 ES = 0.0,
                 EF = 0.0,
-                volume = stor_vol[storage],
-                s_cluster = storage_cluster,
-                t_cluster = None,
+                volume = storage_volumes[storage],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
+                abandoned = None
+                )
+        # create storage commissioning node
+        G.add_node(
+            (storage, "commissioning"),
+            duration = 0.0,
+            stage = "commissioning",
+            tech = "storage",
+            ES = 0.0,
+            EF = 0.0,
+            volume = storage_volumes[storage],
+            actual_volume = 0.0,
+            committed_volume = 0.0,
+            abandoned = None
+        )
+    
+    # Step 2: build all the transport nodes
+    for transport in transport_volumes:
+        # give a successor attribute to each transport project
+        succ = pipe_downstream[transport]
+
+        # give a predecessor attribute to each transport project
+        preds = immediate_upstream_project(transport, pipe_downstream, capture_pipe)
+
+        # create nodes for transport definition, approval, construction
+        for stage, dur in transport_durations[transport].items():
+            G.add_node(
+                (transport, stage),
+                duration = sample_duration(dur, transport, stage, "transport", replication_seed, sampling),
+                stage = stage,
+                tech = "transport",
+                ES = 0.0,
+                EF = 0.0,
+                volume = transport_volumes[transport],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
+                successor = succ,
+                predecessor = preds,
                 abandoned = None
             )
+        # create transport commissioning node
+        G.add_node(
+            (transport, "commissioning"),
+            duration = 0.0,
+            stage = "commissioning",
+            tech = "transport",
+            ES = 0.0,
+            EF = 0.0,
+            volume = transport_volumes[transport],
+            actual_volume = 0.0,
+            committed_volume = 0.0,
+            successor = succ,
+            predecessor = preds,
+            abandoned = None
+        )
 
-            for transport, captures in transport_clusters.items():
-                # cluster number is determined by ts project
-                transport_cluster =  transport + " cluster"
-
-                # add transport nodes
-                for stage, dur in trans[transport].items():
-                    G.add_node(
-                        (transport, stage),
-                        duration = sample_duration(dur, transport, stage, "transport", replication_seed, sampling),
-                        stage = stage,
-                        tech = "transport",
-                        ES = 0.0,
-                        EF = 0.0,
-                        volume = trans_vol[transport],
-                        t_cluster = transport_cluster,
-                        s_cluster = storage_cluster,
-                        abandoned = None
-                    )
-
-                # add transport commissioning node
-                G.add_node(
-                    (transport, "commissioning"),
-                    duration = 0.0,
-                    stage = "commissioning",
-                    tech = "transport",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = trans_vol[transport],
-                    t_cluster = transport_cluster,
-                    s_cluster = storage_cluster,
-                    abandoned = None
-                )
-
-                for capture in captures:
-                    # add capture nodes
-                    for stage, dur in caps[capture].items():
-                        G.add_node(
-                            (capture, stage),
-                            duration = sample_duration(dur, capture, stage, "capture", replication_seed, sampling),
-                            stage = stage,
-                            tech = "capture",
-                            ES = 0.0,
-                            EF = 0.0,
-                            volume = caps_vol[capture],
-                            t_cluster = transport_cluster,
-                            s_cluster = storage_cluster,
-                            abandoned = None
-                        )
-            
-                    # add capture commissioning node
-                    G.add_node(
-                        (capture, "commissioning"),
-                        duration = 0.0,
-                        stage = "commissioning",
-                        tech = "capture",
-                        ES = 0.0,
-                        EF = 0.0,
-                        volume = caps_vol[capture],
-                        t_cluster = transport_cluster,
-                        s_cluster = storage_cluster,
-                        abandoned = None
-                    )
-
-        return G
-
-    # helper method for drawing intra-project edges only
-    # this method works for 1:multiple already
-    def intra_edges(G: nx.DiGraph, clusters):
-        def graphEdges(G, pid):
-            for a, b in zip(STAGES4[:-1], STAGES4[1:]):
-                G.add_edge((pid, a), (pid, b))
+    # Step 3: build all the capture nodes
+    for capture in capture_volumes:
+        immediate_transport = capture_pipe[capture]
+        for stage, dur in capture_durations[capture].items():
+            G.add_node(
+                (capture, stage),
+                duration = sample_duration(dur, capture, stage, "capture", replication_seed, sampling),
+                stage = stage,
+                tech = "capture",
+                ES = 0.0,
+                EF = 0.0,
+                volume = capture_volumes[capture],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
+                immediate_transport = immediate_transport,
+                abandoned = None
+            )
         
-        for storage, transport_clusters in clusters.items():
-            graphEdges(G, storage)
-            for transport, captures in transport_clusters.items():
-                graphEdges(G, transport)
-                for capture in captures:
-                    graphEdges(G, capture)
-
-    # make a NEW graph without interdependent edges to evaluate baseline ES/EF
-    G_indep = intra_nodes()
-    intra_edges(G_indep, clusters)
-
-    return G_indep
-
-#==================================================================
-# BUILDING THE DAG WITH INTERDEPENDENCIES
-#==================================================================
+        # add capture commissioning node
+        G.add_node(
+            (capture, "commissioning"),
+            duration = 0.0,
+            stage = "commissioning",
+            tech = "capture",
+            ES = 0.0,
+            EF = 0.0,
+            volume = capture_volumes[capture],
+            actual_volume = 0.0,
+            committed_volume = 0.0,
+            abandoned = None
+        )
+    
+    return G
 
 def fracSplit(captures, frac_split = FRAC_SPLIT):
         '''
@@ -257,80 +284,103 @@ def fracSplit(captures, frac_split = FRAC_SPLIT):
         # cuts the list of pids in two for the two sets (go ahead at approval and construction)
         return shuffled[:approv_num], shuffled[approv_num:]
 
-def get_storage(G, capture, clusters):
-    for storage, t_clusters in clusters.items():
-        for transport, captures in t_clusters.items():
-            for cap in captures:
-                if cap == capture:
-                    return storage
-
-def get_transport(G, capture, clusters):
-    for storage, t_clusters in clusters.items():
-        for transport, captures in t_clusters.items():
-            for cap in captures:
-                if cap == capture:
-                    return transport
-
-def projGraph(
-        replication_seed=0, 
-        clusters = project_data.CLUSTERS, 
-        caps = project_data.CAPTURE,
-        caps_vol = project_data.CAPTURE_VOLUMES,
-        trans = project_data.TRANSPORT,
-        trans_vol = project_data.TRANSPORT_VOLUMES,
-        stor = project_data.STORAGE,
-        stor_vol = project_data.STORAGE_VOLUMES,
-        frac_split = FRAC_SPLIT,
-        sampling = False
-        ):
+def projEdges(G: nx.DiGraph, 
+              pipe_downstream = project_data.PIPE_DOWNSTREAM, 
+              capture_pipe = project_data.CAPTURE_PIPE,
+              capture_volumes=project_data.CAPTURE_VOLUMES,
+              storage_volumes=project_data.STORAGE_VOLUMES,
+              transport_volumes=project_data.TRANSPORT_VOLUMES,
+              trunks=project_data.TRUNKS,
+              frac_split=FRAC_SPLIT):
+    '''
+    Description: adds edges to G
+    Args: G
+    '''
     
-    # building the base graph with intra-project edges
-    G = make_base_graph(
-        replication_seed, 
-        clusters, 
-        caps,
-        caps_vol,
-        trans,
-        trans_vol,
-        stor,
-        stor_vol,
-        sampling
+    # Step 1: add intra-project edges (def -> app -> cons -> comm)
+    for storage in storage_volumes:
+        s1 = STAGES4[:-1]
+        s2 = STAGES4[1:]
+        for stage1, stage2 in zip(s1, s2):
+            G.add_edge(
+                (storage, stage1),
+                (storage, stage2)
+            )
+    for transport in transport_volumes:
+        s1 = STAGES4[:-1]
+        s2 = STAGES4[1:]
+        for stage1, stage2 in zip(s1, s2):
+            G.add_edge(
+                (transport, stage1),
+                (transport, stage2)
+            )
+    for capture in capture_volumes:
+        s1 = STAGES4[:-1]
+        s2 = STAGES4[1:]
+        for stage1, stage2 in zip(s1, s2):
+            G.add_edge(
+                (transport, stage1),
+                (transport, stage2)
+            )
+
+    # Step 2: add inter-project dependencies for capture app/ cons
+    cluster_captures = [c for caps in capture_volumes for c in caps]
+    approval, construction = fracSplit(cluster_captures, frac_split)
+    
+    for capture in approval:
+        dep_trans = capture_pipe[capture]
+        dep_stor = project_storage(capture, "capture", pipe_downstream, capture_pipe)
+        G.add_edge(
+            (dep_stor, "approval"),
+            (capture, "approval")
+        )
+        G.add_edge(
+            (dep_trans, "approval"),
+            (capture, "approval")
         )
 
-    for storage, t_cluster in clusters.items():
-        cluster_captures = [c for caps in t_cluster.values() for c in caps]
-        approval, construction = fracSplit(cluster_captures, frac_split)
-
-        for capture in approval:
-            G.add_edge(
-                (get_storage(G, capture, clusters), "approval"), 
-                (capture, "approval")
-            )
-
-            G.add_edge(
-                (get_transport(G, capture, clusters), "approval"),
-                (capture, "approval")
-            )
-
-        for capture in construction:
-            G.add_edge(
-                (get_storage(G, capture, clusters), "construction"), 
-                (capture, "approval")
-            )
-
-            G.add_edge(
-                (get_transport(G, capture, clusters), "construction"),
-                (capture, "approval")
-            )
+    for capture in construction:
+        dep_trans = capture_pipe[capture]
+        dep_stor = project_storage(capture, "capture", pipe_downstream, capture_pipe)
+        G.add_edge(
+            (dep_stor, "construction"),
+            (capture, "approval")
+        )
+        G.add_edge(
+            (dep_trans, "construction"),
+            (capture, "approval")
+        )
     
-    # commissioning cascade: storage -> transport -> capture
-    for storage, t_cluster in clusters.items():
-        for transport, captures in t_cluster.items():
-            G.add_edge((storage, "commissioning"), (transport, "commissioning"))
-            for capture in captures:
-                G.add_edge((transport, "commissioning"), (capture, "commissioning"))
+    # Step 3: add edges for cons -> comm for trans/cap, gating edges for commissioning
+    for capture in capture_volumes:
+        G.add_edge(
+            (capture, "construction"),
+            (capture, "commissioning")
+        )
+        G.add_edge(
+            (capture_pipe[capture], "commissioning"),
+            (capture, "commissioning")
+        )
+    
+    for transport in transport_volumes:
+        G.add_edge(
+            (transport, "construction"),
+            (transport, "commissioning")
+        )
+    for storage in storage_volumes:
+        for immediate_upstream
+        G.add_edge(
+            (storage, "commissioning"),
 
-    return G
+        )
+    
+    # Step 4 (CRUCIAL): add interdependency edges between different tiers of the network 
+    for transport in transport_volumes:
+        # identify tiers via transport depending on another transport
+        if get_tech(G, pipe_downstream[transport]) == "transport":
+            
+
+def 
 
 #==================================================================
 # RUNNING THE CPM
