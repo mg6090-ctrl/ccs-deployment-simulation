@@ -271,13 +271,13 @@ def projGraph(replication_seed=0,
     
     return G
 
-def fracSplit(captures, frac_split = FRAC_SPLIT):
+def fracSplit(captures, frac_split = FRAC_SPLIT, replication_seed = 0):
         '''
         Description: helper method that splits capture into two batches based on risk aversion level
         Returns: tuple of ([approval pids], [construction pids])
         '''
         # seeding and introducing randomness
-        rng = random.Random(SEED)
+        rng = random.Random(SEED + replication_seed)
         shuffled = list(captures)
         rng.shuffle(shuffled)
 
@@ -293,7 +293,8 @@ def projEdges(G: nx.DiGraph,
               capture_volumes=project_data.CAPTURE_VOLUMES,
               storage_volumes=project_data.STORAGE_VOLUMES,
               transport_volumes=project_data.TRANSPORT_VOLUMES,
-              frac_split=FRAC_SPLIT):
+              frac_split=FRAC_SPLIT,
+              replication_seed=0):
     '''
     Description: adds edges to G
     Args: G
@@ -327,7 +328,7 @@ def projEdges(G: nx.DiGraph,
 
     # Step 2: add inter-project dependencies for capture app/ cons
     cluster_captures = list(capture_volumes)
-    approval, construction = fracSplit(cluster_captures, frac_split)
+    approval, construction = fracSplit(cluster_captures, frac_split, replication_seed)
     
     for capture in approval:
         dep_trans = capture_pipe[capture]
@@ -553,7 +554,7 @@ def build_model(replication_seed=0, sampling=False,
                   capture_durations, capture_volumes, 
                   storage_durations, storage_volumes,
                   transport_durations, transport_volumes)
-    projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split)
+    projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split, replication_seed)
     add_hammock_node(G, capture_volumes, transport_volumes)
     return G
 
@@ -587,7 +588,7 @@ def monte_carlo(
     for rep in range(n_reps):
 
         G = build_model(
-            replication_seed, 
+            rep, 
             sampling,
             pipe_downstream, 
             capture_pipe, 
@@ -655,6 +656,11 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    print("threshold 0.1:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05, hammock_threshold=0.1)))
-    print("threshold 0.5:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05, hammock_threshold=0.5)))
-    print("threshold 0.9:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05, hammock_threshold=0.9)))
+    r = monte_carlo(50, sampling=True, base_rate=0.05)
+    comps = [x["completion"] for x in r]
+    print("distinct completions:", len(set(comps)), "of", len(comps))
+
+    r1 = monte_carlo(30, base_rate=0.1)
+    r2 = monte_carlo(30, base_rate=0.1)
+    print("reproducible:", [x["completion"] for x in r1] == [y["completion"] for y in r2])
+    

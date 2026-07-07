@@ -268,13 +268,13 @@ def projGraph(replication_seed=0,
     
     return G
 
-def fracSplit(captures, frac_split = FRAC_SPLIT):
+def fracSplit(captures, frac_split = FRAC_SPLIT, replication_seed = 0):
         '''
         Description: helper method that splits capture into two batches based on risk aversion level
         Returns: tuple of ([approval pids], [construction pids])
         '''
         # seeding and introducing randomness
-        rng = random.Random(SEED)
+        rng = random.Random(SEED + replication_seed)
         shuffled = list(captures)
         rng.shuffle(shuffled)
 
@@ -290,7 +290,8 @@ def projEdges(G: nx.DiGraph,
               capture_volumes=project_data.CAPTURE_VOLUMES,
               storage_volumes=project_data.STORAGE_VOLUMES,
               transport_volumes=project_data.TRANSPORT_VOLUMES,
-              frac_split=FRAC_SPLIT):
+              frac_split=FRAC_SPLIT,
+              replication_seed=0):
     '''
     Description: adds edges to G
     Args: G
@@ -324,7 +325,7 @@ def projEdges(G: nx.DiGraph,
 
     # Step 2: add inter-project dependencies for capture app/ cons
     cluster_captures = list(capture_volumes)
-    approval, construction = fracSplit(cluster_captures, frac_split)
+    approval, construction = fracSplit(cluster_captures, frac_split, replication_seed)
     
     for capture in approval:
         dep_trans = capture_pipe[capture]
@@ -493,7 +494,7 @@ def build_model(replication_seed=0, sampling=False,
                   capture_durations, capture_volumes, 
                   storage_durations, storage_volumes,
                   transport_durations, transport_volumes)
-    projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split)
+    projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split, replication_seed)
     return G
 
 #==================================================================
