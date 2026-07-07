@@ -22,6 +22,9 @@ BASE_RATE = 0.05
 MAX_RATE = 0.4
 CAPTURE_TOLERANCE = 48
 
+# hammock node
+HAMMOCK_THRESHOLD = 0.2
+
 #==================================================================
 # STOCHASTIC DURATION SAMPLING
 #==================================================================
@@ -376,46 +379,105 @@ def projEdges(G: nx.DiGraph,
                 (storage, "commissioning"),
                 (trans, "commissioning")
             )
-    
-    # Step 4 (CRUCIAL): add interdependency edges between different tiers of the network 
+
+def add_hammock_node(G:nx.DiGraph, 
+                    capture_volumes=project_data.CAPTURE_VOLUMES,
+                    transport_volumes=project_data.TRANSPORT_VOLUMES):
+    # create the hammock node (duration = 0)
+    G.add_node(
+        ("hammock node", "hammock node"), # need to think about the naming of the node
+        duration = 0,
+        stage = "hammock node",
+        tech = "hammock node",
+        ES = 0.0,
+        EF = 0.0,
+        actual_volume = 0.0,
+        committed_volume = 0.0,
+        abandoned = None
+    )
+    # add outwards edge from commissioning stage of all transports
     for transport in transport_volumes:
-        # if the transport feeds into another transport, we gate its definition 
-        # with the commissioning of the transport it depends on
-        if get_tech(G, pipe_downstream[transport]) == "transport":
-            G.add_edge(
-                (pipe_downstream[transport], "commissioning"),
-                (transport, "definition")   
-            )
-    
+        G.add_edge(
+            (transport, "commissioning"),
+            ("hammock node", "hammock node")
+        )
+
+    # add edge linking hammock to def stage of all captures 
     for capture in capture_volumes:
-        # if capture feeds into a transport that is dependent on other transports, we gate
-        # the definition of the capture with the commissioning of the transport
-        if get_tech(G, pipe_downstream[capture_pipe[capture]]) == "transport":
-            G.add_edge(
-                (pipe_downstream[capture_pipe[capture]], "commissioning"),
-                (capture, "definition")
-            )
+        G.add_edge(
+            ("hammock node", "hammock node"),
+            (capture, "definition")
+        )
 
 #==================================================================
 # RUNNING THE CPM
 #==================================================================
 
-def CPM(G: nx.DiGraph):
+def gather_input_specs(G: nx.DiGraph, hammock_node):
+    '''
+    Description: gathers (volume, arrival_time) specs for predecessors of hammock node 
+    Args: G, hammock_node
+    Returns a list of (volume, arrival_time) to feed into the volumetric gating method
+    '''
+    arrivals = []
+
+    for node in G.predecessors(hammock_node):
+        # skip nodes marked as abandoned — not necessary here because trans/stor don't abandon
+        # but we'll keep it
+        if G.nodes[node]["abandoned"] is not None:
+            continue
+
+        # this handles inputs from transport projects
+        elif G.nodes[node]["tech"] == "transport":
+            volume = G.nodes[node]["volume"]
+            arrival_time = G.nodes[node]["EF"]
+            arrivals.append((volume, arrival_time))
+    
+    return arrivals
+
+def threshold_gating(arrivals, capacity, fraction):
+    '''
+    arrivals: list of (volume, arrival_time) for each committed party
+    capacity: the downstream capacity (e.g. pipeline volume)
+    fraction: fraction that must be filled to fire (e.g. 0.75)
+    Returns: the time the gate fires, or None if threshold never reached
+    '''
+    needed = capacity*fraction
+    ordered = sorted(arrivals, key = lambda x: x[1]) #lambda returns second tuple element (arrival time)
+    cumulative_volume = 0.0
+    for volume, arrival_time in ordered:
+        cumulative_volume += volume
+        if cumulative_volume >= needed:
+            return arrival_time
+    return None # if the capacity is never filled, then the gate won't fire
+
+def CPM(G: nx.DiGraph, capacity=project_data.TRANSPORT_CAPACITY, hammock_threshold=HAMMOCK_THRESHOLD):
     '''
     Description: runs critical path method (CPM), updating ES and EF 
     Args: G
     '''
     for node in nx.topological_sort(G):
-        preds = list(G.predecessors(node))
 
-        # the new ES is the max of the EF of the preceeding node(s) and the original ES
-        max_preds = max((G.nodes[p]["EF"] for p in preds if G.nodes[p]["abandoned"] is None), default = 0.0)
-
-        updated_ES = max(max_preds, G.nodes[node].get("ES", 0.0))
+        # if we are at the hammock node
+        if G.nodes[node]["stage"] == "hammock node":
+            arrivals = gather_input_specs(G, node)
+            fire_time = threshold_gating(arrivals, capacity, hammock_threshold)
+            if fire_time is None:
+                raise ValueError("Threshold never reached — check for code issues")
+            G.nodes[node]["ES"] = fire_time
+            G.nodes[node]["EF"] = fire_time
         
-        # update the ES and EF of each node
-        G.nodes[node]["ES"] = updated_ES
-        G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"] 
+        else:
+            preds = list(G.predecessors(node))
+
+            # the new ES is the max of the EF of the preceeding node(s) and the original ES
+            max_preds = max((G.nodes[p]["EF"] for p in preds if G.nodes[p]["abandoned"] is None), default = 0.0)
+
+            updated_ES = max(max_preds, G.nodes[node].get("ES", 0.0))
+            
+            # update the ES and EF of each node
+            G.nodes[node]["ES"] = updated_ES
+            G.nodes[node]["EF"] = updated_ES + G.nodes[node]["duration"] 
 
 #==================================================================
 # CALCULATING PROJECT DELAYS
@@ -471,8 +533,6 @@ def apply_attrition(G, captures=project_data.CAPTURE_VOLUMES, base_rate=BASE_RAT
     for capture in captures:
         for stage in ROLL_STAGES:
             p = calculate_attrition_probability(G, capture, stage, base_rate, max_rate, cap_tolerance)
-            d = calculate_delay(G, capture, stage)
-            print(f"{capture:8} {stage:11} delay={d:6.1f} prob={p:.3f}")
             if rng.random() < p:
                 mark_capture_abandoned(G, capture)
                 abandoned_c[capture] = stage
@@ -494,6 +554,7 @@ def build_model(replication_seed=0, sampling=False,
                   storage_durations, storage_volumes,
                   transport_durations, transport_volumes)
     projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split)
+    add_hammock_node(G, capture_volumes, transport_volumes)
     return G
 
 #==================================================================
@@ -516,6 +577,7 @@ def monte_carlo(
         stor_vol = project_data.STORAGE_VOLUMES,
         frac_split = FRAC_SPLIT,
         sampling = True,
+        hammock_threshold = HAMMOCK_THRESHOLD
     ):
     
     results = []
@@ -535,7 +597,7 @@ def monte_carlo(
             frac_split
         )
 
-        CPM(G)
+        CPM(G, hammock_threshold=hammock_threshold)
 
         abandoned = apply_attrition(
                         G, 
@@ -545,7 +607,7 @@ def monte_carlo(
                         cap_tolerance = cap_tolerance
                     )
 
-        CPM(G)
+        CPM(G, hammock_threshold=hammock_threshold)
 
         final_vol = 0
         
@@ -593,5 +655,6 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    print("default:", analyze_monte_carlo(monte_carlo(300)))
-    print("high base_rate:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05)))
+    print("threshold 0.1:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05, hammock_threshold=0.1)))
+    print("threshold 0.5:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05, hammock_threshold=0.5)))
+    print("threshold 0.9:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05, hammock_threshold=0.9)))

@@ -33,3 +33,6 @@ TRANSPORT = {
     "projT3": {"definition": 6, "approval": 15, "construction": 15},
 }
 STORAGE = {"projS1": {"definition": 10, "approval": 24, "construction": 20}}
+
+# getting the total capacity of all transport projects for the hammock node
+TRANSPORT_CAPACITY = sum(TRANSPORT_VOLUMES.values())
