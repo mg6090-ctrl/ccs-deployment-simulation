@@ -1,38 +1,64 @@
 #==================================================================
-# PROJECT DATA — TESTING NETWORK
+# PROJECT DATA 
 #==================================================================
 
-PIPE_DOWNSTREAM = {
-    "projT2": "projT1",   # spurA -> trunk
-    "projT3": "projT1",   # spurB -> trunk
-    "projT1": "projS1",   # trunk -> storage
+CAPTURE = {
+    "projC1":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC2":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC3":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC4":  {"definition": 12, "approval": 24, "construction": 36},
+    "projC5":  {"definition": 6, "approval": 9, "construction": 12},
+    "projC6":  {"definition": 6, "approval": 9, "construction": 12},
+    "projC7":  {"definition": 6, "approval": 6, "construction": 6},
+    "projC8":  {"definition": 6, "approval": 6, "construction": 6},
 }
 
-CAPTURE_PIPE = {
-    "projC1": "projT2",   # -> spurA
-    "projC2": "projT2",   # -> spurA
-    "projC3": "projT1",   # -> trunk DIRECTLY
-    "projC4": "projT3",   # -> spurB
+CAPTURE_VOLUMES = {
+    "projC1": 1.469847, "projC2": 1.112612, "projC3": 0.823186, "projC4": 0.241809, 
+    "projC5": 0.060437, "projC6": 0.114565, 
+    "projC7": 1.011104, "projC8": 0.059286                  
 }
+
+# dictionary for storage projects
+STORAGE = {
+    "projS1":  {"definition": 24, "approval": 30, "construction": 24}   
+}
+
+# capture volumes
+STORAGE_VOLUMES = {
+    "projS1": 6
+}
+
+# dictionary for transport projects
+TRANSPORT = {
+    "projT1":  {"definition": 9, "approval": 36, "construction": 30}
+}
+
+# transport volumes
+TRANSPORT_VOLUMES = {
+    "projT1": 6
+}
+
+CLUSTERS = {
+    "projS1":  {
+        "projT1": ["projC1", "projC2", "projC3", "projC4", "projC5", "projC6", "projC7", "projC8"]
+        }
+}
+
+# stores the pipe/storage every single transport flows into next
+PIPE_DOWNSTREAM = {"projT1": "projS1"}
+
+# stores the transport every single capture flows into next
+CAPTURE_PIPE = {"projC1": "projT1", 
+                "projC2": "projT1",
+                "projC3": "projT1",
+                "projC4": "projT1",
+                "projC5": "projT1",
+                "projC6": "projT1",
+                "projC7": "projT1",
+                "projC8": "projT1"}
 
 TRUNKS = ["projT1"]
-
-CAPTURE_VOLUMES = {"projC1": 1.5, "projC2": 1.5, "projC3": 2.0, "projC4": 1.5}
-TRANSPORT_VOLUMES = {"projT1": 8, "projT2": 4, "projT3": 2}
-STORAGE_VOLUMES = {"projS1": 10}
-
-CAPTURE = {
-    "projC1": {"definition": 5, "approval": 10, "construction": 10},
-    "projC2": {"definition": 5, "approval": 10, "construction": 10},
-    "projC3": {"definition": 6, "approval": 12, "construction": 12},
-    "projC4": {"definition": 5, "approval": 10, "construction": 10},
-}
-TRANSPORT = {
-    "projT1": {"definition": 8, "approval": 20, "construction": 20},
-    "projT2": {"definition": 6, "approval": 15, "construction": 15},
-    "projT3": {"definition": 6, "approval": 15, "construction": 15},
-}
-STORAGE = {"projS1": {"definition": 10, "approval": 24, "construction": 20}}
 
 # getting the total capacity of all transport projects for the hammock node
 TRANSPORT_CAPACITY = sum(TRANSPORT_VOLUMES.values())
