@@ -310,6 +310,40 @@
                 font: { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
             };
 
+            // Helper function to turn ugly keys into clean UI labels and format values
+            function formatMetrics(summaryObj) {
+                if (!summaryObj) return "No data available.";
+                let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
+                
+                for (const [key, value] of Object.entries(summaryObj)) {
+                    // 1. Clean up the key string (Capitalize words, remove "average" or "avg")
+                    let label = key
+                        .replace(/^(average|avg)\s+/i, '') // removes "average " or "avg " from start
+                        .replace(/_/g, ' ')                // switches underscores to spaces
+                        .replace(/\b\w/g, c => c.toUpperCase()); // Capitalizes Words
+
+                    // 2. Smart value formatting
+                    let displayValue = value;
+                    if (typeof value === 'number') {
+                        if (key.includes('rate') || key.includes('percent') || (value < 1 && value > 0)) {
+                            // Format decimals as percentages (e.g., 0.1425 -> 14.3%)
+                            displayValue = `${(value * 100).toFixed(1)}%`;
+                        } else {
+                            // Standard numbers rounded to 2 decimal places
+                            displayValue = value.toFixed(2);
+                        }
+                    }
+
+                    html += `
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #343a40; font-size: 14px;">
+                            <span style="color: #adb5bd; font-weight: 500;">${label}:</span>
+                            <span style="color: #ffffff; font-weight: 600; font-family: monospace;">${displayValue}</span>
+                        </li>`;
+                }
+                html += '</ul>';
+                return html;
+            }
+
             button.addEventListener('click', async () => {
                 button.textContent = "Processing...";
                 button.disabled = true;
@@ -366,7 +400,7 @@
 
                     if (data.world1_1){
                         const w1_1_summary = data.world1_1.summary
-                        w1_1_output.textContent = JSON.stringify(w1_1_summary, null, 2)
+                        w1_1_output.innerHTML = formatMetrics(w1_1_summary); // Updated
 
                         x_c_abandon.push("World 1.1")
                         y_c_abandon.push(w1_1_summary["average capture abandonment rate"])
@@ -374,11 +408,11 @@
                         y_c_final_vol.push(w1_1_summary["average final volume"])
                         x_c_time.push("World 1.1")
                         y_c_time.push(w1_1_summary["average completion time"])
-                    } else { w1_1_output.textContent = "Not selected." }
+                    } else { w1_1_output.innerHTML = '<span style="color:#6c757d">Not selected.</span>'; }
 
                     if (data.world1_2){
                         const w1_2_summary = data.world1_2.summary
-                        w1_2_output.textContent = JSON.stringify(w1_2_summary, null, 2)
+                        w1_2_output.innerHTML = formatMetrics(w1_2_summary); // Updated
 
                         x_c_abandon.push("World 1.2")
                         y_c_abandon.push(w1_2_summary["average capture abandonment rate"])
@@ -386,11 +420,11 @@
                         y_c_final_vol.push(w1_2_summary["average final volume"])
                         x_c_time.push("World 1.2")
                         y_c_time.push(w1_2_summary["average completion time"])
-                    } else { w1_2_output.textContent = "Not selected." }
+                    } else { w1_2_output.innerHTML = '<span style="color:#6c757d">Not selected.</span>'; }
 
                     if (data.world2){
                         const w2_summary = data.world2.summary
-                        s2_output.textContent = JSON.stringify(w2_summary, null, 2)
+                        s2_output.innerHTML = formatMetrics(w2_summary); // Updated
 
                         x_c_abandon.push("World 2")
                         y_c_abandon.push(w2_summary["average capture abandonment rate"])
@@ -398,9 +432,9 @@
                         y_c_final_vol.push(w2_summary["average final vol of capture"])
                         x_c_time.push("World 2")
                         y_c_time.push(w2_summary["average completion time of survived"])
-                    } else { s2_output.textContent = "Not selected." }
+                    } else { s2_output.innerHTML = '<span style="color:#6c757d">Not selected.</span>'; }
 
-                    // Rendering Charts with new styling layouts
+                    // Rendering Charts
                     Plotly.newPlot("chart_c_abandon", 
                         [{x: x_c_abandon, y: y_c_abandon, type: "bar", marker: {color: '#dc3545'}}],
                         { title: {text: "<b>Capture Project Abandonment Rate</b>"}, ...chartLayoutDefaults }
