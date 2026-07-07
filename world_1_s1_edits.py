@@ -290,7 +290,6 @@ def projEdges(G: nx.DiGraph,
               capture_volumes=project_data.CAPTURE_VOLUMES,
               storage_volumes=project_data.STORAGE_VOLUMES,
               transport_volumes=project_data.TRANSPORT_VOLUMES,
-              trunks=project_data.TRUNKS,
               frac_split=FRAC_SPLIT):
     '''
     Description: adds edges to G
@@ -319,12 +318,12 @@ def projEdges(G: nx.DiGraph,
         s2 = STAGES4[1:]
         for stage1, stage2 in zip(s1, s2):
             G.add_edge(
-                (transport, stage1),
-                (transport, stage2)
+                (capture, stage1),
+                (capture, stage2)
             )
 
     # Step 2: add inter-project dependencies for capture app/ cons
-    cluster_captures = [c for caps in capture_volumes for c in caps]
+    cluster_captures = list(capture_volumes)
     approval, construction = fracSplit(cluster_captures, frac_split)
     
     for capture in approval:
@@ -357,6 +356,7 @@ def projEdges(G: nx.DiGraph,
             (capture, "construction"),
             (capture, "commissioning")
         )
+        # add edge from its transport commissioning to the capture commissioning 
         G.add_edge(
             (capture_pipe[capture], "commissioning"),
             (capture, "commissioning")
@@ -367,20 +367,34 @@ def projEdges(G: nx.DiGraph,
             (transport, "construction"),
             (transport, "commissioning")
         )
-    for storage in storage_volumes:
-        for immediate_upstream
-        G.add_edge(
-            (storage, "commissioning"),
 
-        )
+    for storage in storage_volumes:
+        # adding gating for the primary tier network
+        _, transports = immediate_upstream_project(storage, pipe_downstream, capture_pipe)
+        for trans in transports:
+            G.add_edge(
+                (storage, "commissioning"),
+                (trans, "commissioning")
+            )
     
     # Step 4 (CRUCIAL): add interdependency edges between different tiers of the network 
     for transport in transport_volumes:
-        # identify tiers via transport depending on another transport
+        # if the transport feeds into another transport, we gate its definition 
+        # with the commissioning of the transport it depends on
         if get_tech(G, pipe_downstream[transport]) == "transport":
-            
-
-def 
+            G.add_edge(
+                (pipe_downstream[transport], "commissioning"),
+                (transport, "definition")   
+            )
+    
+    for capture in capture_volumes:
+        # if capture feeds into a transport that is dependent on other transports, we gate
+        # the definition of the capture with the commissioning of the transport
+        if get_tech(G, pipe_downstream[capture_pipe[capture]]) == "transport":
+            G.add_edge(
+                (pipe_downstream[capture_pipe[capture]], "commissioning"),
+                (capture, "definition")
+            )
 
 #==================================================================
 # RUNNING THE CPM
@@ -391,7 +405,6 @@ def CPM(G: nx.DiGraph):
     Description: runs critical path method (CPM), updating ES and EF 
     Args: G
     '''
-    
     for node in nx.topological_sort(G):
         preds = list(G.predecessors(node))
 
@@ -446,37 +459,42 @@ def calculate_attrition_probability(
     delay_factor = delay / capture_tolerance
     return min(max_rate, base_rate * np.exp(delay_factor))
 
-def mark_capture_abandoned(G: nx.DiGraph, capture, stage):
+def mark_capture_abandoned(G: nx.DiGraph, capture):
     for stage in STAGES4:
         G.nodes[(capture, stage)]["abandoned"] = True
 
-def apply_attrition(
-        G: nx.DiGraph, 
-        base_rate = BASE_RATE,
-        clusters = project_data.CLUSTERS, 
-        replication_seed = 0,
-        max_rate = MAX_RATE,
-        cap_tolerance = CAPTURE_TOLERANCE
-        ):
-
-    # NOTE: here we only roll abandonment for the first two stages so we are consistent with 
-    # the base roll for S2
+# Instrument apply_attrition temporarily: print each roll's stage, delay, prob
+def apply_attrition(G, captures=project_data.CAPTURE_VOLUMES, base_rate=BASE_RATE, replication_seed=0, max_rate=MAX_RATE, cap_tolerance=CAPTURE_TOLERANCE):
     ROLL_STAGES = ["definition", "approval"]
-
-    # a generator for the whole pass — does not hash per item, just one stream.
-    # this is because the order is fixed
     rng = random.Random(SEED + replication_seed)
     abandoned_c = {}
-    for storage, t_clusters in clusters.items():
-        for transport, captures in t_clusters.items():
-            for capture in captures:
-                for stage in ROLL_STAGES:
-                    if rng.random() < calculate_attrition_probability(G, capture, stage, base_rate, max_rate, cap_tolerance):
-                        mark_capture_abandoned(G, capture, stage)
-                        abandoned_c[capture] = stage
-                        break # once a project dies, don't need to roll future stage
-    
+    for capture in captures:
+        for stage in ROLL_STAGES:
+            p = calculate_attrition_probability(G, capture, stage, base_rate, max_rate, cap_tolerance)
+            d = calculate_delay(G, capture, stage)
+            print(f"{capture:8} {stage:11} delay={d:6.1f} prob={p:.3f}")
+            if rng.random() < p:
+                mark_capture_abandoned(G, capture)
+                abandoned_c[capture] = stage
+                break
     return abandoned_c
+
+#==================================================================
+# BUILD MODEL
+#==================================================================
+
+def build_model(replication_seed=0, sampling=False,
+               pipe_downstream = project_data.PIPE_DOWNSTREAM, capture_pipe = project_data.CAPTURE_PIPE, 
+               capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,
+               storage_durations=project_data.STORAGE, storage_volumes=project_data.STORAGE_VOLUMES,
+               transport_durations=project_data.TRANSPORT, transport_volumes=project_data.TRANSPORT_VOLUMES,
+               frac_split=FRAC_SPLIT):
+    G = projGraph(replication_seed, sampling, pipe_downstream, capture_pipe,
+                  capture_durations, capture_volumes, 
+                  storage_durations, storage_volumes,
+                  transport_durations, transport_volumes)
+    projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split)
+    return G
 
 #==================================================================
 # MONTE CARLO
@@ -486,9 +504,10 @@ def monte_carlo(
         n_reps, 
         base_rate = BASE_RATE, 
         max_rate = MAX_RATE,
+        pipe_downstream = project_data.PIPE_DOWNSTREAM,
+        capture_pipe = project_data.CAPTURE_PIPE,
         cap_tolerance = CAPTURE_TOLERANCE,
         replication_seed=0, 
-        clusters = project_data.CLUSTERS, 
         caps = project_data.CAPTURE,
         caps_vol = project_data.CAPTURE_VOLUMES,
         trans = project_data.TRANSPORT,
@@ -505,25 +524,22 @@ def monte_carlo(
 
     for rep in range(n_reps):
 
-        G = projGraph(
-            rep, 
-            clusters, 
-            caps,
-            caps_vol,
-            trans,
-            trans_vol,
-            stor,
-            stor_vol,
-            frac_split,
-            sampling
+        G = build_model(
+            replication_seed, 
+            sampling,
+            pipe_downstream, 
+            capture_pipe, 
+            caps, caps_vol,
+            stor, stor_vol,
+            trans, trans_vol, 
+            frac_split
         )
 
         CPM(G)
 
         abandoned = apply_attrition(
                         G, 
-                        base_rate = base_rate, 
-                        clusters = clusters, 
+                        base_rate = base_rate,  
                         replication_seed = rep,
                         max_rate = max_rate,
                         cap_tolerance = cap_tolerance
@@ -532,11 +548,10 @@ def monte_carlo(
         CPM(G)
 
         final_vol = 0
-        for storage, t_clusters in clusters.items():
-            for transport, captures in t_clusters.items():
-                for capture in captures:
-                    if not G.nodes[(capture, "commissioning")]["abandoned"]:
-                        final_vol += G.nodes[(capture, "commissioning")]['volume']
+        
+        for capture in caps:
+            if not G.nodes[(capture, "commissioning")]["abandoned"]:
+                final_vol += G.nodes[(capture, "commissioning")]['volume']
 
         results.append({
                 "c_abandon": abandoned,
@@ -579,4 +594,4 @@ def analyze_monte_carlo(results):
 
 if __name__ == "__main__":
     print("default:", analyze_monte_carlo(monte_carlo(300)))
-    print("high base_rate:", analyze_monte_carlo(monte_carlo(300, base_rate=0.3)))
+    print("high base_rate:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05)))

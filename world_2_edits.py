@@ -930,17 +930,17 @@ def analyze_monte_carlo(results):
         c_def = 0
         c_app = 0
         for captures, stages in a_c.items():
-            if stages == "definition":
+            if stages == "definition joint node":
                 c_def += 1
-            elif stages == "approval":
+            elif stages == "FID joint node":
                 c_app += 1
         
         t_def = 0
         t_app = 0
         for captures, stages in a_t.items():
-            if stages == "definition":
+            if stages == "definition joint node":
                 t_def += 1
-            elif stages == "approval":
+            elif stages == "FID joint node":
                 t_app += 1
 
         if len(a_c) != 0:
@@ -1012,13 +1012,11 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    # results2 = monte_carlo(100, sampling = True, base_rate=0.10)
-    # print(analyze_monte_carlo(results2))
+    results2 = monte_carlo(100, sampling = True, base_rate=0.05)
+    print(analyze_monte_carlo(results2))
 
     G = buildmodel()
-
-    print(traversal_order(G, PIPE_DOWNSTREAM))
-
+    
     print(immediate_upstream_project("projS1"))
     print(immediate_upstream_project("projT1"))
     print(everything_upstream("projS1"))
