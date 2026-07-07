@@ -2,182 +2,246 @@
 <html>
     <head>
         <title>CCS Deployment Simulation</title>
-        <script src = "https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
+        <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
+        <style>
+            body {
+                padding: 40px;
+                max-width: 1400px;
+                margin: 0 auto;
+                font-family: sans-serif;
+            }
+        </style>
     </head>
     <body>
-        
-        <div id = "scenario_selection">
+        <h1 style="text-align: center; margin-bottom: 30px;">CCS Deployment Simulation Dashboard</h1>
+
+        <div id="scenario_selection">
             <h3>World Selection</h3>
             <label> World 1.1: Incentive Rush </label>
-            <input id = "w1_1_checked" type = "checkbox"></input>
+            <input id="w1_1_checked" type="checkbox"></input>
+            <br>
+            <label> World 1.2: Infrastructure Build-Out </label>
+            <input id="w1_2_checked" type="checkbox"></input>
             <br>
             <label> World 2: Uncoordinated </label>
-            <input id = "w2_checked" type = "checkbox"></input>
+            <input id="w2_checked" type="checkbox"></input>
         </div>
 
         <br>
 
-        <div id = "w1_1_params">
-            <h3>World 1.1 (Incentive Rush) Parameters</h3>
+        <div id="w1_1_params">
+            <h3>World 1.1 Incentive Rush Parameters</h3>
             <label> W1.1 stochastic lognormal duration sampling </label>
-            <input id = "w1_1_sampling" type = "checkbox"></input>
+            <input id="w1_1_sampling" type="checkbox"></input>
             <br>
             <label> W1.1 base rate </label>
-            <input id = "w1_1_base_rate" type = "number" value = "0.05"></input>
+            <input id="w1_1_base_rate" type="number" value="0.05"></input>
             <label> W1.1 max rate </label>
-            <input id = "w1_1_max_rate" type = "number" value = "0.4"></input>
+            <input id="w1_1_max_rate" type="number" value="0.4"></input>
             <br>
             <label> W1.1 risk-tolerant fraction </label>
-            <input id = "w1_1_frac_split_approval" type = "number" value = "0.2"></input>
+            <input id="w1_1_frac_split_approval" type="number" value="0.2"></input>
             <br>
             <label> W1.1 capture tolerance </label>
-            <input id = "w1_1_cap_tol" type = "number" min = "0.001" value = "48"></input>
+            <input id="w1_1_cap_tol" type="number" min="0.001" value="48"></input>
             <br>
             <label> W1.1 number of trials </label>
-            <input id = "w1_1_n_reps" type = "number" value = "100"></input>
+            <input id="w1_1_n_reps" type="number" value="100"></input>
         </div>
 
         <br>
 
-        <div id = "w2_params">
-            <h3>World 2 Parameters</h3>
+        <div id="w1_2_params">
+            <h3>World 1.2 Infrastructure Build-Out Parameters</h3>
+            <label> W1.2 stochastic lognormal duration sampling </label>
+            <input id="w1_2_sampling" type="checkbox"></input>
+            <br>
+            <label> W1.2 base rate </label>
+            <input id="w1_2_base_rate" type="number" value="0.05"></input>
+            <label> W1.2 max rate </label>
+            <input id="w1_2_max_rate" type="number" value="0.4"></input>
+            <br>
+            <label> W1.2 risk-tolerant fraction </label>
+            <input id="w1_2_frac_split_approval" type="number" value="0.2"></input>
+            <br>
+            <label> W1.2 capture tolerance </label>
+            <input id="w1_2_cap_tol" type="number" min="0.001" value="48"></input>
+            <br>
+            <label> W1.2 number of trials </label>
+            <input id="w1_2_n_reps" type="number" value="100"></input>
+            <br>
+            <label> W1.2 infrastructure completion threshold </label>
+            <input id="w1_2_n_hammock_threshold" type="number" value="0.2"></input>
+        </div>
+
+        <br>
+
+        <div id="w2_params">
+            <h3>World 2 Uncoordinated Parameters</h3>
             <label> W2 stochastic lognormal duration sampling </label>
-            <input id = "w2_sampling" type = "checkbox"></input>
+            <input id="w2_sampling" type="checkbox"></input>
             <br>
             <label> S2 base rate </label>
-            <input id = "w2_base_rate" type = "number" value = "0.05"></input>
+            <input id="w2_base_rate" type="number" value="0.05"></input>
             <label> S2 max rate </label>
-            <input id = "w2_max_rate" type = "number" value = "0.4"></input>
+            <input id="w2_max_rate" type="number" value="0.4"></input>
             <br>
             <label> S2 threshold fraction </label>
-            <input id = "w2_threshold_frac" type = "number" value = "0.5"></input>
+            <input id="w2_threshold_frac" type="number" value="0.5"></input>
             <br>
             <label> S2 capture tolerance </label>
-            <input id = "w2_cap_tol" type = "number" min = "0.001" value = "36"></input>
+            <input id="w2_cap_tol" type="number" min="0.001" value="36"></input>
             <label> S2 transport tolerance </label>
-            <input id = "w2_trans_tol" type = "number" min = "0.001" value = "36"></input>
+            <input id="w2_trans_tol" type="number" min="0.001" value="36"></input>
             <label> S2 storage tolerance </label>
-            <input id = "w2_stor_tol" type = "number" min = "0.001" value = "36"></input>
+            <input id="w2_stor_tol" type="number" min="0.001" value="36"></input>
             <br>
             <label> S2 number of trials </label>
-            <input id = "w2_n_reps" type = "number" value = "100"></input>
+            <input id="w2_n_reps" type="number" value="100"></input>
         </div>
 
         <br>
         <br>
-        <button id = "run">Run Simulation</button>
+        <button id="run">Run Simulation</button>
     
         <h3>Scenario Comparisons</h3>
-        <div style = "display: flex; gap: 18px; width: 100%">
-            <div style = "flex: 1; min-width: 0;">
-                <div id = "chart_c_abandon" style = "height: 400px;"></div>
+        <div style="display: flex; gap: 18px; width: 100%">
+            <div style="flex: 1; min-width: 0;">
+                <div id="chart_c_abandon" style="height: 400px;"></div>
             </div>
-            <div style = "flex: 1; min-width: 0;">
-                <div id = "chart_final_vol" style = "height: 400px;"></div>
+            <div style="flex: 1; min-width: 0;">
+                <div id="chart_final_vol" style="height: 400px;"></div>
             </div>
-            <div style = "flex: 1; min-width: 0;">
-                <div id = "chart_time" style = "height: 400px;"></div>
+            <div style="flex: 1; min-width: 0;">
+                <div id="chart_time" style="height: 400px;"></div>
             </div>
         </div>
         
 
-        <div style = "display: flex; gap: 24px;">
-            <div style = "flex: 1;">
-                <h3>Scenario 1 Results</h3>
-                <pre id = "s1_output"></pre>
+        <div style="display: flex; gap: 18px;">
+            <div style="flex: 1;">
+                <h3>World 1.1 Incentive Rush Results</h3>
+                <pre id="w1_1_output"></pre>
             </div>
-
-            <div style = "flex: 2;">
-                <h3>Scenario 2 Results</h3>
-                <pre id = "s2_output"></pre>
+            <div style="flex: 1;">
+                <h3>World 1.2 Infrastructure Build-Out Results</h3>
+                <pre id="w1_2_output"></pre>
+            </div>
+            <div style="flex: 1;">
+                <h3>World 2 Uncoordinated Results</h3>
+                <pre id="w2_output"></pre>
             </div>
         </div>
 
-        <pre id = "output"></pre>
+        <pre id="output"></pre>
 
         <script>
-            // getting the html elements via their id 
             const button = document.getElementById('run')
-            const output = document.getElementById('output')
+            const w1_1_output = document.getElementById('w1_1_output')
+            const w1_2_output = document.getElementById('w1_2_output')
+            const w2_output = document.getElementById('w2_output')
             
-            // adding async function to the button
             button.addEventListener('click', async () => {
-                // creating the scenarios list
                 const scenarios = []
                 if (document.getElementById('w1_1_checked').checked){
                     scenarios.push("world1_1")
+                }
+                if (document.getElementById('w1_2_checked').checked){
+                    scenarios.push("world1_2")
                 }
                 if (document.getElementById('w2_checked').checked){
                     scenarios.push("world2")
                 }
                 
-                // filling scenario1 params
-                const scenario1 = {}
-                scenario1["base_rate"] = Number(document.getElementById('w1_1_base_rate').value)
-                scenario1["n_reps"] = parseInt(document.getElementById('w1_1_n_reps').value)
-                scenario1["sampling"] = document.getElementById('w1_1_sampling').checked
-                scenario1["w1_1_max_rate"] = Number(document.getElementById('w1_1_max_rate').value)
-                scenario1["w1_1_cap_tol"] = Number(document.getElementById('w1_1_cap_tol').value)
-                scenario1["frac_split_app"] = Number(document.getElementById('w1_1_frac_split_approval').value)
+                // World 1.1 Params (Keys fixed to match backend exactly)
+                const world1_1 = {}
+                world1_1["base_rate"] = Number(document.getElementById('w1_1_base_rate').value)
+                world1_1["n_reps"] = parseInt(document.getElementById('w1_1_n_reps').value)
+                world1_1["sampling"] = document.getElementById('w1_1_sampling').checked
+                world1_1["s1_max_rate"] = Number(document.getElementById('w1_1_max_rate').value)
+                world1_1["s1_cap_tol"] = Number(document.getElementById('w1_1_cap_tol').value)
+                world1_1["frac_split_app"] = Number(document.getElementById('w1_1_frac_split_approval').value)
                 
-                // filling scenario2 params
-                const scenario2 = {}
-                scenario2["base_rate"] = Number(document.getElementById('w2_base_rate').value)
-                scenario2["n_reps"] = parseInt(document.getElementById('w2_n_reps').value)
-                scenario2["sampling"] = document.getElementById('w2_sampling').checked
-                scenario2["max_rate"] = Number(document.getElementById('w2_max_rate').value)
-                scenario2["threshold_frac"] = Number(document.getElementById('w2_threshold_frac').value)
-                scenario2["cap_tol"] = Number(document.getElementById('w2_cap_tol').value)
-                scenario2["trans_tol"] = Number(document.getElementById('w2_trans_tol').value)
-                scenario2["stor_tol"] = Number(document.getElementById('w2_stor_tol').value)
+                // World 1.2 Params (Keys fixed to match backend exactly)
+                const world1_2 = {}
+                world1_2["base_rate"] = Number(document.getElementById('w1_2_base_rate').value)
+                world1_2["n_reps"] = parseInt(document.getElementById('w1_2_n_reps').value)
+                world1_2["sampling"] = document.getElementById('w1_2_sampling').checked
+                world1_2["s1_max_rate"] = Number(document.getElementById('w1_2_max_rate').value)
+                world1_2["s1_cap_tol"] = Number(document.getElementById('w1_2_cap_tol').value)
+                world1_2["frac_split_app"] = Number(document.getElementById('w1_2_frac_split_approval').value)
+                world1_2["hammock_threshold"] = Number(document.getElementById('w1_2_n_hammock_threshold').value)
+
+                // World 2 Params
+                const world2 = {}
+                world2["base_rate"] = Number(document.getElementById('w2_base_rate').value)
+                world2["n_reps"] = parseInt(document.getElementById('w2_n_reps').value)
+                world2["sampling"] = document.getElementById('w2_sampling').checked
+                world2["max_rate"] = Number(document.getElementById('w2_max_rate').value)
+                world2["threshold_frac"] = Number(document.getElementById('w2_threshold_frac').value)
+                world2["cap_tol"] = Number(document.getElementById('w2_cap_tol').value)
+                world2["trans_tol"] = Number(document.getElementById('w2_trans_tol').value)
+                world2["stor_tol"] = Number(document.getElementById('w2_stor_tol').value)
 
                 const response = await fetch(
                     "http://localhost:5000/api/run-model", 
                     {
                         method: 'POST', 
                         headers: {"Content-Type": "application/json"}, 
-                        body: JSON.stringify({"scenarios": scenarios, "world1_1": scenario1, "world2": scenario2})
+                        body: JSON.stringify({"scenarios": scenarios, "world1_1": world1_1, "world1_2": world1_2, "world2": world2})
                     }
                 )
                 const data = await response.json()
                 
-                x_c_abandon = []
-                y_c_abandon = []
+                const x_c_abandon = []
+                const y_c_abandon = []
 
-                x_c_final_vol = []
-                y_c_final_vol = []
+                const x_c_final_vol = []
+                const y_c_final_vol = []
 
-                x_c_time = []
-                y_c_time = []
+                const x_c_time = []
+                const y_c_time = []
 
-                if (data.scenario1){
-                    const s1_summary = data.scenario1.summary
-                    const s1_reps = data.scenario1.reps
-                    s1_output.textContent = JSON.stringify(s1_summary, null, 2)
+                if (data.world1_1){
+                    const w1_1_summary = data.world1_1.summary
+                    w1_1_output.textContent = JSON.stringify(w1_1_summary, null, 2)
 
-                    x_c_abandon.push("Scenario 1")
-                    y_c_abandon.push(data.scenario1.summary["average capture abandonment rate"])
+                    x_c_abandon.push("World 1.1")
+                    y_c_abandon.push(w1_1_summary["average capture abandonment rate"])
 
-                    x_c_final_vol.push("Scenario 1")
-                    y_c_final_vol.push(data.scenario1.summary["average final volume"])
+                    x_c_final_vol.push("World 1.1")
+                    y_c_final_vol.push(w1_1_summary["average final volume"])
 
-                    x_c_time.push("Scenario 1")
-                    y_c_time.push(data.scenario1.summary["average completion time"])
+                    x_c_time.push("World 1.1")
+                    y_c_time.push(w1_1_summary["average completion time"])
                 }
 
-                if (data.scenario2){
-                    const s2_summary = data.scenario2.summary
-                    const s2_reps = data.scenario2.reps
-                    s2_output.textContent = JSON.stringify(s2_summary, null, 2)
+                if (data.world1_2){
+                    const w1_2_summary = data.world1_2.summary
+                    w1_2_output.textContent = JSON.stringify(w1_2_summary, null, 2)
 
-                    x_c_abandon.push("Scenario 2")
-                    y_c_abandon.push(data.scenario2.summary["average capture abandonment rate"])
+                    x_c_abandon.push("World 1.2")
+                    y_c_abandon.push(w1_2_summary["average capture abandonment rate"])
 
-                    x_c_final_vol.push("Scenario 2")
-                    y_c_final_vol.push(data.scenario2.summary["average final vol of capture"])
+                    x_c_final_vol.push("World 1.2")
+                    y_c_final_vol.push(w1_2_summary["average final volume"])
 
-                    x_c_time.push("Scenario 2")
-                    y_c_time.push(data.scenario2.summary["average completion time of survived"])
+                    x_c_time.push("World 1.2")
+                    y_c_time.push(w1_2_summary["average completion time"])
+                }
+
+                if (data.world2){
+                    const w2_summary = data.world2.summary
+                    w2_output.textContent = JSON.stringify(w2_summary, null, 2) // Fixed target reference
+
+                    x_c_abandon.push("World 2")
+                    y_c_abandon.push(w2_summary["average capture abandonment rate"])
+
+                    x_c_final_vol.push("World 2")
+                    y_c_final_vol.push(w2_summary["average final vol of capture"])
+
+                    x_c_time.push("World 2")
+                    y_c_time.push(w2_summary["average completion time of survived"])
                 }
 
                 Plotly.newPlot(
@@ -198,8 +262,6 @@
                     {title: {text: "Average completion time of survived clusters"}}
                 )
             })
-            
         </script>
-
     </body>
 </html>

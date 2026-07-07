@@ -472,8 +472,6 @@ def apply_attrition(G, captures=project_data.CAPTURE_VOLUMES, base_rate=BASE_RAT
     for capture in captures:
         for stage in ROLL_STAGES:
             p = calculate_attrition_probability(G, capture, stage, base_rate, max_rate, cap_tolerance)
-            d = calculate_delay(G, capture, stage)
-            print(f"{capture:8} {stage:11} delay={d:6.1f} prob={p:.3f}")
             if rng.random() < p:
                 mark_capture_abandoned(G, capture)
                 abandoned_c[capture] = stage
