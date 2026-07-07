@@ -51,7 +51,7 @@ DATA = dict(
 def show(name, ok, detail=""):
     print(f"{'PASS' if ok else 'FAIL'}  {name}   {detail}")
 
-import world_2_edits as s2
+import world_2 as s2
 
 # ============================================================
 # TEST 1 — full-collapse boundary: base=1,max=1,late=1 -> everything dies

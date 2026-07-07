@@ -26,8 +26,8 @@ Scenario 1.2 (hammock, pre-built infra):
 """
 
 # ---- EDIT THESE IMPORTS ----
-import world_1_s1_edits as tier      # Scenario 1.1 (tier-gated)
-import world_1_s2_edits as ham       # Scenario 1.2 (hammock)
+import world_1_s1 as tier      # Scenario 1.1 (tier-gated)
+import world_1_s2 as ham       # Scenario 1.2 (hammock)
 # If both scenarios share one module, import once and use it for both.
 
 # ---------------------------------------------------------------
@@ -73,7 +73,7 @@ def test_tier_scenario():
     # downstream (Tier 1) transport's commissioning EF.
     G = tier.build_model(replication_seed=0, sampling=False)
     tier.CPM(G)
-    import world_1_s1_edits as m  # for data access; adjust if needed
+    import world_1_s1 as m  # for data access; adjust if needed
     pd = m.project_data.PIPE_DOWNSTREAM
     tier_ok = True
     detail = ""

@@ -7,60 +7,60 @@
     <body>
         
         <div id = "scenario_selection">
-            <h3>Scenario Selection</h3>
-            <label> Scenario 1 </label>
-            <input id = "s1_checked" type = "checkbox"></input>
+            <h3>World Selection</h3>
+            <label> World 1.1: Incentive Rush </label>
+            <input id = "w1_1_checked" type = "checkbox"></input>
             <br>
-            <label> Scenario 2 </label>
-            <input id = "s2_checked" type = "checkbox"></input>
+            <label> World 2: Uncoordinated </label>
+            <input id = "w2_checked" type = "checkbox"></input>
         </div>
 
         <br>
 
-        <div id = "s1_params">
-            <h3>Scenario 1 Parameters</h3>
-            <label> S1 stochastic lognormal duration sampling </label>
-            <input id = "s1_sampling" type = "checkbox"></input>
+        <div id = "w1_1_params">
+            <h3>World 1.1 (Incentive Rush) Parameters</h3>
+            <label> W1.1 stochastic lognormal duration sampling </label>
+            <input id = "w1_1_sampling" type = "checkbox"></input>
             <br>
-            <label> S1 base rate </label>
-            <input id = "s1_base_rate" type = "number" value = "0.05"></input>
-            <label> S1 max rate </label>
-            <input id = "s1_max_rate" type = "number" value = "0.4"></input>
+            <label> W1.1 base rate </label>
+            <input id = "w1_1_base_rate" type = "number" value = "0.05"></input>
+            <label> W1.1 max rate </label>
+            <input id = "w1_1_max_rate" type = "number" value = "0.4"></input>
             <br>
-            <label> S1 risk-tolerant fraction </label>
-            <input id = "s1_frac_split_approval" type = "number" value = "0.2"></input>
+            <label> W1.1 risk-tolerant fraction </label>
+            <input id = "w1_1_frac_split_approval" type = "number" value = "0.2"></input>
             <br>
-            <label> S1 capture tolerance </label>
-            <input id = "s1_cap_tol" type = "number" min = "0.001" value = "48"></input>
+            <label> W1.1 capture tolerance </label>
+            <input id = "w1_1_cap_tol" type = "number" min = "0.001" value = "48"></input>
             <br>
-            <label> S1 number of trials </label>
-            <input id = "s1_n_reps" type = "number" value = "100"></input>
+            <label> W1.1 number of trials </label>
+            <input id = "w1_1_n_reps" type = "number" value = "100"></input>
         </div>
 
         <br>
 
-        <div id = "s2_params">
-            <h3>Scenario 2 Parameters</h3>
-            <label> S2 stochastic lognormal duration sampling </label>
-            <input id = "s2_sampling" type = "checkbox"></input>
+        <div id = "w2_params">
+            <h3>World 2 Parameters</h3>
+            <label> W2 stochastic lognormal duration sampling </label>
+            <input id = "w2_sampling" type = "checkbox"></input>
             <br>
             <label> S2 base rate </label>
-            <input id = "s2_base_rate" type = "number" value = "0.05"></input>
+            <input id = "w2_base_rate" type = "number" value = "0.05"></input>
             <label> S2 max rate </label>
-            <input id = "s2_max_rate" type = "number" value = "0.4"></input>
+            <input id = "w2_max_rate" type = "number" value = "0.4"></input>
             <br>
             <label> S2 threshold fraction </label>
-            <input id = "s2_threshold_frac" type = "number" value = "0.5"></input>
+            <input id = "w2_threshold_frac" type = "number" value = "0.5"></input>
             <br>
             <label> S2 capture tolerance </label>
-            <input id = "s2_cap_tol" type = "number" min = "0.001" value = "36"></input>
+            <input id = "w2_cap_tol" type = "number" min = "0.001" value = "36"></input>
             <label> S2 transport tolerance </label>
-            <input id = "s2_trans_tol" type = "number" min = "0.001" value = "36"></input>
+            <input id = "w2_trans_tol" type = "number" min = "0.001" value = "36"></input>
             <label> S2 storage tolerance </label>
-            <input id = "s2_stor_tol" type = "number" min = "0.001" value = "36"></input>
+            <input id = "w2_stor_tol" type = "number" min = "0.001" value = "36"></input>
             <br>
             <label> S2 number of trials </label>
-            <input id = "s2_n_reps" type = "number" value = "100"></input>
+            <input id = "w2_n_reps" type = "number" value = "100"></input>
         </div>
 
         <br>
@@ -104,39 +104,39 @@
             button.addEventListener('click', async () => {
                 // creating the scenarios list
                 const scenarios = []
-                if (document.getElementById('s1_checked').checked){
-                    scenarios.push("scenario1")
+                if (document.getElementById('w1_1_checked').checked){
+                    scenarios.push("world1_1")
                 }
-                if (document.getElementById('s2_checked').checked){
-                    scenarios.push("scenario2")
+                if (document.getElementById('w2_checked').checked){
+                    scenarios.push("world2")
                 }
                 
                 // filling scenario1 params
                 const scenario1 = {}
-                scenario1["base_rate"] = Number(document.getElementById('s1_base_rate').value)
-                scenario1["n_reps"] = parseInt(document.getElementById('s1_n_reps').value)
-                scenario1["sampling"] = document.getElementById('s1_sampling').checked
-                scenario1["s1_max_rate"] = Number(document.getElementById('s1_max_rate').value)
-                scenario1["s1_cap_tol"] = Number(document.getElementById('s1_cap_tol').value)
-                scenario1["frac_split_app"] = Number(document.getElementById('s1_frac_split_approval').value)
+                scenario1["base_rate"] = Number(document.getElementById('w1_1_base_rate').value)
+                scenario1["n_reps"] = parseInt(document.getElementById('w1_1_n_reps').value)
+                scenario1["sampling"] = document.getElementById('w1_1_sampling').checked
+                scenario1["w1_1_max_rate"] = Number(document.getElementById('w1_1_max_rate').value)
+                scenario1["w1_1_cap_tol"] = Number(document.getElementById('w1_1_cap_tol').value)
+                scenario1["frac_split_app"] = Number(document.getElementById('w1_1_frac_split_approval').value)
                 
                 // filling scenario2 params
                 const scenario2 = {}
-                scenario2["base_rate"] = Number(document.getElementById('s2_base_rate').value)
-                scenario2["n_reps"] = parseInt(document.getElementById('s2_n_reps').value)
-                scenario2["sampling"] = document.getElementById('s2_sampling').checked
-                scenario2["max_rate"] = Number(document.getElementById('s2_max_rate').value)
-                scenario2["threshold_frac"] = Number(document.getElementById('s2_threshold_frac').value)
-                scenario2["cap_tol"] = Number(document.getElementById('s2_cap_tol').value)
-                scenario2["trans_tol"] = Number(document.getElementById('s2_trans_tol').value)
-                scenario2["stor_tol"] = Number(document.getElementById('s2_stor_tol').value)
+                scenario2["base_rate"] = Number(document.getElementById('w2_base_rate').value)
+                scenario2["n_reps"] = parseInt(document.getElementById('w2_n_reps').value)
+                scenario2["sampling"] = document.getElementById('w2_sampling').checked
+                scenario2["max_rate"] = Number(document.getElementById('w2_max_rate').value)
+                scenario2["threshold_frac"] = Number(document.getElementById('w2_threshold_frac').value)
+                scenario2["cap_tol"] = Number(document.getElementById('w2_cap_tol').value)
+                scenario2["trans_tol"] = Number(document.getElementById('w2_trans_tol').value)
+                scenario2["stor_tol"] = Number(document.getElementById('w2_stor_tol').value)
 
                 const response = await fetch(
                     "http://localhost:5000/api/run-model", 
                     {
                         method: 'POST', 
                         headers: {"Content-Type": "application/json"}, 
-                        body: JSON.stringify({"scenarios": scenarios, "scenario1": scenario1, "scenario2": scenario2})
+                        body: JSON.stringify({"scenarios": scenarios, "world1_1": scenario1, "world2": scenario2})
                     }
                 )
                 const data = await response.json()

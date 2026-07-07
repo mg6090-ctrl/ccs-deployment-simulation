@@ -25,7 +25,7 @@ WHAT TO CHECK against your reference diagram:
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
-import world_2_edits as m 
+import world_2 as m 
 
 # ----------------------------------------------------------------------
 # Stage ordering: assigns each node an x-column by its lifecycle stage,
