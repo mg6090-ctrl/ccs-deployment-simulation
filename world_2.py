@@ -243,7 +243,7 @@ def projGraph(replication_seed=0,
                 volume = storage_volumes[storage],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
-                project_type = "storage",
+                project_type = project_data.PROJECT_TYPE[storage],
                 s_cluster = storage_cluster,
                 abandoned = None
                 )
@@ -258,7 +258,7 @@ def projGraph(replication_seed=0,
             volume = storage_volumes[storage],
             actual_volume = 0.0,
             committed_volume = 0.0,
-            project_type = "storage",
+            project_type = project_data.PROJECT_TYPE[storage],
             s_cluster = storage_cluster,
             abandoned = None
         )
@@ -274,7 +274,7 @@ def projGraph(replication_seed=0,
             actual_volume = 0.0,
             committed_volume = 0.0,
             s_cluster = storage_cluster,
-            project_type = "storage",
+            project_type = project_data.PROJECT_TYPE[storage],
             below_threshold = None,
             abandoned = None
         )
@@ -304,7 +304,7 @@ def projGraph(replication_seed=0,
                 successor = succ,
                 predecessor = preds,
                 t_cluster = transport_cluster,
-                project_type = "transport",
+                project_type = project_data.PROJECT_TYPE[transport],
                 abandoned = None
             )
         # create transport commissioning node
@@ -321,7 +321,7 @@ def projGraph(replication_seed=0,
             successor = succ,
             predecessor = preds,
             t_cluster = transport_cluster,
-            project_type = "transport",
+            project_type = project_data.PROJECT_TYPE[transport],
             abandoned = None
         )
         # built transport joint definition and joint FID nodes
@@ -337,7 +337,7 @@ def projGraph(replication_seed=0,
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 t_cluster = transport_cluster,
-                project_type = "transport",
+                project_type = project_data.PROJECT_TYPE[transport],
                 successor = succ,
                 predecessor = preds,
                 below_threshold = None,
