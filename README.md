@@ -1,6 +1,5 @@
 # Carbon Capture and Storage Deployment Simulation
-Modeling Carbon Capture and Storage (CCS) deployment strategies for Net Zero California
-Adaptation of the CADENCE modeling framework developed by Claire Goldberg
+A simulation framework for Carbon Capture and Storage (CCS) deployment. Developed to evaluate policy options for Net Zero California's bid to operationalize 100 million Mt/yr of carbon capture by 2024. This framework is an adaptation of the CADENCE model developed by Claire Goldberg
 
 ## World 1: Coordinated
 - Transport and storage infrastructure proceed with backing (their investment decisions are not impacted by wait-time)
