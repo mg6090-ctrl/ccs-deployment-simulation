@@ -1,16 +1,45 @@
 #==================================================================
+# PARAMETERS AND CONSTANTS
+#==================================================================
+
+DURATION_BY_TYPE = {
+    "storage": {"definition": 24, "approval": 30, "construction": 24},
+    "transport": {"definition": 9, "approval": 36, "construction": 30},
+
+    "NGCC": {"definition": 12, "approval": 24, "construction": 36},
+    "ethanol": {"definition": 6, "approval": 9, "construction": 12},
+    "gas_processing": {"definition": 6, "approval": 6, "construction": 6},
+    
+    # the following have not been confirmed and are placeholders:
+    "DAC": {"definition": 12, "approval": 24, "construction": 36},
+    "CHP": {"definition": 12, "approval": 24, "construction": 36},
+    "legacy_biomass": {"definition": 12, "approval": 24, "construction": 36},
+    "refinery": {"definition": 12, "approval": 24, "construction": 36},
+    "biomass_gasification": {"definition": 12, "approval": 24, "construction": 36},
+    "hydrogen": {"definition": 12, "approval": 24, "construction": 36},
+    "cement": {"definition": 12, "approval": 24, "construction": 36},
+    "other_industrial": {"definition": 12, "approval": 24, "construction": 36}
+}
+
+#==================================================================
 # PROJECT DATA 
 #==================================================================
 
+PROJECT_TYPE = {"projC1": "NGCC", "projC2": "NGCC", "projC3": "NGCC", "projC4": "NGCC",
+               "projC5": "ethanol", "projC6": "ethanol",
+               "projC7": "gas_processing", "projC8": "gas_processing",
+               "projS1": "storage",
+               "projT1": "transport"}
+
 CAPTURE = {
-    "projC1":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC2":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC3":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC4":  {"definition": 12, "approval": 24, "construction": 36},
-    "projC5":  {"definition": 6, "approval": 9, "construction": 12},
-    "projC6":  {"definition": 6, "approval": 9, "construction": 12},
-    "projC7":  {"definition": 6, "approval": 6, "construction": 6},
-    "projC8":  {"definition": 6, "approval": 6, "construction": 6},
+    "projC1":  DURATION_BY_TYPE[PROJECT_TYPE["projC1"]],
+    "projC2":  DURATION_BY_TYPE[PROJECT_TYPE["projC2"]],
+    "projC3":  DURATION_BY_TYPE[PROJECT_TYPE["projC3"]],
+    "projC4":  DURATION_BY_TYPE[PROJECT_TYPE["projC4"]],
+    "projC5":  DURATION_BY_TYPE[PROJECT_TYPE["projC5"]],
+    "projC6":  DURATION_BY_TYPE[PROJECT_TYPE["projC6"]],
+    "projC7":  DURATION_BY_TYPE[PROJECT_TYPE["projC7"]],
+    "projC8":  DURATION_BY_TYPE[PROJECT_TYPE["projC8"]]
 }
 
 CAPTURE_VOLUMES = {
@@ -21,7 +50,7 @@ CAPTURE_VOLUMES = {
 
 # dictionary for storage projects
 STORAGE = {
-    "projS1":  {"definition": 24, "approval": 30, "construction": 24}   
+    "projS1":  DURATION_BY_TYPE[PROJECT_TYPE["projS1"]]  
 }
 
 # capture volumes
@@ -31,18 +60,12 @@ STORAGE_VOLUMES = {
 
 # dictionary for transport projects
 TRANSPORT = {
-    "projT1":  {"definition": 9, "approval": 36, "construction": 30}
+    "projT1":  DURATION_BY_TYPE[PROJECT_TYPE["projT1"]]
 }
 
 # transport volumes
 TRANSPORT_VOLUMES = {
     "projT1": 6
-}
-
-CLUSTERS = {
-    "projS1":  {
-        "projT1": ["projC1", "projC2", "projC3", "projC4", "projC5", "projC6", "projC7", "projC8"]
-        }
 }
 
 # stores the pipe/storage every single transport flows into next
