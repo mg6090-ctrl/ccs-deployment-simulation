@@ -30,22 +30,48 @@ HAMMOCK_THRESHOLD = 0.2
 #==================================================================
 
 # note, cv is coefficient of variation, taken as sd/mean
-CV_BY_TECH = {
-    "capture": {"definition": {"cv": 0.2, "min": 1, "max": 100}, 
-                "approval": {"cv": 0.2, "min": 1, "max": 100},
-                "construction": {"cv": 0.2, "min": 1, "max": 100}},
-    
-    "transport": {"definition": {"cv": 0.2, "min": 1, "max": 100}, 
-                "approval": {"cv": 0.2, "min": 1, "max": 100},
-                "construction": {"cv": 0.2, "min": 1, "max": 100}},
-    
-    "storage": {"definition": {"cv": 0.2, "min": 1, "max": 100}, 
-                "approval": {"cv": 0.2, "min": 1, "max": 100},
-                "construction": {"cv": 0.2, "min": 1, "max": 100}}
-}
+CV_BY_TYPE = {
+    "NGCC": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "ethanol": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "gas_processing": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}}, 
 
-DURATION_SAMPLING = {
-    "dist": "lognormal"    # "lognormal" | "normal" | "uniform"
+    "DAC": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "CHP": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "legacy_biomass": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "refinery": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "biomass_gasification": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "hydrogen": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "cement": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "other_industrial": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+
+    "transport": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}},
+    "storage": {"definition": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}, 
+                "approval": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"},
+                "construction": {"cv": 0.2, "min": 1, "max": 100, "dist": "lognormal"}}
 }
 
 def stable_seed(project, stage, replication_seed=0):
@@ -58,7 +84,7 @@ def stable_seed(project, stage, replication_seed=0):
     digest = hashlib.blake2b(key.encode(), digest_size=8).digest() 
     return int.from_bytes(digest, "big") # interpets 8 bytes as an integer; "big" means read bytes from most significant digit
 
-def sample_duration(mean, project, stage, tech, replication_seed, sampling):
+def sample_duration(mean, project, stage, replication_seed, sampling, dist_override="lognormal"):
     '''
     Sample one stage duration, centered on `mean` (the fixed duration).
     Returns a positive integer (months).
@@ -70,12 +96,13 @@ def sample_duration(mean, project, stage, tech, replication_seed, sampling):
     # create the random number generator -> hash gives seed number, which seeds a random number generator
     rng = np.random.default_rng(stable_seed(project, stage, replication_seed)) 
 
-    cv = CV_BY_TECH[tech][stage]["cv"]
-    minimum = CV_BY_TECH[tech][stage]["min"]
-    maximum = CV_BY_TECH[tech][stage]["max"]
+    project_type = project_data.PROJECT_TYPE[project]
+    cv = CV_BY_TYPE[project_type][stage]["cv"]
+    minimum = CV_BY_TYPE[project_type][stage]["min"]
+    maximum = CV_BY_TYPE[project_type][stage]["max"]
 
     std = cv * mean
-    dist = DURATION_SAMPLING["dist"]
+    dist = dist_override if dist_override is not None else CV_BY_TYPE[project_type][stage]["dist"]
     
     # conversions for the different distributions
     if dist == "normal":
@@ -158,7 +185,8 @@ def projGraph(replication_seed=0,
               storage_durations=project_data.STORAGE, 
               storage_volumes=project_data.STORAGE_VOLUMES,
               transport_durations=project_data.TRANSPORT, 
-              transport_volumes=project_data.TRANSPORT_VOLUMES):
+              transport_volumes=project_data.TRANSPORT_VOLUMES,
+              dist_override="lognormal"):
     '''
     Description: creating graph and adding nodes
     Returns: directed acyclic graph G
@@ -173,12 +201,13 @@ def projGraph(replication_seed=0,
         for stage, dur in storage_durations[storage].items():
             G.add_node(
                 (storage, stage),
-                duration = sample_duration(dur, storage, stage, "storage", replication_seed, sampling),
+                duration = sample_duration(dur, storage, stage, replication_seed, sampling, dist_override),
                 stage = stage,
                 tech = "storage",
                 ES = 0.0,
                 EF = 0.0,
                 volume = storage_volumes[storage],
+                project_type = project_data.PROJECT_TYPE[storage],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 abandoned = None
@@ -192,6 +221,7 @@ def projGraph(replication_seed=0,
             ES = 0.0,
             EF = 0.0,
             volume = storage_volumes[storage],
+            project_type = project_data.PROJECT_TYPE[storage],
             actual_volume = 0.0,
             committed_volume = 0.0,
             abandoned = None
@@ -209,7 +239,7 @@ def projGraph(replication_seed=0,
         for stage, dur in transport_durations[transport].items():
             G.add_node(
                 (transport, stage),
-                duration = sample_duration(dur, transport, stage, "transport", replication_seed, sampling),
+                duration = sample_duration(dur, transport, stage, replication_seed, sampling, dist_override),
                 stage = stage,
                 tech = "transport",
                 ES = 0.0,
@@ -217,6 +247,7 @@ def projGraph(replication_seed=0,
                 volume = transport_volumes[transport],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
+                project_type = project_data.PROJECT_TYPE[transport],
                 successor = succ,
                 predecessor = preds,
                 abandoned = None
@@ -232,6 +263,7 @@ def projGraph(replication_seed=0,
             volume = transport_volumes[transport],
             actual_volume = 0.0,
             committed_volume = 0.0,
+            project_type = project_data.PROJECT_TYPE[transport],
             successor = succ,
             predecessor = preds,
             abandoned = None
@@ -243,12 +275,13 @@ def projGraph(replication_seed=0,
         for stage, dur in capture_durations[capture].items():
             G.add_node(
                 (capture, stage),
-                duration = sample_duration(dur, capture, stage, "capture", replication_seed, sampling),
+                duration = sample_duration(dur, capture, stage, replication_seed, sampling, dist_override),
                 stage = stage,
                 tech = "capture",
                 ES = 0.0,
                 EF = 0.0,
                 volume = capture_volumes[capture],
+                project_type = project_data.PROJECT_TYPE[capture],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 immediate_transport = immediate_transport,
@@ -264,6 +297,7 @@ def projGraph(replication_seed=0,
             ES = 0.0,
             EF = 0.0,
             volume = capture_volumes[capture],
+            project_type = project_data.PROJECT_TYPE[capture],
             actual_volume = 0.0,
             committed_volume = 0.0,
             abandoned = None
@@ -549,11 +583,13 @@ def build_model(replication_seed=0, sampling=False,
                capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,
                storage_durations=project_data.STORAGE, storage_volumes=project_data.STORAGE_VOLUMES,
                transport_durations=project_data.TRANSPORT, transport_volumes=project_data.TRANSPORT_VOLUMES,
-               frac_split=FRAC_SPLIT):
+               frac_split=FRAC_SPLIT,
+               dist_override="lognormal"):
     G = projGraph(replication_seed, sampling, pipe_downstream, capture_pipe,
                   capture_durations, capture_volumes, 
                   storage_durations, storage_volumes,
-                  transport_durations, transport_volumes)
+                  transport_durations, transport_volumes,
+                  dist_override)
     projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split, replication_seed)
     add_hammock_node(G, capture_volumes, transport_volumes)
     return G
@@ -578,7 +614,8 @@ def monte_carlo(
         stor_vol = project_data.STORAGE_VOLUMES,
         frac_split = FRAC_SPLIT,
         sampling = True,
-        hammock_threshold = HAMMOCK_THRESHOLD
+        hammock_threshold = HAMMOCK_THRESHOLD,
+        dist_override = "lognormal"
     ):
     
     results = []
@@ -595,7 +632,8 @@ def monte_carlo(
             caps, caps_vol,
             stor, stor_vol,
             trans, trans_vol, 
-            frac_split
+            frac_split,
+            dist_override
         )
 
         CPM(G, hammock_threshold=hammock_threshold)
