@@ -6,11 +6,11 @@ Adaptation of the CADENCE modeling framework developed by Claire Goldberg
 - Transport and storage infrastructure proceed with backing (their investment decisions are not impacted by wait-time)
 - Coordination problem is partly resolved through guaranteed payout for transport and storage infrastructure
   
-# Scenario 1: Incentive-Driven Rush
+### Scenario 1: Incentive-Driven Rush
 - Projects can begin definition once their predecessors have been commissioned
 - No phase enforcement 
 
-# Scenario 2: Infrastructure Build-Out
+### Scenario 2: Infrastructure Build-Out
 - Enforcement of a front-loaded transport and storage build-out
 - Capture projects begin definition when transport and storage build-out meets threshold
 
