@@ -26,6 +26,9 @@ def run_model():
         w1_1_params = data.get('world1_1', {})
         w1_1_n_reps = w1_1_params.get('n_reps', 10)
         w1_1_sampling = w1_1_params.get('sampling', True)
+        w1_1_norm_sampling = w1_1_params.get('norm_sampling', False)
+        w1_1_uni_sampling = w1_1_params.get('uni_sampling', False)
+        w1_1_no_sampling = w1_1_params.get('no_sampling', False)
         w1_1_frac_split = w1_1_params.get('frac_split', w1_1.FRAC_SPLIT)
         w1_1_base_rate = w1_1_params.get('base_rate', w1_1.BASE_RATE)
         w1_1_caps = w1_1_params.get('caps', project_data.CAPTURE)
@@ -43,6 +46,22 @@ def run_model():
 
         w1_1_frac_split = [w1_1_frac_split_approval, 1-w1_1_frac_split_approval]
 
+        switch = False
+        override = None
+
+        if w1_1_sampling:
+            switch = True
+            override = "lognormal"
+        elif w1_1_norm_sampling:
+            switch = True
+            override = "normal"
+        elif w1_1_uni_sampling:
+            switch = True
+            override = "uniform"
+        elif w1_1_no_sampling:
+            switch = False
+            override = None
+
         w1_1_results = w1_1.monte_carlo(n_reps = w1_1_n_reps, 
                        base_rate = w1_1_base_rate, 
                        max_rate = max_rate,
@@ -54,7 +73,8 @@ def run_model():
                        stor = w1_1_stor, 
                        stor_vol = w1_1_stor_vol, 
                        frac_split = w1_1_frac_split, 
-                       sampling = w1_1_sampling)
+                       sampling = switch,
+                       dist_override = override)
 
         w1_1_summary = w1_1.analyze_monte_carlo(w1_1_results)
 
@@ -69,6 +89,9 @@ def run_model():
         w1_2_params = data.get('world1_2', {})
         w1_2_n_reps = w1_2_params.get('n_reps', 10)
         w1_2_sampling = w1_2_params.get('sampling', True)
+        w1_2_norm_sampling = w1_2_params.get('norm_sampling', False)
+        w1_2_uni_sampling = w1_2_params.get('uni_sampling', False)
+        w1_2_no_sampling = w1_2_params.get('no_sampling', False)
         w1_2_frac_split = w1_2_params.get('frac_split', w1_2.FRAC_SPLIT)
         w1_2_base_rate = w1_2_params.get('base_rate', w1_2.BASE_RATE)
         w1_2_caps = w1_2_params.get('caps', project_data.CAPTURE)
@@ -87,6 +110,22 @@ def run_model():
 
         w1_2_frac_split = [w1_2_frac_split_approval, 1-w1_2_frac_split_approval]
 
+        switch = False
+        override = None
+
+        if w1_2_sampling:
+            switch = True
+            override = "lognormal"
+        elif w1_2_norm_sampling:
+            switch = True
+            override = "normal"
+        elif w1_2_uni_sampling:
+            switch = True
+            override = "uniform"
+        elif w1_2_no_sampling:
+            switch = False
+            override = None
+
         w1_2_results = w1_2.monte_carlo(n_reps = w1_2_n_reps, 
                        base_rate = w1_2_base_rate, 
                        max_rate = max_rate,
@@ -98,8 +137,9 @@ def run_model():
                        stor = w1_2_stor, 
                        stor_vol = w1_2_stor_vol, 
                        frac_split = w1_2_frac_split, 
-                       sampling = w1_2_sampling,
-                       hammock_threshold = w1_2_hammock_threshold)
+                       sampling = switch,
+                       hammock_threshold = w1_2_hammock_threshold,
+                       dist_override = override)
 
         w1_2_summary = w1_2.analyze_monte_carlo(w1_2_results)
 
@@ -114,6 +154,9 @@ def run_model():
         w2_params = data.get('world2', {})
         w2_n_reps = w2_params.get('n_reps', 10)
         w2_sampling = w2_params.get('sampling', True)
+        w2_norm_sampling = w2_params.get('norm_sampling', False)
+        w2_uni_sampling = w2_params.get('uni_sampling', False)
+        w2_no_sampling = w2_params.get('no_sampling', False)
         w2_base_rate = w2_params.get('base_rate', w2.BASE_RATE)
         w2_caps = w2_params.get('caps', project_data.CAPTURE)
         w2_caps_vol = w2_params.get('caps_vol', project_data.CAPTURE_VOLUMES)
@@ -126,6 +169,7 @@ def run_model():
         w2_cap_tol = w2_params.get('cap_tol', w2.CAPTURE_TOLERANCE)
         w2_trans_tol = w2_params.get('trans_tol', w2.TRANSPORT_TOLERANCE)
         w2_stor_tol = w2_params.get('stor_tol', w2.STORAGE_TOLERANCE)
+        w2_late_penalty = w2_params.get('late_penalty', w2.LATE_PENALTY)
 
         if w2_cap_tol <= 0:
             return jsonify({"error": "capture tolerance must be greater than 0"}), 400
@@ -133,6 +177,22 @@ def run_model():
             return jsonify({"error": "transport tolerance must be greater than 0"}), 400
         if w2_stor_tol <= 0:
             return jsonify({"error": "storage tolerance must be greater than 0"}), 400
+
+        switch = False
+        override = None
+
+        if w2_sampling:
+            switch = True
+            override = "lognormal"
+        elif w2_norm_sampling:
+            switch = True
+            override = "normal"
+        elif w2_uni_sampling:
+            switch = True
+            override = "uniform"
+        elif w2_no_sampling:
+            switch = False
+            override = None
 
         w2_results = w2.monte_carlo(n_reps = w2_n_reps, 
                        base_rate = w2_base_rate, 
@@ -147,7 +207,9 @@ def run_model():
                        capture_tolerance = w2_cap_tol,
                        transport_tolerance = w2_trans_tol,
                        storage_tolerance = w2_stor_tol,
-                       sampling = w2_sampling)
+                       sampling = switch,
+                       dist_override=override,
+                       late_penalty=w2_late_penalty)
         
         w2_summary = w2.analyze_monte_carlo(w2_results)
         

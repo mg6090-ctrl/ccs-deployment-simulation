@@ -161,8 +161,20 @@
             <div class="card" id="w1_1_params">
                 <h3>World 1.1 Parameters</h3>
                 <div class="form-group">
-                    <label>Stochastic lognormal sampling</label>
-                    <input id="w1_1_sampling" type="checkbox" checked></input>
+                    <label>Lognormal duration sampling</label>
+                    <input id="w1_1_sampling" type="radio" name="w1_1_distribution_selection" checked></input>
+                </div>
+                <div class="form-group">
+                    <label>Normal duration sampling</label>
+                    <input id="w1_1_norm_sampling" type="radio" name="w1_1_distribution_selection" unchecked></input>
+                </div>
+                <div class="form-group">
+                    <label>Uniform duration sampling</label>
+                    <input id="w1_1_uni_sampling" type="radio" name="w1_1_distribution_selection" unchecked></input>
+                </div>
+                <div class="form-group">
+                    <label>No duration sampling</label>
+                    <input id="w1_1_no_sampling" type="radio" name="w1_1_distribution_selection" unchecked></input>
                 </div>
                 <div class="form-group">
                     <label>Base rate</label>
@@ -189,8 +201,20 @@
             <div class="card" id="w1_2_params">
                 <h3>World 1.2 Parameters</h3>
                 <div class="form-group">
-                    <label>Stochastic lognormal sampling</label>
-                    <input id="w1_2_sampling" type="checkbox" checked></input>
+                    <label>Lognormal duration sampling</label>
+                    <input id="w1_2_sampling" type="radio" name="w1_2_distribution_selection" checked></input>
+                </div>
+                <div class="form-group">
+                    <label>Normal duration sampling</label>
+                    <input id="w1_2_norm_sampling" type="radio" name="w1_2_distribution_selection" unchecked></input>
+                </div>
+                <div class="form-group">
+                    <label>Uniform duration sampling</label>
+                    <input id="w1_2_uni_sampling" type="radio" name="w1_2_distribution_selection" unchecked></input>
+                </div>
+                <div class="form-group">
+                    <label>No duration sampling</label>
+                    <input id="w1_2_no_sampling" type="radio" name="w1_2_distribution_selection" unchecked></input>
                 </div>
                 <div class="form-group">
                     <label>Base rate</label>
@@ -221,8 +245,20 @@
             <div class="card" id="w2_params">
                 <h3>World 2 Parameters</h3>
                 <div class="form-group">
-                    <label>Stochastic lognormal sampling</label>
-                    <input id="w2_sampling" type="checkbox" checked></input>
+                    <label>Lognormal duration sampling</label>
+                    <input id="w2_sampling" type="radio" name="w2_distribution_selection" checked></input>
+                </div>
+                <div class="form-group">
+                    <label>Normal duration sampling</label>
+                    <input id="w2_norm_sampling" type="radio" name="w2_distribution_selection" unchecked></input>
+                </div>
+                <div class="form-group">
+                    <label>Uniform duration sampling</label>
+                    <input id="w2_uni_sampling" type="radio" name="w2_distribution_selection" unchecked></input>
+                </div>
+                <div class="form-group">
+                    <label>No duration sampling</label>
+                    <input id="w2_no_sampling" type="radio" name="w2_distribution_selection" unchecked></input>
                 </div>
                 <div class="form-group">
                     <label>Base rate</label>
@@ -235,6 +271,10 @@
                 <div class="form-group">
                     <label>Threshold fraction</label>
                     <input id="w2_threshold_frac" type="number" step="0.1" value="0.5"></input>
+                </div>
+                <div class="form-group">
+                    <label>Late penalty</label>
+                    <input id="w2_late_penalty" type="number" step="0.1" value="0.4"></input>
                 </div>
                 <div class="form-group">
                     <label>Capture tolerance</label>
@@ -310,14 +350,22 @@
                 font: { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
             };
 
-            // Helper function to turn ugly keys into clean UI labels and format values
+            // Helper function to turn keys into clean UI labels and format values
             function formatMetrics(summaryObj) {
                 if (!summaryObj) return "No data available.";
+                const customLabels = {
+                    "average capture abandonment rate": "Capture Abandon Rate",
+                    "average final vol of capture": "Final Vol Captured",
+                    "average completion time of survived": "Completion Time",
+                    "avg percent of capture abandoning at approval": "Capture Abandon @ Approval",
+                    "avg percent of transport abandoning at approval": "Transport Abandon @ Approval"
+                };
+
                 let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
                 
                 for (const [key, value] of Object.entries(summaryObj)) {
                     // 1. Clean up the key string (Capitalize words, remove "average" or "avg")
-                    let label = key
+                    let label = customLabels[key.toLowerCase().trim()] || key
                         .replace(/^(average|avg)\s+/i, '') // removes "average " or "avg " from start
                         .replace(/_/g, ' ')                // switches underscores to spaces
                         .replace(/\b\w/g, c => c.toUpperCase()); // Capitalizes Words
@@ -325,7 +373,7 @@
                     // 2. Smart value formatting
                     let displayValue = value;
                     if (typeof value === 'number') {
-                        if (key.includes('rate') || key.includes('percent') || (value < 1 && value > 0)) {
+                        if (key.includes('rate') || key.includes('percent')) {
                             // Format decimals as percentages (e.g., 0.1425 -> 14.3%)
                             displayValue = `${(value * 100).toFixed(1)}%`;
                         } else {
@@ -357,6 +405,8 @@
                     base_rate: Number(document.getElementById('w1_1_base_rate').value),
                     n_reps: parseInt(document.getElementById('w1_1_n_reps').value),
                     sampling: document.getElementById('w1_1_sampling').checked,
+                    norm_sampling: document.getElementById('w1_1_norm_sampling').checked,
+                    uni_sampling: document.getElementById('w1_1_uni_sampling').checked,
                     s1_max_rate: Number(document.getElementById('w1_1_max_rate').value),
                     s1_cap_tol: Number(document.getElementById('w1_1_cap_tol').value),
                     frac_split_app: Number(document.getElementById('w1_1_frac_split_approval').value)
@@ -366,6 +416,8 @@
                     base_rate: Number(document.getElementById('w1_2_base_rate').value),
                     n_reps: parseInt(document.getElementById('w1_2_n_reps').value),
                     sampling: document.getElementById('w1_2_sampling').checked,
+                    norm_sampling: document.getElementById('w1_2_norm_sampling').checked,
+                    uni_sampling: document.getElementById('w1_2_uni_sampling').checked,
                     s1_max_rate: Number(document.getElementById('w1_2_max_rate').value),
                     s1_cap_tol: Number(document.getElementById('w1_2_cap_tol').value),
                     frac_split_app: Number(document.getElementById('w1_2_frac_split_approval').value),
@@ -376,11 +428,15 @@
                     base_rate: Number(document.getElementById('w2_base_rate').value),
                     n_reps: parseInt(document.getElementById('w2_n_reps').value),
                     sampling: document.getElementById('w2_sampling').checked,
+                    norm_sampling: document.getElementById('w2_norm_sampling').checked,
+                    uni_sampling: document.getElementById('w2_uni_sampling').checked,
+                    no_sampling: document.getElementById('w2_no_sampling').checked,
                     max_rate: Number(document.getElementById('w2_max_rate').value),
                     threshold_frac: Number(document.getElementById('w2_threshold_frac').value),
                     cap_tol: Number(document.getElementById('w2_cap_tol').value),
                     trans_tol: Number(document.getElementById('w2_trans_tol').value),
-                    stor_tol: Number(document.getElementById('w2_stor_tol').value)
+                    stor_tol: Number(document.getElementById('w2_stor_tol').value),
+                    late_penalty: Number(document.getElementById('w2_late_penalty').value)
                 }
 
                 try {

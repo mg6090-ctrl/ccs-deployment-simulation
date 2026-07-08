@@ -23,7 +23,7 @@ MAX_RATE = 0.4
 CAPTURE_TOLERANCE = 36
 STORAGE_TOLERANCE = 36
 TRANSPORT_TOLERANCE = 36
-LATE_PENALTY = 0.15
+LATE_PENALTY = 0.4
 
 #==================================================================
 # PROJECT DATA
