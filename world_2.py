@@ -17,7 +17,7 @@ STAGES4 = ["definition", "approval", "construction", "commissioning"]
 SEED = 42
 
 # constants for the abandonment function
-THRESHOLD_FRAC = 0.5
+THRESHOLD_FRAC = 0.3
 BASE_RATE = 0.05
 MAX_RATE = 0.4
 CAPTURE_TOLERANCE = 36
@@ -1051,7 +1051,7 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    results2 = monte_carlo(100, sampling = True, base_rate=0.05)
+    results2 = monte_carlo(300, sampling = True, base_rate=0.05)
     print(analyze_monte_carlo(results2))
 
     G = buildmodel()

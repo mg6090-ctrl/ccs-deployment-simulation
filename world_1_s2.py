@@ -23,7 +23,7 @@ MAX_RATE = 0.4
 CAPTURE_TOLERANCE = 48
 
 # hammock node
-HAMMOCK_THRESHOLD = 0.2
+HAMMOCK_THRESHOLD = 0.5
 
 #==================================================================
 # STOCHASTIC DURATION SAMPLING
@@ -694,6 +694,9 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
+    print("default:", analyze_monte_carlo(monte_carlo(300)))
+    print("high base_rate:", analyze_monte_carlo(monte_carlo(300, base_rate=0.05)))
+
     r = monte_carlo(50, sampling=True, base_rate=0.05)
     comps = [x["completion"] for x in r]
     print("distinct completions:", len(set(comps)), "of", len(comps))
