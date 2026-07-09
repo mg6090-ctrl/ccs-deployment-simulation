@@ -917,7 +917,7 @@ def monte_carlo(n_reps,
             fid = (cluster_naming(storage), "FID joint node")
             if not G.nodes[fid]["below_threshold"] and G.nodes[fid]["abandoned"] is None:
                 final_vol += G.nodes[fid]["actual_volume"]
-        
+
         results.append({
                 "a_c": a_c,
                 "a_t": a_t,

@@ -114,7 +114,7 @@ TRANSPORT_VOLUMES = {
 # stores the pipe/storage every single transport flows into next
 PIPE_DOWNSTREAM = {"projT1": "projS1",
                    "projT2": "projT1",
-                   "projT3": "projT2",
+                   "projT3": "projT1",
                    "projT4": "projT3",
                    "projT5": "projT2",
                    "projT6": "projT1"
