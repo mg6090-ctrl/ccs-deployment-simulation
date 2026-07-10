@@ -5,7 +5,7 @@
 DURATION_BY_TYPE = {
     "storage": {"definition": 24, "approval": 30, "construction": 24},
     "transport": {"definition": 9, "approval": 36, "construction": 30},
-
+    
     "NGCC": {"definition": 12, "approval": 24, "construction": 36},
     "ethanol": {"definition": 6, "approval": 9, "construction": 12},
     "gas_processing": {"definition": 6, "approval": 6, "construction": 6},

@@ -1,3 +1,5 @@
+# NOTE: NEED TO REWRITE THIS!
+
 # Two spurs (projT2, projT3) feed a trunk (projT1); a capture (projC3)
 # attaches directly to the trunk; trunk feeds storage (projS1).
 #

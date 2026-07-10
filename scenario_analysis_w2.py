@@ -22,7 +22,7 @@ import numpy as np
 # NODE DATA COLLECTION
 #==================================================================
 
-def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s):
+def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s, base_year=2026):
     '''
     After each replication run in monte carlo, run this to collect information from all graph nodes
     Inputs: G (digraph), rep (rep number), 
@@ -36,7 +36,7 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s)
         EF = d.get("EF", 0.0)
         
         abandoned = d.get("abandoned") is not None
-        tech = d.get("tech") is not None    
+        tech = d.get("tech")
 
         limit_pred, limit_cat = limiting_pred(G, n)
 
@@ -47,7 +47,7 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s)
         elif tech == "storage":
             ab_stage = abandoned_s.get(project) if abandoned else None
         elif tech == "joint":
-            ab_stage == "NA"
+            ab_stage = "NA"
         
         # think about what parameters to collect 
         rows.append({
@@ -64,7 +64,8 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s)
             "abandoned": abandoned,
             "abandonment_stage": ab_stage,
             "limit_pred": limit_pred,
-            "limit_cat": limit_cat
+            "limit_cat": limit_cat,
+            "finish_year": base_year + int(EF//12) if EF and EF != float('inf') else None
             }  
         )
     return rows
@@ -74,7 +75,9 @@ def limiting_pred(G: nx.DiGraph, node):
     Returns the predecessor node that set the ES of this node and category of limitation
     '''
     es = G.nodes[node].get("ES")
-    node_tech = G.nodes[node].get("tech")
+    if G.nodes[node].get("abandoned") is not None:
+        return None, "abandoned"
+    
     if es is None:
         return None, None
     
@@ -129,6 +132,8 @@ def monte_carlo(n_reps,
     num_trans = len(transport_volumes)
     num_stor = len(storage_volumes)
 
+    all_rows = []
+
     for rep in range(n_reps):
         G = buildmodel(replication_seed=rep, sampling=sampling,
                        trunks=trunks, pipe_downstream=pipe_downstream, capture_pipe=capture_pipe, 
@@ -169,9 +174,11 @@ def monte_carlo(n_reps,
             }
         )
 
-        collect_node_rows(G, rep, a_c, a_t, a_s)
+        all_rows.extend(collect_node_rows(G, rep, a_c, a_t, a_s))
     
-    return results
+    node_df = pd.DataFrame(all_rows)
+    
+    return node_df
 
 def analyze_monte_carlo(results):
     cum_s_abandoned = 0.0
@@ -286,9 +293,76 @@ def analyze_monte_carlo(results):
 # DEPLOYMENT OVER TIME
 #==================================================================
 
-def deployment_over_time():
+def deployment_over_time(data):
     '''
     For each rep, cumulative volume captured over time 
     Returns a dataframe of time, mean, p10, p90 over reps which we can then use to plot 
     '''
+    cumulative_vol_per_year = []
+
+    df = pd.read_csv(data)
+    full_years = list(range(2026, 2046))
+
+    reps = df["rep"].unique()
+    for rep in reps:
+        cap_comm = df[(df["rep"] == rep) & (df["tech"]=="capture") & (df["stage"]=="commissioning") & (df["abandoned"] == False)]
+        yearly = cap_comm.groupby("finish_year")["volume"].sum()
+        cumulative = yearly.cumsum()
+        aligned = cumulative.reindex(full_years).ffill().fillna(0)
+        cumulative_vol_per_year.append(aligned)
+
+    arr = np.array(cumulative_vol_per_year)
+    mean = arr.mean(axis=0) # averages across reps for each time point
+    p10  = np.percentile(arr, 10, axis=0)
+    p90  = np.percentile(arr, 90, axis=0)
+
+    return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90})
+
+#==================================================================
+# ABANDONMENT SUMMARY
+#==================================================================
+
+# count abandoned capture projects and group by definition and approval stage
+def abandonment_summary(data):
+    # Load the data
+    df = pd.read_csv(data)
     
+    # Filter for only the relevant rows upfront
+    filtered_df = df[
+        (df["tech"] == "capture") & 
+        (df["abandoned"] == True) & 
+        (df["stage"] == "commissioning")
+    ].copy()
+    
+    # Create helper columns for the specific abandonment stages
+    filtered_df["is_def"] = filtered_df["abandonment_stage"] == "definition joint node"
+    filtered_df["is_app"] = filtered_df["abandonment_stage"] == "FID joint node"
+    
+    # Group by 'rep' and count the occurrences
+    rep_counts = filtered_df.groupby("rep").agg(
+        total_abandonment=("abandoned", "count"),
+        abandon_at_def=("is_def", "sum"),
+        abandon_at_app=("is_app", "sum")
+    ).reset_index()
+    
+    # Define percentile functions for p10 and p90
+    def p10(x): return np.percentile(x, 10)
+    def p90(x): return np.percentile(x, 90)
+    
+    # Aggregate across ALL reps to get mean, p10, and p90
+    summary_stats = rep_counts.drop(columns="rep").agg(["mean", p10, p90])
+    
+    return summary_stats 
+
+#==================================================================
+# DEPLOYMENT OVER TIME
+#==================================================================
+
+#==================================================================
+# EXECUTION
+#================================================================== 
+
+if __name__ == "__main__":
+    monte_carlo(3).to_csv('trial_1.csv', index=False)
+    deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
+    abandonment_summary('trial_1.csv').to_csv('abandonment_trial_1.csv', index=False)
