@@ -147,3 +147,5 @@ TRUNKS = ["projT1"]
 
 # getting the total capacity of all transport projects for the hammock node
 TRANSPORT_CAPACITY = sum(TRANSPORT_VOLUMES.values())
+
+CAPTURE_NUM = len(CAPTURE_VOLUMES)

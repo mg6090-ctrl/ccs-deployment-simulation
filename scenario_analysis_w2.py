@@ -19,6 +19,20 @@ import pandas as pd
 import numpy as np
 
 #==================================================================
+# W2 BASELINE
+#==================================================================
+
+BASELINE = dict(
+    base_rate=0.05, max_rate=0.2, late_penalty=0.2, threshold_frac=0.5,
+    capture_tolerance=48, transport_tolerance=48, storage_tolerance=48,
+    trunks=project_data.TRUNKS, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE,
+    capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,
+    storage_durations=project_data.STORAGE, storage_volumes=project_data.STORAGE_VOLUMES,
+    transport_durations=project_data.TRANSPORT, transport_volumes=project_data.TRANSPORT_VOLUMES,
+    sampling = True
+)
+
+#==================================================================
 # NODE DATA COLLECTION
 #==================================================================
 
@@ -38,7 +52,7 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s,
         abandoned = d.get("abandoned") is not None
         tech = d.get("tech")
 
-        limit_pred, limit_cat = limiting_pred(G, n)
+        limit_proj, limit_stage, limit_tech, root_proj, root_stage, root_tech = limiting_pred_at_joint(G, n)
 
         if tech == "capture":
             ab_stage = abandoned_c.get(project) if abandoned else None
@@ -63,44 +77,54 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s,
             "committed_volume": d.get("committed_volume", None),
             "abandoned": abandoned,
             "abandonment_stage": ab_stage,
-            "limit_pred": limit_pred,
-            "limit_cat": limit_cat,
+            "limit_proj": limit_proj,
+            "limit_stage": limit_stage,
+            "limit_tech": limit_tech,
+            "root_proj": root_proj,
+            "root_stage": root_stage,
+            "root_tech": root_tech,
             "finish_year": base_year + int(EF//12) if EF and EF != float('inf') else None
             }  
         )
     return rows
 
-def limiting_pred(G: nx.DiGraph, node):
+def limiting_pred_at_joint(G: nx.DiGraph, node):
     '''
-    Returns the predecessor node that set the ES of this node and category of limitation
+    Returns the predecessor node that set the ES of the joint node and tech type
     '''
-    es = G.nodes[node].get("ES")
-    if G.nodes[node].get("abandoned") is not None:
-        return None, "abandoned"
+    limit_proj = limit_stage = limit_tech = None
+    root_proj = root_stage = root_tech = None
+
+    # handle the joint nodes
+    if G.nodes[node].get("tech") != "joint":
+        return None, None, None, None, None, None
     
-    if es is None:
-        return None, None
+    def find_binder(n):
+        es = G.nodes[n].get("ES")
+        if es is None:
+            return None
+        for p in G.predecessors(n):
+            ef = G.nodes[p].get("EF")
+            if ef is not None and abs(ef-es) < 1e-9:
+                return p
+        return None
     
-    for pred in G.predecessors(node):
-        if G.nodes[pred].get("abandoned") is not None:
-            continue 
-        if G.nodes[pred].get("EF") is not None and abs(G.nodes[pred]["EF"] - es) < 1e-9:
-            target_tech = G.nodes[pred].get("tech")
-            if pred[0] == node[0]:
-                category = "own schedule"
-            elif target_tech == "capture":
-                category = "capture"
-            elif G.nodes[pred].get("tech") == "transport":
-                category = "transport"
-            elif G.nodes[pred].get("tech") == "storage":
-                category = "storage"
-            elif G.nodes[pred].get("tech") == "joint":
-                category = "joint_threshold"
-            else:
-                category = "other"
-            return pred[0], category
+    binder = find_binder(node)
+    if binder is None:
+        return limit_proj, limit_stage, limit_tech, root_proj, root_stage, root_tech
+    limit_proj, limit_stage = binder[0], binder[1]
+    limit_tech = G.nodes[binder].get("project_type")
+
+    current = binder
+    while G.nodes[current].get("tech") == "joint":
+        nxt = find_binder(current)
+        if nxt is None:
+            break
+        current = nxt
+    root_proj, root_stage = current[0], current[1]
+    root_tech = G.nodes[current].get("project_type")
     
-    return None, "starting node" # it started at ES = 0 
+    return limit_proj, limit_stage, limit_tech, root_proj, root_stage, root_tech
 
 #==================================================================
 # MONTE CARLO
@@ -178,7 +202,7 @@ def monte_carlo(n_reps,
     
     node_df = pd.DataFrame(all_rows)
     
-    return node_df
+    return results
 
 def analyze_monte_carlo(results):
     cum_s_abandoned = 0.0
@@ -319,50 +343,69 @@ def deployment_over_time(data):
     return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90})
 
 #==================================================================
-# ABANDONMENT SUMMARY
+# ABANDONMENT SUMMARY NOTE: THIS IS WRONG BECAUSE RUN 0 SHOULD BE ALL ABANDONED
 #==================================================================
 
-# count abandoned capture projects and group by definition and approval stage
 def abandonment_summary(data):
-    # Load the data
     df = pd.read_csv(data)
-    
-    # Filter for only the relevant rows upfront
-    filtered_df = df[
-        (df["tech"] == "capture") & 
-        (df["abandoned"] == True) & 
-        (df["stage"] == "commissioning")
-    ].copy()
-    
-    # Create helper columns for the specific abandonment stages
-    filtered_df["is_def"] = filtered_df["abandonment_stage"] == "definition joint node"
-    filtered_df["is_app"] = filtered_df["abandonment_stage"] == "FID joint node"
-    
-    # Group by 'rep' and count the occurrences
-    rep_counts = filtered_df.groupby("rep").agg(
-        total_abandonment=("abandoned", "count"),
-        abandon_at_def=("is_def", "sum"),
-        abandon_at_app=("is_app", "sum")
-    ).reset_index()
-    
-    # Define percentile functions for p10 and p90
-    def p10(x): return np.percentile(x, 10)
-    def p90(x): return np.percentile(x, 90)
-    
-    # Aggregate across ALL reps to get mean, p10, and p90
-    summary_stats = rep_counts.drop(columns="rep").agg(["mean", p10, p90])
-    
-    return summary_stats 
+
+    # one row per capture per rep (definition stage = always present, one per capture)
+    caps = df[(df["tech"] == "capture") & (df["stage"] == "definition")]
+
+    # per rep: what fraction of captures abandoned?
+    rate_per_rep = caps.groupby("rep")["abandoned"].mean()
+    #   groupby("rep") -> splits into the 100 reps
+    #   ["abandoned"].mean() -> fraction True (abandoned) in each rep = that rep's rate
+
+    # now summarize those 100 rates:
+    return {
+        "mean": rate_per_rep.mean(),
+        "p10":  rate_per_rep.quantile(0.10),
+        "p90":  rate_per_rep.quantile(0.90),
+    }
 
 #==================================================================
-# DEPLOYMENT OVER TIME
+# BOTTLENECK ANALYSIS NOTE: INCOMPLETE, NEED TO CONSIDER COLLECTION
 #==================================================================
+
+def bottleneck_analysis(data):
+    '''
+    Understanding what project is holding up each joint decision node 
+    (tracing back to roots if necessary)
+    '''
+    df = pd.read_csv(data)
+    joint_nodes = df[df["tech"]=="joint"]
+    reps = df["rep"].unique()
+
+#==================================================================
+# SENSITIVITY ANALYSIS
+#==================================================================
+
+def sensitivity_sweep(param_name, values, n_reps):
+    rows = []
+    for v in values:
+        results = monte_carlo(n_reps, **{param_name: v})   # only override, rest = defaults
+        cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
+        final_vol = analyze_monte_carlo(results)["average final vol of capture"]
+        all_abandon = analyze_monte_carlo(results)["all abandoned rate"]
+        rows.append({param_name: v, "cap abandonment": cap_abandonment, "final vol": final_vol, "all abandon": all_abandon})
+    return pd.DataFrame(rows)
 
 #==================================================================
 # EXECUTION
 #================================================================== 
 
 if __name__ == "__main__":
-    monte_carlo(3).to_csv('trial_1.csv', index=False)
-    deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
-    abandonment_summary('trial_1.csv').to_csv('abandonment_trial_1.csv', index=False)
+    # monte_carlo(3).to_csv('trial_1.csv', index=False)
+    # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
+    # print(abandonment_summary('trial_1.csv'))
+
+     #monte_carlo(100).to_csv('trial_2.csv', index=False)
+    # deployment_over_time('trial_2.csv').to_csv('deployment_trial_2.csv', index=False)
+    # print(abandonment_summary('trial_2.csv'))
+
+    # sensitivity_sweep("late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6], 100).to_csv('lp_sensitivity.csv', index=False)
+    # sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 100).to_csv('thresholdfrac_sensitivity.csv', index=False)
+    # sensitivity_sweep("max_rate", [0.05, 0.1, 0.15, 0.2], 100).to_csv('maxrate_sensitivity.csv', index=False)
+    # sensitivity_sweep("base_rate", [0.01, 0.05, 0.1, 0.15], 100).to_csv('baserate_sensitivity.csv', index=False)
+    sensitivity_sweep("transport_tolerance", [48, 60, 100, 200], 100).to_csv('transtol2_sensitivity.csv', index=False)
