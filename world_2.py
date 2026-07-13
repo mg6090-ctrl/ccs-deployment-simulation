@@ -26,25 +26,6 @@ TRANSPORT_TOLERANCE = 36
 LATE_PENALTY = 0.4
 
 #==================================================================
-# PROJECT DATA
-#==================================================================
-
-# stores the pipe/storage every single transport flows into next
-PIPE_DOWNSTREAM = {"projT1": "projS1"}
-
-# stores the transport every single capture flows into next
-CAPTURE_PIPE = {"projC1": "projT1", 
-                "projC2": "projT1",
-                "projC3": "projT1",
-                "projC4": "projT1",
-                "projC5": "projT1",
-                "projC6": "projT1",
-                "projC7": "projT1",
-                "projC8": "projT1"}
-
-TRUNKS = ["projT1"]
-
-#==================================================================
 # STOCHASTIC DURATION SAMPLING
 #==================================================================
 
@@ -500,7 +481,7 @@ def projEdges(G: nx.DiGraph,
         )
         G.add_edge(
             (pipe_downstream[transport], "commissioning"),
-            (capture, "commissioning")
+            (transport, "commissioning")
         )
   
 #==================================================================
@@ -750,7 +731,7 @@ def time_slip_at_gate(G: nx.DiGraph,
         # get tech to calculate attrition probability
         if G.nodes[node]["tech"] == "joint":
             owning_project = cluster_owner(node)
-            tech = "transport"
+            tech = "transport" # if we have a joint node, we treat the node's tech as transport (for transport tolerance)
         
         else:
             tech = G.nodes[node]["tech"]
@@ -1051,13 +1032,16 @@ def analyze_monte_carlo(results):
 #==================================================================
 
 if __name__ == "__main__":
-    results2 = monte_carlo(300, sampling = True, base_rate=0.05)
-    print(analyze_monte_carlo(results2))
+    # results2 = monte_carlo(300, sampling = True, base_rate=0.05)
+    # print(analyze_monte_carlo(results2))
 
     G = buildmodel()
     
-    print(immediate_upstream_project("projS1"))
-    print(immediate_upstream_project("projT1"))
-    print(everything_upstream("projS1"))
-    print(everything_upstream("projT1"))
+    # print(immediate_upstream_project("projS1"))
+    # print(immediate_upstream_project("projT1"))
+    # print(everything_upstream("projS1"))
+    # print(everything_upstream("projT1"))
+
+    for n in G.predecessors(("projC19", "construction")):
+        print (n)
     

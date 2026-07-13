@@ -391,6 +391,9 @@ def sensitivity_sweep(param_name, values, n_reps):
         rows.append({param_name: v, "cap abandonment": cap_abandonment, "final vol": final_vol, "all abandon": all_abandon})
     return pd.DataFrame(rows)
 
+def two_variable_sweep():
+    return
+
 #==================================================================
 # EXECUTION
 #================================================================== 
@@ -408,4 +411,8 @@ if __name__ == "__main__":
     # sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 100).to_csv('thresholdfrac_sensitivity.csv', index=False)
     # sensitivity_sweep("max_rate", [0.05, 0.1, 0.15, 0.2], 100).to_csv('maxrate_sensitivity.csv', index=False)
     # sensitivity_sweep("base_rate", [0.01, 0.05, 0.1, 0.15], 100).to_csv('baserate_sensitivity.csv', index=False)
-    sensitivity_sweep("transport_tolerance", [48, 60, 100, 200], 100).to_csv('transtol2_sensitivity.csv', index=False)
+    # sensitivity_sweep("transport_tolerance", [48, 60, 100, 200], 100).to_csv('transtol2_sensitivity.csv', index=False)
+    # sensitivity_sweep("storage_tolerance", [12, 24, 48, 60, 100, 200], 100).to_csv('stortol_sensitivity.csv', index=False)
+    # sensitivity_sweep("capture_tolerance", [12, 48, 60, 100, 200], 500).to_csv('captol3_sensitivity.csv', index=False)
+    sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 500).to_csv('thresholdfrac1_sensitivity.csv', index=False)
+    

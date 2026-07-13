@@ -3,6 +3,7 @@ import random
 import hashlib
 import numpy as np
 import project_data as project_data 
+import matplotlib as plt
 
 #==================================================================
 # CONSTANTS (PARAMETERS)
@@ -405,6 +406,14 @@ def projEdges(G: nx.DiGraph,
             (transport, "construction"),
             (transport, "commissioning")
         )
+        # NOTE: the following adds gating in the build-out between transports in terms of 
+        # dependency
+        downstream = pipe_downstream[transport]
+        if downstream in transport_volumes:
+            G.add_edge(
+                (downstream, "commissioning"),
+                (transport, "commissioning")
+            )
 
     for storage in storage_volumes:
         # adding gating for the primary tier network
@@ -704,4 +713,5 @@ if __name__ == "__main__":
     r1 = monte_carlo(30, base_rate=0.1)
     r2 = monte_carlo(30, base_rate=0.1)
     print("reproducible:", [x["completion"] for x in r1] == [y["completion"] for y in r2])
+    
     
