@@ -391,23 +391,24 @@ def projEdges(G: nx.DiGraph,
     
     # Step 3: add edges for cons -> comm for trans/cap, gating edges for commissioning
     for capture in capture_volumes:
+        # add edges from each capture's construction to its commissioning
         G.add_edge(
             (capture, "construction"),
             (capture, "commissioning")
         )
-        # add edge from its transport commissioning to the capture commissioning 
+        # add edges from transport commissioning to the dependent capture commissioning 
         G.add_edge(
             (capture_pipe[capture], "commissioning"),
             (capture, "commissioning")
         )
     
     for transport in transport_volumes:
+        # add edges from each transport's construction to its commissioning
         G.add_edge(
             (transport, "construction"),
             (transport, "commissioning")
         )
-        # NOTE: the following adds gating in the build-out between transports in terms of 
-        # dependency
+        # add edges from primary transports' commissioning to secondary transports' commissioning
         downstream = pipe_downstream[transport]
         if downstream in transport_volumes:
             G.add_edge(
@@ -416,7 +417,7 @@ def projEdges(G: nx.DiGraph,
             )
 
     for storage in storage_volumes:
-        # adding gating for the primary tier network
+        # adding edges from storage commissioning to trunk lines' commissioning
         _, transports = immediate_upstream_project(storage, pipe_downstream, capture_pipe)
         for trans in transports:
             G.add_edge(
@@ -439,10 +440,10 @@ def add_hammock_node(G:nx.DiGraph,
         committed_volume = 0.0,
         abandoned = None
     )
-    # add outwards edge from commissioning stage of all transports
+    # add outwards edge from construction stage of all transports
     for transport in transport_volumes:
         G.add_edge(
-            (transport, "commissioning"),
+            (transport, "construction"),
             ("hammock node", "hammock node")
         )
 
@@ -569,7 +570,6 @@ def mark_capture_abandoned(G: nx.DiGraph, capture):
     for stage in STAGES4:
         G.nodes[(capture, stage)]["abandoned"] = True
 
-# Instrument apply_attrition temporarily: print each roll's stage, delay, prob
 def apply_attrition(G, captures=project_data.CAPTURE_VOLUMES, base_rate=BASE_RATE, replication_seed=0, max_rate=MAX_RATE, cap_tolerance=CAPTURE_TOLERANCE):
     ROLL_STAGES = ["definition", "approval"]
     rng = random.Random(SEED + replication_seed)

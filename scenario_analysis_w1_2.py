@@ -189,9 +189,9 @@ def monte_carlo(
 
         all_rows.extend(collect_node_rows(G, rep, abandoned))
 
-    node_df = pd.DataFrame(all_rows)
-    return node_df
-    #return results
+    # node_df = pd.DataFrame(all_rows)
+    # return node_df
+    return results
 
 def analyze_monte_carlo(results):
     cum_abandoned = 0.0
@@ -257,4 +257,5 @@ def three_variable_sweep(param1, val1, param2, val2, param3, val3, n_reps):
 
 if __name__ == "__main__":
     # monte_carlo(3).to_csv("w1_2_trial_1.csv", index=False)
-    two_variable_sweep("frac_split", [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.8, 0.2)], "max_rate", [0.05, 0.1, 0.2, 0.3, 0.4], 300).to_csv("w12_split_max_sweep.csv", index=False)
+    # two_variable_sweep("frac_split", [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.8, 0.2)], "max_rate", [0.05, 0.1, 0.2, 0.3, 0.4], 300).to_csv("w12_split_max_sweep.csv", index=False)
+    two_variable_sweep("frac_split", [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.8, 0.2)], "hammock_threshold", [0.1, 0.3, 0.5, 0.7, 1.0], 300).to_csv("w12_split_hammock_sweep.csv", index=False)
