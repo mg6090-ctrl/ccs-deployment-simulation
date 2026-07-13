@@ -391,8 +391,28 @@ def sensitivity_sweep(param_name, values, n_reps):
         rows.append({param_name: v, "cap abandonment": cap_abandonment, "final vol": final_vol, "all abandon": all_abandon})
     return pd.DataFrame(rows)
 
-def two_variable_sweep():
-    return
+def two_variable_sweep(param1, val1, param2, val2, n_reps):
+    rows = []
+    for v1 in val1:
+        for v2 in val2:
+            results = monte_carlo(n_reps, **{param1: v1, param2: v2})
+            cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
+            final_vol = analyze_monte_carlo(results)["average final vol of capture"]
+            all_abandon = analyze_monte_carlo(results)["all abandoned rate"]
+            rows.append({param1: v1, param2: v2, "abandonment": cap_abandonment, "final vol": final_vol, "all abandon": all_abandon})
+    return pd.DataFrame(rows)
+
+def three_variable_sweep(param1, val1, param2, val2, param3, val3, n_reps):
+    rows = []
+    for v1 in val1:
+        for v2 in val2:
+            for v3 in val3:
+                results = monte_carlo(n_reps, **{param1: v1, param2: v2, param3: v3})
+                cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
+                final_vol = analyze_monte_carlo(results)["average final vol of capture"]
+                all_abandon = analyze_monte_carlo(results)["all abandoned rate"]
+                rows.append({param1: v1, param2: v2, "abandonment": cap_abandonment, "final vol": final_vol, "all abandon": all_abandon})
+    return pd.DataFrame(rows)
 
 #==================================================================
 # EXECUTION
@@ -414,5 +434,7 @@ if __name__ == "__main__":
     # sensitivity_sweep("transport_tolerance", [48, 60, 100, 200], 100).to_csv('transtol2_sensitivity.csv', index=False)
     # sensitivity_sweep("storage_tolerance", [12, 24, 48, 60, 100, 200], 100).to_csv('stortol_sensitivity.csv', index=False)
     # sensitivity_sweep("capture_tolerance", [12, 48, 60, 100, 200], 500).to_csv('captol3_sensitivity.csv', index=False)
-    sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 500).to_csv('thresholdfrac1_sensitivity.csv', index=False)
-    
+    # sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 500).to_csv('thresholdfrac1_sensitivity.csv', index=False)
+    # two_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6], 300).to_csv('frac_late_sweep.csv', index=False)
+    # two_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "storage_tolerance", [12, 24, 48, 60, 72], 300).to_csv('frac_stortol_sweep.csv', index=False)
+    three_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "storage_tolerance", [12, 24, 48, 60], "late_penalty", [0.2, 0.3, 0.4, 0.5], 300).to_csv("three_sweep.csv", index=False)
