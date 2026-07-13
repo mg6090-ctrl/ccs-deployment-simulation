@@ -408,7 +408,7 @@ def projEdges(G: nx.DiGraph,
         )
 
     for storage in storage_volumes:
-        # adding gating for the primary tier network
+        # add edge from commissioning of storage to commissioning of trunk pipeline
         _, transports = immediate_upstream_project(storage, pipe_downstream, capture_pipe)
         for trans in transports:
             G.add_edge(
@@ -428,7 +428,8 @@ def projEdges(G: nx.DiGraph,
     
     for capture in capture_volumes:
         # if capture feeds into a transport that is dependent on other transports, we gate
-        # the definition of the capture with the commissioning of the transport
+        # the definition of the capture with the commissioning of the dependent transport 
+        # (transport one layer down, not necessarily the trunk)
         if get_tech(G, pipe_downstream[capture_pipe[capture]]) == "transport":
             G.add_edge(
                 (pipe_downstream[capture_pipe[capture]], "commissioning"),
