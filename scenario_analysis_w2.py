@@ -83,7 +83,7 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s,
             "root_proj": root_proj,
             "root_stage": root_stage,
             "root_tech": root_tech,
-            "finish_year": base_year + int(EF//12) if EF and EF != float('inf') else None
+            "finish_year": base_year + int(EF//12) if EF is not None and EF != float('inf') else None
             }  
         )
     return rows
@@ -135,19 +135,19 @@ def monte_carlo(n_reps,
                 trunks = project_data.TRUNKS,
                 pipe_downstream=project_data.PIPE_DOWNSTREAM,
                 capture_pipe=project_data.CAPTURE_PIPE,
-                base_rate=BASE_RATE, 
-                threshold_frac=THRESHOLD_FRAC,
-                max_rate=MAX_RATE, 
-                capture_tolerance=CAPTURE_TOLERANCE,
-                transport_tolerance=TRANSPORT_TOLERANCE, 
-                storage_tolerance=STORAGE_TOLERANCE,
+                base_rate=BASELINE["base_rate"], 
+                threshold_frac=BASELINE["threshold_frac"],
+                max_rate=BASELINE["max_rate"], 
+                capture_tolerance=BASELINE["capture_tolerance"], 
+                transport_tolerance=BASELINE["transport_tolerance"],
+                storage_tolerance=BASELINE["storage_tolerance"],
                 capture_durations=project_data.CAPTURE, 
                 capture_volumes=project_data.CAPTURE_VOLUMES,
                 storage_durations=project_data.STORAGE, 
                 storage_volumes=project_data.STORAGE_VOLUMES,
                 transport_durations=project_data.TRANSPORT, 
                 transport_volumes=project_data.TRANSPORT_VOLUMES,
-                late_penalty = LATE_PENALTY,
+                late_penalty = BASELINE["late_penalty"],
                 dist_override = "lognormal"):
     
     results = []
@@ -419,6 +419,10 @@ def three_variable_sweep(param1, val1, param2, val2, param3, val3, n_reps):
 #================================================================== 
 
 if __name__ == "__main__":
+    #===========================
+    # Getting node level data
+    #===========================
+
     # monte_carlo(3).to_csv('trial_1.csv', index=False)
     # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
     # print(abandonment_summary('trial_1.csv'))
@@ -427,14 +431,23 @@ if __name__ == "__main__":
     # deployment_over_time('trial_2.csv').to_csv('deployment_trial_2.csv', index=False)
     # print(abandonment_summary('trial_2.csv'))
 
-    # sensitivity_sweep("late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6], 100).to_csv('lp_sensitivity.csv', index=False)
-    # sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 100).to_csv('thresholdfrac_sensitivity.csv', index=False)
-    # sensitivity_sweep("max_rate", [0.05, 0.1, 0.15, 0.2], 100).to_csv('maxrate_sensitivity.csv', index=False)
-    # sensitivity_sweep("base_rate", [0.01, 0.05, 0.1, 0.15], 100).to_csv('baserate_sensitivity.csv', index=False)
-    # sensitivity_sweep("transport_tolerance", [48, 60, 100, 200], 100).to_csv('transtol2_sensitivity.csv', index=False)
-    # sensitivity_sweep("storage_tolerance", [12, 24, 48, 60, 100, 200], 100).to_csv('stortol_sensitivity.csv', index=False)
-    # sensitivity_sweep("capture_tolerance", [12, 48, 60, 100, 200], 500).to_csv('captol3_sensitivity.csv', index=False)
-    # sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 500).to_csv('thresholdfrac1_sensitivity.csv', index=False)
-    # two_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6], 300).to_csv('frac_late_sweep.csv', index=False)
+    #===========================
+    # Single var sweeps
+    #===========================
+
+    # sensitivity_sweep("late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6], 300).to_csv('lp_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 300).to_csv('thresholdfrac_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("max_rate", [0.05, 0.1, 0.15, 0.2], 300).to_csv('maxrate_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("base_rate", [0.01, 0.05, 0.1, 0.15], 300).to_csv('baserate_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("transport_tolerance", [48, 60, 100, 200], 300).to_csv('transtol2_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("storage_tolerance", [12, 24, 48, 60, 100, 200], 300).to_csv('stortol_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("capture_tolerance", [12, 48, 60, 100, 200], 300).to_csv('captol3_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 500).to_csv('thresholdfrac_sensitivity_500.csv', index=False)
+
+    #===========================
+    # Multi var sweeps
+    #===========================
+
+    two_variable_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 500).to_csv('frac_late_sweep.csv', index=False)
     # two_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "storage_tolerance", [12, 24, 48, 60, 72], 300).to_csv('frac_stortol_sweep.csv', index=False)
-    three_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "storage_tolerance", [12, 24, 48, 60], "late_penalty", [0.2, 0.3, 0.4, 0.5], 300).to_csv("three_sweep.csv", index=False)
+    # three_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "storage_tolerance", [12, 24, 48, 60], "late_penalty", [0.2, 0.3, 0.4, 0.5], 300).to_csv("three_sweep.csv", index=False)
