@@ -543,7 +543,7 @@ def calculate_delay(G: nx.DiGraph, project, stage):
         return delay
     
     else:
-        return 0 # this is what is return for the definition stage
+        return 0 # this is what is returned for the definition stage - a flat abandonment rate
 
 #==================================================================
 # PROJECT ABANDONMENT 
@@ -649,6 +649,7 @@ def monte_carlo(
 
         abandoned = apply_attrition(
                         G, 
+                        captures=caps_vol,
                         base_rate = base_rate,  
                         replication_seed = rep,
                         max_rate = max_rate,

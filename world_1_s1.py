@@ -565,7 +565,7 @@ def monte_carlo(
     for rep in range(n_reps):
 
         G = build_model(
-            replication_seed, 
+            rep, 
             sampling,
             pipe_downstream, 
             capture_pipe, 
