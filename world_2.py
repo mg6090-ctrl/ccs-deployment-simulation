@@ -225,7 +225,7 @@ def projGraph(replication_seed=0,
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 project_type = project_data.PROJECT_TYPE[storage],
-                s_cluster = storage_cluster,
+                s_cluster = storage,
                 abandoned = None
                 )
         # create storage commissioning node
@@ -240,7 +240,7 @@ def projGraph(replication_seed=0,
             actual_volume = 0.0,
             committed_volume = 0.0,
             project_type = project_data.PROJECT_TYPE[storage],
-            s_cluster = storage_cluster,
+            s_cluster = storage,
             abandoned = None
         )
         # create storage joint FID node
@@ -254,7 +254,7 @@ def projGraph(replication_seed=0,
             volume = storage_volumes[storage],
             actual_volume = 0.0,
             committed_volume = 0.0,
-            s_cluster = storage_cluster,
+            s_cluster = storage,
             project_type = project_data.PROJECT_TYPE[storage],
             below_threshold = None,
             abandoned = None
@@ -284,7 +284,7 @@ def projGraph(replication_seed=0,
                 committed_volume = 0.0,
                 successor = succ,
                 predecessor = preds,
-                t_cluster = transport_cluster,
+                t_cluster = transport,
                 project_type = project_data.PROJECT_TYPE[transport],
                 abandoned = None
             )
@@ -301,7 +301,7 @@ def projGraph(replication_seed=0,
             committed_volume = 0.0,
             successor = succ,
             predecessor = preds,
-            t_cluster = transport_cluster,
+            t_cluster = transport,
             project_type = project_data.PROJECT_TYPE[transport],
             abandoned = None
         )
@@ -317,7 +317,7 @@ def projGraph(replication_seed=0,
                 volume = transport_volumes[transport],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
-                t_cluster = transport_cluster,
+                t_cluster = transport,
                 project_type = project_data.PROJECT_TYPE[transport],
                 successor = succ,
                 predecessor = preds,
@@ -464,6 +464,8 @@ def projEdges(G: nx.DiGraph,
         )
 
     # Step 4: add edges for cons -> comm for trans/cap, gating edges for commissioning
+    # also add edges for capture def -> app and app -> cons to enforce sequencing for 
+    # late projects
     for capture in capture_volumes:
         G.add_edge(
             (capture, "construction"),
@@ -472,6 +474,14 @@ def projEdges(G: nx.DiGraph,
         G.add_edge(
             (capture_pipe[capture], "commissioning"),
             (capture, "commissioning")
+        )
+        G.add_edge(
+            (capture, "definition"),
+            (capture, "approval")
+        )
+        G.add_edge(
+            (capture, "approval"),
+            (capture, "construction")
         )
     
     for transport in transport_volumes:
@@ -482,6 +492,14 @@ def projEdges(G: nx.DiGraph,
         G.add_edge(
             (pipe_downstream[transport], "commissioning"),
             (transport, "commissioning")
+        )
+        G.add_edge(
+            (transport, "definition"),
+            (transport, "approval")
+        )
+        G.add_edge(
+            (transport, "approval"),
+            (transport, "construction")
         )
   
 #==================================================================
@@ -558,7 +576,13 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
         if is_threshold_joint(G, node):
             arrivals = gather_input_specs(G, node)
             capacity = G.nodes[node]["volume"]
-            fire_time = threshold_gating(arrivals, capacity, threshold_frac)
+            proj = cluster_owner(node)
+            if node[1] == "FID joint node":
+                n = (proj, "approval")
+            elif node[1] == "definition joint node":
+                n = (proj, "definition")
+            threshold_time = threshold_gating(arrivals, capacity, threshold_frac)
+            fire_time = None if threshold_time is None else max(threshold_time, G.nodes[n]["EF"])
             if fire_time is None:
                 G.nodes[node]["ES"] = float("inf")
                 G.nodes[node]["EF"] = float("inf")
@@ -883,7 +907,7 @@ def monte_carlo(n_reps,
                        storage_volumes=storage_volumes, transport_durations=transport_durations,
                        transport_volumes=transport_volumes, dist_override=dist_override)
 
-        CPM(G, threshold_frac)
+        CPM(G, threshold_frac) # initial CPM gives each node ES and EF 
 
         a_s, a_t, a_c = apply_attrition(G, pipe_downstream, capture_pipe, base_rate, threshold_frac,
                                          max_rate, capture_tolerance, transport_tolerance, storage_tolerance,
