@@ -121,11 +121,11 @@ def limiting_pred(G: nx.DiGraph, node):
 
 def monte_carlo(
         n_reps, 
-        base_rate = BASE_RATE, 
-        max_rate = MAX_RATE,
+        base_rate = BASELINE["base_rate"], 
+        max_rate = BASELINE["max_rate"],
         pipe_downstream = project_data.PIPE_DOWNSTREAM,
         capture_pipe = project_data.CAPTURE_PIPE,
-        cap_tolerance = CAPTURE_TOLERANCE,
+        cap_tolerance = BASELINE["capture_tolerance"],
         replication_seed=0, 
         caps = project_data.CAPTURE,
         caps_vol = project_data.CAPTURE_VOLUMES,
@@ -133,9 +133,9 @@ def monte_carlo(
         trans_vol = project_data.TRANSPORT_VOLUMES,
         stor = project_data.STORAGE,
         stor_vol = project_data.STORAGE_VOLUMES,
-        frac_split = FRAC_SPLIT,
+        frac_split = BASELINE["frac_split"],
         sampling = True,
-        hammock_threshold = HAMMOCK_THRESHOLD,
+        hammock_threshold = BASELINE["hammock_threshold"],
         dist_override = "lognormal"
     ):
     
