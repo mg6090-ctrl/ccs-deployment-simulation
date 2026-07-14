@@ -9,16 +9,16 @@ DURATION_BY_TYPE = {
     "NGCC": {"definition": 12, "approval": 24, "construction": 36},
     "ethanol": {"definition": 6, "approval": 9, "construction": 12},
     "gas_processing": {"definition": 6, "approval": 6, "construction": 6},
+    "refinery": {"definition": 30, "approval": 24, "construction": 36},
+    "legacy_biomass": {"definition": 10, "approval": 18, "construction": 30},
+    "CHP": {"definition": 12, "approval": 24, "construction": 36},
+    "other_industrial": {"definition": 12, "approval": 24, "construction": 36},
     
     # the following have not been confirmed and are placeholders:
     "DAC": {"definition": 12, "approval": 24, "construction": 36},
-    "CHP": {"definition": 12, "approval": 24, "construction": 36},
-    "legacy_biomass": {"definition": 12, "approval": 24, "construction": 36},
-    "refinery": {"definition": 12, "approval": 24, "construction": 36},
     "biomass_gasification": {"definition": 12, "approval": 24, "construction": 36},
     "hydrogen": {"definition": 12, "approval": 24, "construction": 36},
     "cement": {"definition": 12, "approval": 24, "construction": 36},
-    "other_industrial": {"definition": 12, "approval": 24, "construction": 36}
 }
 
 #==================================================================
