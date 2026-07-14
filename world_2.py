@@ -587,6 +587,7 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
                 G.nodes[node]["ES"] = float("inf")
                 G.nodes[node]["EF"] = float("inf")
                 G.nodes[node]["below_threshold"] = True
+                G.nodes[node]["committed_volume"] = 0.0 # if the joint has failed we set committed to 0
                 G.nodes[node]["actual_volume"] = 0.0
             else:
                 G.nodes[node]["ES"] = fire_time
@@ -755,7 +756,8 @@ def time_slip_at_gate(G: nx.DiGraph,
         # get tech to calculate attrition probability
         if G.nodes[node]["tech"] == "joint":
             owning_project = cluster_owner(node)
-            tech = "transport" # if we have a joint node, we treat the node's tech as transport (for transport tolerance)
+            tech = "transport" # if the predecessor of a joint node is a joint node, it must be a transport cluster
+            # so we treat the node's tech as transport (for transport tolerance)
         
         else:
             tech = G.nodes[node]["tech"]
