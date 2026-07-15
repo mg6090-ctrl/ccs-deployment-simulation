@@ -1,14 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from scenario_analysis_w2 import (
-    BASELINE as w2_BASELINE,
     monte_carlo as w2_monte_carlo,
     analyze_monte_carlo as w2_analyze_monte_carlo,
     sensitivity_sweep as w2_sensitivity_sweep,
     two_variable_sweep as w2_two_variable_sweep,
 )
 from scenario_analysis_w1_1 import(
-    BASELINE as w11_BASELINE,
     monte_carlo as w11_monte_carlo,
     analyze_monte_carlo as w11_analyze_monte_carlo,
     sensitivity_sweep as w11_sensitivity_sweep,
@@ -16,7 +14,6 @@ from scenario_analysis_w1_1 import(
 )
 
 from scenario_analysis_w1_2 import(
-    BASELINE as w12_BASELINE,
     monte_carlo as w12_monte_carlo,
     analyze_monte_carlo as w12_analyze_monte_carlo,
     sensitivity_sweep as w12_sensitivity_sweep,
@@ -24,16 +21,35 @@ from scenario_analysis_w1_2 import(
 )
 
 #==================================================================
-# TORNADO CHART METHODS
+# COMPARISON CHARTS
 #==================================================================
 
-def swing(sweep_df, param_col, metric_col="final vol"):
-    lo = sweep_df.loc[sweep_df[param_col].idxmin(), metric_col]
-    hi = sweep_df.loc[sweep_df[param_col].idxmax(), metric_col]
-    return lo, hi
+def final_vol_compare():
+    return
 
-rows = []
-def w2_make_tornado(lp_df, base_df, thresh_df, max_df, metric_col):
+#==================================================================
+# DEPLOYMENT OVER TIME
+#==================================================================
+
+def deployment_over_time_compare():
+    return
+
+#==================================================================
+# GENERAL TORNADO METHODS
+#==================================================================
+
+def swing(sweep_df, param_col, metric_col="final vol"): 
+    lo_row = sweep_df.loc[sweep_df[metric_col].idxmin()]
+    hi_row = sweep_df.loc[sweep_df[metric_col].idxmax()]
+    return (lo_row[param_col], lo_row[metric_col],   # low param value + its metric
+            hi_row[param_col], hi_row[metric_col])    # high param value + its metric
+
+#==================================================================
+# W2 GRAPHS
+#==================================================================
+
+def w2_make_tornado(lp_df, base_df, thresh_df, max_df, metric_col, baseline):
+    rows = []
     for name, df, col in [
         ("late_penalty", lp_df, "late_penalty"),
         ("base_rate", base_df, "base_rate"),
@@ -41,31 +57,18 @@ def w2_make_tornado(lp_df, base_df, thresh_df, max_df, metric_col):
         ("max_rate", max_df, "max_rate"),
         # ("sampling", sample_df, "sampling")
     ]:
-        lo, hi = swing(df, col, metric_col)
-        rows.append({"param": name, "low": lo, "high": hi, "swing": abs(hi-lo)})
+        lo_param, lo_metric, hi_param, hi_metric = swing(df, col, metric_col)
+        rows.append({"param": name,
+                     "low_param": lo_param,
+                     "high_param": hi_param,
+                     "low_delta":  lo_metric - baseline,    # deviation from baseline at low param value
+                     "high_delta": hi_metric - baseline,    # deviation at high param value
+                     "swing": abs(hi_metric-lo_metric)})
     
     tornado = pd.DataFrame(rows).sort_values("swing") # ascending -> widest at top
     return tornado
 
-def w11_make_tornado(base_df, risk_df, max_df, captol_df, metric_col):
-    for name, df, col in [
-        ("risk_tolerance", risk_df, "frac_split"),
-        ("base_rate", base_df, "base_rate"),
-        ("max_rate", max_df, "max_rate"),
-        ("capture_tolerance", captol_df, "cap_tolerance"),
-    ]:
-        lo, hi = swing(df, col, metric_col)
-        rows.append({"param": name, "low": lo, "high": hi, "swing": abs(hi-lo)})
-    
-    tornado = pd.DataFrame(rows).sort_values("swing") # ascending -> widest at top
-    return tornado
-
-#==================================================================
-# EXECUTION (PLOTTING CHARTS)
-#==================================================================
-
-if __name__ == "__main__":
-    
+def w2_plot_tornado():
     # PLOTTING THE TORNADO CHART FOR W2
     fig, ax = plt.subplots(figsize=(8,5))
 
@@ -77,29 +80,43 @@ if __name__ == "__main__":
     # sample_df = sensitivity_sweep("sampling", False, 300)
 
     # get the baseline reading
-    baseline_mc = w2_monte_carlo(300)
-    baseline_results = w2_analyze_monte_carlo(baseline_mc)
-    baseline_final_vol = baseline_results["average final vol of capture"]
+    w2_baseline_mc = w2_monte_carlo(300)
+    w2_baseline_results = w2_analyze_monte_carlo(w2_baseline_mc)
+    w2_baseline_final_vol = w2_baseline_results["average final vol of capture"]
 
-    tornado = w2_make_tornado(lp_df=lp_df, base_df=base_df, thresh_df=thresh_df, max_df=max_df, metric_col="final vol")
+    tornado = w2_make_tornado(lp_df=lp_df, base_df=base_df, thresh_df=thresh_df, max_df=max_df, metric_col="final vol", baseline=w2_baseline_final_vol)
 
     for i, r in enumerate(tornado.itertuples()):
-        ax.barh(i, abs(r.high - r.low), left=min(r.low, r.high), height=0.6, color="#4477aa")
+        left = min(r.low_delta, r.high_delta)
+        width = abs(r.high_delta - r.low_delta)
+        ax.barh(i, width,  left=left, height=0.6, color="#4477aa")  # low param value
 
-        # label the LOW end and HIGH end of the bar with their values
-        ax.text(r.low, i, f"{r.low:.1f}", va="center", ha="right", fontsize=8)
-        ax.text(r.high, i, f"{r.high:.1f}", va="center", ha="left", fontsize=8)
+        offset = 0.5   # how far outside the bar end to place the label
+        # negative-side label goes further left (outside), right-aligned
+        ax.text(min(r.low_delta, r.high_delta) - offset, i,
+                f"{r.low_param}\n({r.low_delta:+.1f})",
+                va="center", ha="right", fontsize=7)
+        # positive-side label goes further right (outside), left-aligned
+        ax.text(max(r.low_delta, r.high_delta) + offset, i,
+            f"{r.high_param}\n({r.high_delta:+.1f})",
+            va="center", ha="left", fontsize=7)
+
+    span = max(tornado["high_delta"].max(), tornado["low_delta"].max()) - min(tornado["high_delta"].min(), tornado["low_delta"].min())
+    ax.set_xlim(-span*0.7, span*0.7)   # generous room on both sides for labels
+
+    ax.axvline(0, color="black", lw=1)   # baseline is now at 0
+    ax.text(0, len(tornado) - 0.3, f"baseline = {w2_baseline_final_vol:.1f}",
+        ha="center", va="bottom", fontsize=9, fontweight="bold")
 
     ax.set_yticks(range(len(tornado)))
     ax.set_yticklabels(tornado["param"])
-    ax.axvline(baseline_final_vol, color="black", ls="--", lw=1, label="baseline")
-    ax.set_xlabel("final volume")
-    ax.set_title("Final vol sensitivity")
-    ax.legend()
+    ax.set_xlabel("change in final volume from baseline")
+    ax.set_title("W2 sensitivity tornado (contributions relative to baseline)")
     plt.tight_layout()
-    plt.savefig("final_vol_tornado.png", dpi=120)
+    plt.savefig("w2_final_vol_tornado.png", dpi=120)
 
-    # PLOTTING THE HEAT MAP FOR W2 
+def w2_plot_heatmap():
+     # PLOTTING THE HEAT MAP FOR W2 
     # assume df_2d has columns: late_penalty, threshold_frac, final_vol
     df_2d = w2_two_variable_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 300)
     grid = df_2d.pivot(index="late_penalty", columns="threshold_frac", values="final vol")
@@ -120,46 +137,86 @@ if __name__ == "__main__":
         for j in range(len(grid.columns)):
             ax.text(j, i, f"{grid.iloc[i,j]:.1f}", ha="center", va="center", color="white", fontsize=8)
     plt.tight_layout()
-    plt.savefig("frac_pen_heatmap.png", dpi=120)
+    plt.savefig("w2_frac_pen_heatmap.png", dpi=120)
 
+#==================================================================
+# W1.1 GRAPHS
+#==================================================================
 
+def w11_make_tornado(base_df, risk_df, max_df, captol_df, metric_col, baseline):
+    rows = []
+    for name, df, col in [
+        ("risk_tolerance", risk_df, "frac_split"),
+        ("base_rate", base_df, "base_rate"),
+        ("max_rate", max_df, "max_rate"),
+        ("capture_tolerance", captol_df, "cap_tolerance"),
+    ]:
+        lo_param, lo_metric, hi_param, hi_metric = swing(df, col, metric_col)
+        rows.append({"param": name, 
+                     "low_param": lo_param,
+                     "high_param": hi_param,
+                    "low_delta":  lo_metric - baseline,    # deviation from baseline at low param value
+                    "high_delta": hi_metric - baseline,    # deviation at high param value
+                     "swing": abs(hi_metric-lo_metric)})
+    
+    tornado = pd.DataFrame(rows).sort_values("swing") # ascending -> widest at top
+    return tornado
+
+def w11_plot_tornado():
     # PLOTTING THE TORNADO CHART FOR W1.1
     fig, ax = plt.subplots(figsize=(8,5))
 
     # getting sensitivity dataframes
-    w11_lp_df = w11_sensitivity_sweep("late_penalty", [0.2, 0.6, 0.8, 1], 300)
     w11_base_df = w11_sensitivity_sweep("base_rate", [0, 0.05, 0.2], 300)
-    w11_thresh_df = w11_sensitivity_sweep("threshold_frac", [0, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 300)
     w11_max_df = w11_sensitivity_sweep("max_rate", [0.05, 0.1, 0.2, 0.8, 0.9, 1.0], 300)
-    # sample_df = sensitivity_sweep("sampling", False, 300)
+    w11_captol_df = w11_sensitivity_sweep("cap_tolerance", [12, 24, 36, 48, 60], 300)
+    w11_risk_df = w11_sensitivity_sweep("frac_split", [(0, 1), (1, 0)], 300)
 
     # get the baseline reading
     w11_baseline_mc = w11_monte_carlo(300)
-    w11_baseline_results = w11_analyze_monte_carlo(baseline_mc)
-    w11_baseline_final_vol = baseline_results["average final vol of capture"]
+    w11_baseline_results = w11_analyze_monte_carlo(w11_baseline_mc)
+    w11_baseline_final_vol = w11_baseline_results["average final volume"]
 
-    tornado = w11_make_tornado(base_df=base_df, thresh_df=thresh_df, max_df=max_df, metric_col="final vol")
+    tornado = w11_make_tornado(base_df=w11_base_df, 
+                               max_df=w11_max_df, 
+                               risk_df=w11_risk_df, 
+                               captol_df=w11_captol_df, 
+                               metric_col="final vol", 
+                               baseline=w11_baseline_final_vol)
 
     for i, r in enumerate(tornado.itertuples()):
-        ax.barh(i, abs(r.high - r.low), left=min(r.low, r.high), height=0.6, color="#4477aa")
+        left = min(r.low_delta, r.high_delta)
+        width = abs(r.high_delta - r.low_delta)
+        ax.barh(i, width, left=left, height=0.6, color="#4477aa")
 
-        # label the LOW end and HIGH end of the bar with their values
-        ax.text(r.low, i, f"{r.low:.1f}", va="center", ha="right", fontsize=8)
-        ax.text(r.high, i, f"{r.high:.1f}", va="center", ha="left", fontsize=8)
+        offset = 0.5   # how far outside the bar end to place the label
+        # negative-side label goes further left (outside), right-aligned
+        ax.text(min(r.low_delta, r.high_delta) - offset, i,
+                f"{r.low_param}\n({r.low_delta:+.1f})",
+                va="center", ha="right", fontsize=7)
+        # positive-side label goes further right (outside), left-aligned
+        ax.text(max(r.low_delta, r.high_delta) + offset, i,
+            f"{r.high_param}\n({r.high_delta:+.1f})",
+            va="center", ha="left", fontsize=7)
+
+    span = max(tornado["high_delta"].max(), tornado["low_delta"].max()) - min(tornado["high_delta"].min(), tornado["low_delta"].min())
+    ax.set_xlim(-span*0.8, span*0.8)   # generous room on both sides for labels
+
+    ax.axvline(0, color="black", lw=1)   # baseline is now at 0
+    ax.text(0, len(tornado) - 0.7, f"baseline = {w11_baseline_final_vol:.1f}",
+        ha="center", va="bottom", fontsize=9, fontweight="bold")
 
     ax.set_yticks(range(len(tornado)))
     ax.set_yticklabels(tornado["param"])
-    ax.axvline(baseline_final_vol, color="black", ls="--", lw=1, label="baseline")
-    ax.set_xlabel("final volume")
-    ax.set_title("Final vol sensitivity")
-    ax.legend()
+    ax.set_xlabel("change in final volume from baseline")
+    ax.set_title("W1.1 sensitivity tornado (contributions relative to baseline)")
     plt.tight_layout()
-    plt.savefig("final_vol_tornado.png", dpi=120)
+    plt.savefig("w11_final_vol_tornado.png", dpi=120)
 
+def w11_plot_heatmap():
     # PLOTTING THE HEAT MAP FOR W1.1
-    # assume df_2d has columns: late_penalty, threshold_frac, final_vol
-    df_2d = w11_two_variable_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 300)
-    grid = df_2d.pivot(index="late_penalty", columns="threshold_frac", values="final vol")
+    df_2d = w11_two_variable_sweep("frac_split", [(0, 1), (0.2, 0.8), (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.8, 0.2), (1, 0)], "max_rate", [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6], 300)
+    grid = df_2d.pivot(index="frac_split", columns="max_rate", values="final vol")
 
     fig, ax = plt.subplots(figsize=(7, 6))
     im = ax.imshow(grid, origin="lower", aspect="auto", cmap="viridis")
@@ -167,9 +224,9 @@ if __name__ == "__main__":
     ax.set_xticklabels(grid.columns)
     ax.set_yticks(range(len(grid.index)))
     ax.set_yticklabels(grid.index)
-    ax.set_xlabel("threshold_frac")
-    ax.set_ylabel("late_penalty")
-    ax.set_title("Final volume across late_penalty × threshold_frac")
+    ax.set_xlabel("max_rate")
+    ax.set_ylabel("frac_split")
+    ax.set_title("Final volume across risk-tolerance × max rate")
     fig.colorbar(im, ax=ax, label="final volume")
 
     # optional: annotate each cell with its value
@@ -177,8 +234,119 @@ if __name__ == "__main__":
         for j in range(len(grid.columns)):
             ax.text(j, i, f"{grid.iloc[i,j]:.1f}", ha="center", va="center", color="white", fontsize=8)
     plt.tight_layout()
-    plt.savefig("frac_pen_heatmap.png", dpi=120)
+    plt.savefig("w11_risk_max_heatmap.png", dpi=120)
 
+#==================================================================
+# W1.2 GRAPHS
+#==================================================================
+
+def w12_make_tornado(base_df, risk_df, max_df, captol_df, hammock_df, metric_col, baseline):
+    rows = []
+    for name, df, col in [
+        ("risk_tolerance", risk_df, "frac_split"),
+        ("base_rate", base_df, "base_rate"),
+        ("max_rate", max_df, "max_rate"),
+        ("capture_tolerance", captol_df, "cap_tolerance"),
+        ("hammock_threshold", hammock_df, "hammock_threshold")
+    ]:
+        lo_param, lo_metric, hi_param, hi_metric = swing(df, col, metric_col)
+        rows.append({"param": name, 
+                     "low_param": lo_param,
+                     "high_param": hi_param,
+                    "low_delta":  lo_metric - baseline,    # deviation from baseline at low param value
+                    "high_delta": hi_metric - baseline,    # deviation at high param value
+                     "swing": abs(hi_metric-lo_metric)})
+    
+    tornado = pd.DataFrame(rows).sort_values("swing") # ascending -> widest at top
+    return tornado
+
+def w12_plot_tornado():
+    # PLOTTING THE TORNADO CHART FOR W1.2
+    fig, ax = plt.subplots(figsize=(8,5))
+
+    # getting sensitivity dataframes
+    w12_base_df = w12_sensitivity_sweep("base_rate", [0, 0.05, 0.2], 300)
+    w12_max_df = w12_sensitivity_sweep("max_rate", [0.05, 0.1, 0.2, 0.8, 0.9, 1.0], 300)
+    w12_captol_df = w12_sensitivity_sweep("cap_tolerance", [12, 24, 36, 48, 60], 300)
+    w12_risk_df = w12_sensitivity_sweep("frac_split", [(0, 1), (1, 0)], 300)
+    w12_hammock_df = w12_sensitivity_sweep("hammock_threshold", [0, 1], 300)
+
+    # get the baseline reading
+    w12_baseline_mc = w12_monte_carlo(300)
+    w12_baseline_results = w12_analyze_monte_carlo(w12_baseline_mc)
+    w12_baseline_final_vol = w12_baseline_results["average final volume"]
+
+    tornado = w12_make_tornado(base_df=w12_base_df, 
+                               max_df=w12_max_df, 
+                               risk_df=w12_risk_df, 
+                               captol_df=w12_captol_df, 
+                               hammock_df=w12_hammock_df,
+                               metric_col="final vol", 
+                               baseline=w12_baseline_final_vol)
+
+    for i, r in enumerate(tornado.itertuples()):
+        left = min(r.low_delta, r.high_delta)
+        width = abs(r.high_delta - r.low_delta)
+        ax.barh(i, width, left=left, height=0.6, color="#4477aa")
+
+        offset = 0.5   # how far outside the bar end to place the label
+        # negative-side label goes further left (outside), right-aligned
+        ax.text(min(r.low_delta, r.high_delta) - offset, i,
+                f"{r.low_param}\n({r.low_delta:+.1f})",
+                va="center", ha="right", fontsize=7)
+        # positive-side label goes further right (outside), left-aligned
+        ax.text(max(r.low_delta, r.high_delta) + offset, i,
+            f"{r.high_param}\n({r.high_delta:+.1f})",
+            va="center", ha="left", fontsize=7)
+
+    span = max(tornado["high_delta"].max(), tornado["low_delta"].max()) - min(tornado["high_delta"].min(), tornado["low_delta"].min())
+    ax.set_xlim(-span*0.9, span*0.9)   # generous room on both sides for labels
+
+    ax.axvline(0, color="black", lw=1)   # baseline is now at 0
+    ax.text(0, len(tornado) - 0.7, f"baseline = {w12_baseline_final_vol:.1f}",
+        ha="center", va="bottom", fontsize=9, fontweight="bold")
+    
+    ax.set_yticks(range(len(tornado)))
+    ax.set_yticklabels(tornado["param"])
+    ax.set_xlabel("change in final volume from baseline")
+    ax.set_title("W1.2 sensitivity tornado (contributions relative to baseline)")
+    plt.tight_layout()
+    plt.savefig("w12_final_vol_tornado.png", dpi=120)
+
+def w12_plot_heatmap():
+    # PLOTTING THE HEAT MAP FOR W1.2
+    df_2d = w12_two_variable_sweep("frac_split", [(0, 1), (0.2, 0.8), (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.8, 0.2), (1, 0)], "hammock_threshold", [0, 0.2, 0.4, 0.5, 0.6, 0.8, 1], 300)
+    grid = df_2d.pivot(index="frac_split", columns="hammock_threshold", values="final vol")
+
+    fig, ax = plt.subplots(figsize=(7, 6))
+    im = ax.imshow(grid, origin="lower", aspect="auto", cmap="viridis")
+    ax.set_xticks(range(len(grid.columns)))
+    ax.set_xticklabels(grid.columns)
+    ax.set_yticks(range(len(grid.index)))
+    ax.set_yticklabels(grid.index)
+    ax.set_xlabel("hammok_threshold")
+    ax.set_ylabel("frac_split")
+    ax.set_title("Final volume across risk-tolerance × build-out threshold")
+    fig.colorbar(im, ax=ax, label="final volume")
+
+    # optional: annotate each cell with its value
+    for i in range(len(grid.index)):
+        for j in range(len(grid.columns)):
+            ax.text(j, i, f"{grid.iloc[i,j]:.1f}", ha="center", va="center", color="white", fontsize=8)
+    plt.tight_layout()
+    plt.savefig("w12_risk_ham_heatmap.png", dpi=120)
+
+#==================================================================
+# EXECUTION
+#==================================================================
+
+if __name__ == "__main__":
+    # w2_plot_tornado()
+    #w2_plot_heatmap()
+    w11_plot_tornado()
+    w11_plot_heatmap()
+    # w12_plot_tornado()
+    #w12_plot_heatmap()    
 
 
 

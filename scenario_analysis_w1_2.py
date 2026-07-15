@@ -2,11 +2,6 @@ import world_1_s2 as w1_2
 import project_data as project_data
 import networkx as nx
 from world_1_s2 import (
-    BASE_RATE,
-    MAX_RATE,
-    CAPTURE_TOLERANCE,
-    FRAC_SPLIT,
-    HAMMOCK_THRESHOLD,
     build_model,
     CPM,
     apply_attrition
@@ -21,7 +16,7 @@ import numpy as np
 
 BASELINE = dict(
     base_rate=0.05, max_rate=0.2, frac_split=(0.2, 0.8), hammock_threshold=0.5,
-    capture_tolerance=48, transport_tolerance=48, storage_tolerance=48,
+    capture_tolerance=48,
     trunks=project_data.TRUNKS, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE,
     capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,
     storage_durations=project_data.STORAGE, storage_volumes=project_data.STORAGE_VOLUMES,
@@ -256,6 +251,21 @@ def three_variable_sweep(param1, val1, param2, val2, param3, val3, n_reps):
 #================================================================== 
 
 if __name__ == "__main__":
+    #===========================
+    # Getting node level data
+    #===========================
     # monte_carlo(3).to_csv("w1_2_trial_1.csv", index=False)
-    # two_variable_sweep("frac_split", [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.8, 0.2)], "max_rate", [0.05, 0.1, 0.2, 0.3, 0.4], 300).to_csv("w12_split_max_sweep.csv", index=False)
-    two_variable_sweep("frac_split", [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.8, 0.2)], "hammock_threshold", [0.1, 0.3, 0.5, 0.7, 1.0], 300).to_csv("w12_split_hammock_sweep.csv", index=False)
+
+    #===========================
+    # Single var sweeps
+    #===========================
+    # sensitivity_sweep("max_rate", [0.05, 0.1, 0.15, 0.2, 0.4, 0.6], 300).to_csv('w12_maxrate_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("base_rate", [0.01, 0.05, 0.1, 0.15, 0.2], 300).to_csv('w12_baserate_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("cap_tolerance", [12, 48, 60, 100, 200], 300).to_csv('w12_captol_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("frac_split", [(0, 1), (0.2, 0.8), (0.4, 0.6), (0.6, 0.4), (0.8, 0.2), (1,0)], 300).to_csv('w12_risktol_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("hammock_threshold", [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 300).to_csv('w12_hammock_sensitivity_300.csv', index=False)
+
+    #===========================
+    # Multi var sweeps
+    #===========================
+    two_variable_sweep("frac_split", [(0.1, 0.9), (0.3, 0.7), (0.5, 0.5), (0.7, 0.2)], "hammock_threshold", [0, 0.2, 0.4, 0.5, 0.6, 0.8, 1], 300).to_csv("w12_split_ham_sweep.csv", index=False)
