@@ -98,6 +98,58 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
     plt.savefig("deployment_comparison.png", dpi=120)
 
 #==================================================================
+# DISTRIBUTION OF FINAL VOLUME
+#==================================================================
+
+def w2_final_vol_distribution(w2_node_data):
+    w2_df = w2_node_data
+    survived = w2_df[(w2_df["tech"]=="capture") & (w2_df["stage"]=="commissioning") & (~w2_df["abandoned"])]
+    final_vols = survived.groupby("rep")["volume"].sum()   # total delivered per rep
+    # reps with zero survivors won't appear — add them back as 0:
+    all_reps = w2_df["rep"].unique()
+    final_vols = final_vols.reindex(all_reps, fill_value=0)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.hist(final_vols, bins=20, color="#2c6fbb", edgecolor="white")
+    ax.set_xlabel("final delivered volume")
+    ax.set_ylabel("number of reps")
+    ax.set_title("W2 deployment distribution across reps")
+    plt.tight_layout()
+    plt.savefig("w2_histogram.png", dpi=120)
+
+def w11_final_vol_distribution(w11_node_data):
+    w11_df = w11_node_data
+    survived = w11_df[(w11_df["tech"]=="capture") & (w11_df["stage"]=="commissioning") & (~w11_df["abandoned"])]
+    final_vols = survived.groupby("rep")["volume"].sum()   # total delivered per rep
+    # reps with zero survivors won't appear — add them back as 0:
+    all_reps = w11_df["rep"].unique()
+    final_vols = final_vols.reindex(all_reps, fill_value=0)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.hist(final_vols, bins=20, color="#bb782c", edgecolor="white")
+    ax.set_xlabel("final delivered volume")
+    ax.set_ylabel("number of reps")
+    ax.set_title("W1.1 deployment distribution across reps")
+    plt.tight_layout()
+    plt.savefig("w11_histogram.png", dpi=120)
+
+def w12_final_vol_distribution(w12_node_data):
+    w12_df = w12_node_data
+    survived = w12_df[(w12_df["tech"]=="capture") & (w12_df["stage"]=="commissioning") & (~w12_df["abandoned"])]
+    final_vols = survived.groupby("rep")["volume"].sum()   # total delivered per rep
+    # reps with zero survivors won't appear — add them back as 0:
+    all_reps = w12_df["rep"].unique()
+    final_vols = final_vols.reindex(all_reps, fill_value=0)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.hist(final_vols, bins=20, color="#3abb2c", edgecolor="white")
+    ax.set_xlabel("final delivered volume")
+    ax.set_ylabel("number of reps")
+    ax.set_title("W1.2 deployment distribution across reps")
+    plt.tight_layout()
+    plt.savefig("w12_histogram.png", dpi=120)
+
+#==================================================================
 # GENERAL TORNADO METHODS
 #==================================================================
 
@@ -414,7 +466,10 @@ if __name__ == "__main__":
     _, w12_node_data = w12_monte_carlo(300)
     _, w2_node_data = w2_monte_carlo(300)
 
-    deployment_over_time_compare(w11_node_data, w12_node_data, w2_node_data)
+    # deployment_over_time_compare(w11_node_data, w12_node_data, w2_node_data)
+    w2_final_vol_distribution(w2_node_data)
+    w11_final_vol_distribution(w11_node_data)
+    w12_final_vol_distribution(w12_node_data)
 
 
 
