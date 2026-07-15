@@ -80,7 +80,7 @@ def w2_plot_tornado():
     # sample_df = sensitivity_sweep("sampling", False, 300)
 
     # get the baseline reading
-    w2_baseline_mc = w2_monte_carlo(300)
+    w2_baseline_mc, _ = w2_monte_carlo(300)
     w2_baseline_results = w2_analyze_monte_carlo(w2_baseline_mc)
     w2_baseline_final_vol = w2_baseline_results["average final vol of capture"]
 
@@ -173,7 +173,7 @@ def w11_plot_tornado():
     w11_risk_df = w11_sensitivity_sweep("frac_split", [(0, 1), (1, 0)], 300)
 
     # get the baseline reading
-    w11_baseline_mc = w11_monte_carlo(300)
+    w11_baseline_mc, _ = w11_monte_carlo(300)
     w11_baseline_results = w11_analyze_monte_carlo(w11_baseline_mc)
     w11_baseline_final_vol = w11_baseline_results["average final volume"]
 
@@ -272,7 +272,7 @@ def w12_plot_tornado():
     w12_hammock_df = w12_sensitivity_sweep("hammock_threshold", [0, 1], 300)
 
     # get the baseline reading
-    w12_baseline_mc = w12_monte_carlo(300)
+    w12_baseline_mc, _ = w12_monte_carlo(300)
     w12_baseline_results = w12_analyze_monte_carlo(w12_baseline_mc)
     w12_baseline_final_vol = w12_baseline_results["average final volume"]
 

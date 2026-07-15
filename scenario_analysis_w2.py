@@ -195,7 +195,7 @@ def monte_carlo(n_reps,
     
     node_df = pd.DataFrame(all_rows)
     
-    return results
+    return results, node_df
 
 def analyze_monte_carlo(results):
     cum_s_abandoned = 0.0
@@ -377,7 +377,7 @@ def bottleneck_analysis(data):
 def sensitivity_sweep(param_name, values, n_reps):
     rows = []
     for v in values:
-        results = monte_carlo(n_reps, **{param_name: v})   # only override, rest = defaults
+        results, node = monte_carlo(n_reps, **{param_name: v})   # only override, rest = defaults
         cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
         final_vol = analyze_monte_carlo(results)["average final vol of capture"]
         all_abandon = analyze_monte_carlo(results)["all abandoned rate"]
@@ -388,7 +388,7 @@ def two_variable_sweep(param1, val1, param2, val2, n_reps):
     rows = []
     for v1 in val1:
         for v2 in val2:
-            results = monte_carlo(n_reps, **{param1: v1, param2: v2})
+            results, node = monte_carlo(n_reps, **{param1: v1, param2: v2})
             cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
             final_vol = analyze_monte_carlo(results)["average final vol of capture"]
             all_abandon = analyze_monte_carlo(results)["all abandoned rate"]
@@ -400,7 +400,7 @@ def three_variable_sweep(param1, val1, param2, val2, param3, val3, n_reps):
     for v1 in val1:
         for v2 in val2:
             for v3 in val3:
-                results = monte_carlo(n_reps, **{param1: v1, param2: v2, param3: v3})
+                results, node = monte_carlo(n_reps, **{param1: v1, param2: v2, param3: v3})
                 cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
                 final_vol = analyze_monte_carlo(results)["average final vol of capture"]
                 all_abandon = analyze_monte_carlo(results)["all abandoned rate"]
@@ -415,12 +415,12 @@ if __name__ == "__main__":
     #===========================
     # Getting node level data
     #===========================
-
-    # monte_carlo(3).to_csv('trial_1.csv', index=False)
+    _, nodes = monte_carlo(300)
+    nodes.to_csv('w_2_nodes.csv', index=False)
     # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
     # print(abandonment_summary('trial_1.csv'))
 
-     #monte_carlo(100).to_csv('trial_2.csv', index=False)
+    #monte_carlo(100).to_csv('trial_2.csv', index=False)
     # deployment_over_time('trial_2.csv').to_csv('deployment_trial_2.csv', index=False)
     # print(abandonment_summary('trial_2.csv'))
 

@@ -183,11 +183,9 @@ def monte_carlo(
 
         all_rows.extend(collect_node_rows(G, rep, abandoned))
     
-    # node_df = pd.DataFrame(all_rows)
+    node_df = pd.DataFrame(all_rows)
 
-    # return node_df
-
-    return results
+    return results, node_df
 
 def analyze_monte_carlo(results):
     cum_abandoned = 0.0
@@ -220,7 +218,7 @@ def analyze_monte_carlo(results):
 def sensitivity_sweep(param_name, values, n_reps):
     rows = []
     for v in values:
-        results = monte_carlo(n_reps, **{param_name: v})   # only override, rest = defaults
+        results, _ = monte_carlo(n_reps, **{param_name: v})  # only override, rest = defaults
         cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
         final_vol = analyze_monte_carlo(results)["average final volume"]
         rows.append({param_name: v, "cap abandonment": cap_abandonment, "final vol": final_vol})
@@ -230,7 +228,7 @@ def two_variable_sweep(param1, val1, param2, val2, n_reps):
     rows = []
     for v1 in val1:
         for v2 in val2:
-            results = monte_carlo(n_reps, **{param1: v1, param2: v2})
+            results, _ = monte_carlo(n_reps, **{param1: v1, param2: v2})
             cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
             final_vol = analyze_monte_carlo(results)["average final volume"]
             rows.append({param1: v1, param2: v2, "abandonment": cap_abandonment, "final vol": final_vol})
@@ -241,7 +239,7 @@ def three_variable_sweep(param1, val1, param2, val2, param3, val3, n_reps):
     for v1 in val1:
         for v2 in val2:
             for v3 in val3:
-                results = monte_carlo(n_reps, **{param1: v1, param2: v2, param3: v3})
+                results, _ = monte_carlo(n_reps, **{param1: v1, param2: v2, param3: v3})
                 cap_abandonment = analyze_monte_carlo(results)["average capture abandonment rate"]
                 final_vol = analyze_monte_carlo(results)["average final volume"]
                 rows.append({param1: v1, param2: v2, "abandonment": cap_abandonment, "final vol": final_vol})
@@ -255,7 +253,8 @@ if __name__ == "__main__":
     #===========================
     # Getting node level data
     #===========================
-    # monte_carlo(3).to_csv("w1_1_trial_1.csv", index=False)
+    _, nodes = monte_carlo(300)
+    nodes.to_csv("w1_1_nodes.csv", index=False)
 
     #===========================
     # Single var sweeps
@@ -263,7 +262,7 @@ if __name__ == "__main__":
     # sensitivity_sweep("max_rate", [0.05, 0.1, 0.15, 0.2, 0.4, 0.6], 300).to_csv('w11_maxrate_sensitivity_300.csv', index=False)
     # sensitivity_sweep("base_rate", [0.01, 0.05, 0.1, 0.15, 0.2], 300).to_csv('w11_baserate_sensitivity_300.csv', index=False)
     # sensitivity_sweep("cap_tolerance", [12, 48, 60, 100, 200], 300).to_csv('w11_captol_sensitivity_300.csv', index=False)
-    sensitivity_sweep("frac_split", [(0, 1), (0.2, 0.8), (0.4, 0.6), (0.6, 0.4), (0.8, 0.2), (1,0)], 300).to_csv('w11_risktol_sensitivity_300.csv', index=False)
+    # sensitivity_sweep("frac_split", [(0, 1), (0.2, 0.8), (0.4, 0.6), (0.6, 0.4), (0.8, 0.2), (1,0)], 300).to_csv('w11_risktol_sensitivity_300.csv', index=False)
 
     #===========================
     # Multi var sweeps
