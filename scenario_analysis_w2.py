@@ -317,7 +317,7 @@ def deployment_over_time(data):
     '''
     cumulative_vol_per_year = []
 
-    df = pd.read_csv(data)
+    df = data
     full_years = list(range(2026, 2046))
 
     reps = df["rep"].unique()

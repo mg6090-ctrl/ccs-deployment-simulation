@@ -212,6 +212,35 @@ def analyze_monte_carlo(results):
             "average final volume": avg_vol}
 
 #==================================================================
+# DEPLOYMENT OVER TIME
+#==================================================================
+
+def deployment_over_time(data):
+    '''
+    For each rep, cumulative volume captured over time 
+    Returns a dataframe of time, mean, p10, p90 over reps which we can then use to plot 
+    '''
+    cumulative_vol_per_year = []
+
+    df = data
+    full_years = list(range(2026, 2046))
+
+    reps = df["rep"].unique()
+    for rep in reps:
+        cap_comm = df[(df["rep"] == rep) & (df["tech"]=="capture") & (df["stage"]=="commissioning") & (df["abandoned"] == False)]
+        yearly = cap_comm.groupby("finish_year")["volume"].sum()
+        cumulative = yearly.cumsum()
+        aligned = cumulative.reindex(full_years).ffill().fillna(0)
+        cumulative_vol_per_year.append(aligned)
+
+    arr = np.array(cumulative_vol_per_year)
+    mean = arr.mean(axis=0) # averages across reps for each time point
+    p10  = np.percentile(arr, 10, axis=0)
+    p90  = np.percentile(arr, 90, axis=0)
+
+    return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90})
+
+#==================================================================
 # SENSITIVITY ANALYSIS
 #==================================================================
 
