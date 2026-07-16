@@ -144,6 +144,9 @@ CAPTURE_PIPE = {"projC1": "projT1",
 
 TRUNKS = ["projT1"]
 
+# sum of all capture volumes
+PLANNED_CAP_VOLUME = sum(CAPTURE_VOLUMES.values())
+
 # getting the total capacity of all transport projects for the hammock node
 TRANSPORT_CAPACITY = sum(TRANSPORT_VOLUMES.values())
 

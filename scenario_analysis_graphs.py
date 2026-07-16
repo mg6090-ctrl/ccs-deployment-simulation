@@ -23,6 +23,8 @@ from scenario_analysis_w1_2 import(
     deployment_over_time as w12_deployment_over_time
 )
 
+import project_data as project_data
+
 #==================================================================
 # COMPARISON CHARTS
 #==================================================================
@@ -52,15 +54,29 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
     ax.fill_between(w12_deployment["year"], w12_deployment["p10"], w12_deployment["p90"], color="#3abb2c", alpha=0.2, label="World 1.2 10th–90th percentile")
 
     ax.set_xlabel("year")
-    ax.set_xticks(range(2025, 2058, 2))
+    ax.set_xticks(range(2025, 2047, 2))
 
-    last_w2_y = w2_deployment["mean"][29]
-    last_w11_y = w11_deployment["mean"][29]
-    last_w12_y = w12_deployment["mean"][29]
+    target = project_data.PLANNED_CAP_VOLUME
+    
+    ax.axhline(y=target, xmax = 0.91, color="black", linestyle = "--")
+    ax.annotate(
+        text=f"Goal\n{target:.1f}",
+        xy=(2045, target),
+        xytext=(1,0),
+        textcoords="offset points",
+        va="center",
+        ha="left",
+        color="black",
+        fontweight="bold"
+    )
+
+    last_w2_y = w2_deployment["mean"][19]
+    last_w11_y = w11_deployment["mean"][19]
+    last_w12_y = w12_deployment["mean"][19]
 
     ax.annotate(
         text=f"{last_w2_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(2055, last_w2_y),              # Position of the data point
+        xy=(2045, last_w2_y),              # Position of the data point
         xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
         textcoords="offset points",       # Uses point offset instead of data coordinates
         va="center",                      # Vertically centers the text on the line
@@ -71,7 +87,7 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
 
     ax.annotate(
         text=f"{last_w11_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(2055, last_w11_y),              # Position of the data point
+        xy=(2045, last_w11_y),              # Position of the data point
         xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
         textcoords="offset points",       # Uses point offset instead of data coordinates
         va="center",                      # Vertically centers the text on the line
@@ -82,7 +98,7 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
 
     ax.annotate(
         text=f"{last_w12_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(2055, last_w12_y),              # Position of the data point
+        xy=(2045, last_w12_y),              # Position of the data point
         xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
         textcoords="offset points",       # Uses point offset instead of data coordinates
         va="center",                      # Vertically centers the text on the line
