@@ -14,11 +14,10 @@ DURATION_BY_TYPE = {
     "CHP": {"definition": 12, "approval": 24, "construction": 36},
     "other_industrial": {"definition": 12, "approval": 24, "construction": 36},
     
-    # the following have not been confirmed and are placeholders:
-    "DAC": {"definition": 12, "approval": 24, "construction": 36},
-    "biomass_gasification": {"definition": 12, "approval": 24, "construction": 36},
-    "hydrogen": {"definition": 12, "approval": 24, "construction": 36},
-    "cement": {"definition": 12, "approval": 24, "construction": 36},
+    "DAC": {"definition": 24, "approval": 12, "construction": 36},
+    "biomass_gasification": {"definition": 36, "approval": 12, "construction": 36},
+    "hydrogen": {"definition": 30, "approval": 24, "construction": 12},
+    "cement": {"definition": 24, "approval": 12, "construction": 36},
 }
 
 #==================================================================
