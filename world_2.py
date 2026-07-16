@@ -17,13 +17,13 @@ STAGES4 = ["definition", "approval", "construction", "commissioning"]
 SEED = 42
 
 # constants for the abandonment function
-THRESHOLD_FRAC = 0.3
-BASE_RATE = 0.05
-MAX_RATE = 0.4
-CAPTURE_TOLERANCE = 36
-STORAGE_TOLERANCE = 36
-TRANSPORT_TOLERANCE = 36
-LATE_PENALTY = 0.4
+THRESHOLD_FRAC = 0.7
+BASE_RATE = 0.1
+MAX_RATE = 0.3
+CAPTURE_TOLERANCE = 48
+STORAGE_TOLERANCE = 48
+TRANSPORT_TOLERANCE = 48
+LATE_PENALTY = 0.3
 
 #==================================================================
 # STOCHASTIC DURATION SAMPLING

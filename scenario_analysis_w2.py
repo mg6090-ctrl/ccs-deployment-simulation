@@ -16,7 +16,7 @@ import numpy as np
 #==================================================================
 
 BASELINE = dict(
-    base_rate=0.05, max_rate=0.2, late_penalty=0.2, threshold_frac=0.5,
+    base_rate=0.1, max_rate=0.3, late_penalty=0.3, threshold_frac=0.7,
     capture_tolerance=48, transport_tolerance=48, storage_tolerance=48,
     trunks=project_data.TRUNKS, pipe_downstream=project_data.PIPE_DOWNSTREAM, capture_pipe=project_data.CAPTURE_PIPE,
     capture_durations=project_data.CAPTURE, capture_volumes=project_data.CAPTURE_VOLUMES,

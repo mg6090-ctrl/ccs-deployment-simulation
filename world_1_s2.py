@@ -13,14 +13,14 @@ STAGES = ["definition", "approval", "construction"]
 STAGES4 = ["definition", "approval", "construction", "commissioning"]
 
 # fraction split
-FRAC_SPLIT = (0.2, 0.8)
+FRAC_SPLIT = (0.4, 0.6)
 
 # seed for shuffling before frac_split
 SEED = 42
 
 # attrition
 BASE_RATE = 0.05
-MAX_RATE = 0.4
+MAX_RATE = 0.2
 CAPTURE_TOLERANCE = 48
 
 # hammock node
@@ -496,7 +496,7 @@ def threshold_gating(arrivals, capacity, fraction):
             return arrival_time
     return None # if the capacity is never filled, then the gate won't fire
 
-def CPM(G: nx.DiGraph, capacity=project_data.TRANSPORT_CAPACITY, hammock_threshold=HAMMOCK_THRESHOLD):
+def CPM(G: nx.DiGraph, capacity=project_data.PLANNED_CAP_VOLUME, hammock_threshold=HAMMOCK_THRESHOLD):
     '''
     Description: runs critical path method (CPM), updating ES and EF 
     Args: G

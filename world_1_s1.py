@@ -19,7 +19,7 @@ SEED = 42
 
 # attrition
 BASE_RATE = 0.05
-MAX_RATE = 0.4
+MAX_RATE = 0.2
 CAPTURE_TOLERANCE = 48
 
 #==================================================================

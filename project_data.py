@@ -4,19 +4,19 @@
 
 DURATION_BY_TYPE = {
     "storage": {"definition": 24, "approval": 30, "construction": 24},
-    "transport": {"definition": 9, "approval": 36, "construction": 30},
+    "transport": {"definition": 24, "approval": 24, "construction": 30},
     
-    "NGCC": {"definition": 12, "approval": 24, "construction": 36},
+    "NGCC": {"definition": 24, "approval": 12, "construction": 36},
     "ethanol": {"definition": 6, "approval": 9, "construction": 12},
     "gas_processing": {"definition": 6, "approval": 6, "construction": 6},
     "refinery": {"definition": 30, "approval": 24, "construction": 36},
-    "legacy_biomass": {"definition": 10, "approval": 18, "construction": 30},
-    "CHP": {"definition": 12, "approval": 24, "construction": 36},
-    "other_industrial": {"definition": 12, "approval": 24, "construction": 36},
+    "legacy_biomass": {"definition": 18, "approval": 18, "construction": 30},
+    "CHP": {"definition": 24, "approval": 12, "construction": 36},
+    "other_industrial": {"definition": 24, "approval": 12, "construction": 36},
     
     "DAC": {"definition": 24, "approval": 12, "construction": 36},
-    "biomass_gasification": {"definition": 36, "approval": 12, "construction": 36},
-    "hydrogen": {"definition": 30, "approval": 24, "construction": 12},
+    "biomass_gasification": {"definition": 24, "approval": 12, "construction": 36},
+    "hydrogen": {"definition": 24, "approval": 12, "construction": 24},
     "cement": {"definition": 24, "approval": 12, "construction": 36},
 }
 
