@@ -161,7 +161,7 @@ def monte_carlo(n_reps,
 
         CPM(G, threshold_frac)
 
-        a_s, a_t, a_c = apply_attrition(G, pipe_downstream, capture_pipe, base_rate, threshold_frac,
+        a_s, a_t, a_c, abandonment_log = apply_attrition(G, pipe_downstream, capture_pipe, base_rate, threshold_frac,
                                          max_rate, capture_tolerance, transport_tolerance, storage_tolerance,
                                          late_penalty, replication_seed = rep)
 
@@ -175,6 +175,9 @@ def monte_carlo(n_reps,
             if not G.nodes[fid]["below_threshold"] and G.nodes[fid]["abandoned"] is None:
                 final_vol += G.nodes[fid]["actual_volume"]
         
+        # checking abandonment cascade
+        fail_trigger = abandonment_log[0][0] if abandonment_log else None # first project that got abandoned
+
         results.append({
                 "a_c": a_c,
                 "a_t": a_t,
@@ -187,7 +190,10 @@ def monte_carlo(n_reps,
                 "num_cap": num_cap,
                 "capture abandoned": len(a_c),
                 "completion": max(finite) if finite else 0,
-                "final volume": final_vol
+                "final volume": final_vol,
+                "fail trigger": fail_trigger,
+                "collapsed": final_vol < 1e-9,
+                "n_triggers": len(abandonment_log)
             }
         )
 
@@ -357,6 +363,16 @@ def abandonment_summary(data):
         "p90":  rate_per_rep.quantile(0.90),
     }
 
+def abandonment_cascades(monte_carlo_results):
+    cascade_df = pd.DataFrame(monte_carlo_results)
+
+    # count: number of reps where this project was the first to fail
+    # mean: avg number of times the entire cluster collapsed in those reps when this failed first
+    
+    result = cascade_df.groupby("fail trigger")["collapsed"].agg(["mean", "count"]).reset_index()
+    result = result.sort_values("mean", ascending=False)
+    return result
+
 #==================================================================
 # BOTTLENECK ANALYSIS NOTE: INCOMPLETE, NEED TO CONSIDER COLLECTION
 #==================================================================
@@ -415,8 +431,9 @@ if __name__ == "__main__":
     #===========================
     # Getting node level data
     #===========================
-    _, nodes = monte_carlo(300)
-    nodes.to_csv('w_2_nodes.csv', index=False)
+    results, nodes = monte_carlo(300)
+    # nodes.to_csv('w_2_nodes.csv', index=False)
+    abandonment_cascades(results).to_csv("abandonment_cascades.csv", index=False)
     # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
     # print(abandonment_summary('trial_1.csv'))
 
@@ -441,6 +458,6 @@ if __name__ == "__main__":
     # Multi var sweeps
     #===========================
 
-    two_variable_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 500).to_csv('frac_late_sweep.csv', index=False)
+    # two_variable_sweep("threshold_frac", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "late_penalty", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 500).to_csv('frac_late_sweep.csv', index=False)
     # two_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "storage_tolerance", [12, 24, 48, 60, 72], 300).to_csv('frac_stortol_sweep.csv', index=False)
     # three_variable_sweep("threshold_frac", [0.2, 0.4, 0.6, 0.8], "storage_tolerance", [12, 24, 48, 60], "late_penalty", [0.2, 0.3, 0.4, 0.5], 300).to_csv("three_sweep.csv", index=False)

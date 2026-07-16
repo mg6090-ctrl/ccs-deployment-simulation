@@ -729,6 +729,7 @@ def time_slip_at_gate(G: nx.DiGraph,
                       rng, 
                       joint_node,
                       abandoned_t, abandoned_s, abandoned_c,
+                      abandonment_log,
                       base_rate = BASE_RATE, 
                       max_rate = MAX_RATE,
                       capture_tolerance = CAPTURE_TOLERANCE, 
@@ -736,7 +737,7 @@ def time_slip_at_gate(G: nx.DiGraph,
                       storage_tolerance = STORAGE_TOLERANCE, 
                       late_penalty = LATE_PENALTY, 
                       pipe_downstream = project_data.PIPE_DOWNSTREAM,
-                      capture_pipe = project_data.CAPTURE_PIPE
+                      capture_pipe = project_data.CAPTURE_PIPE,
                       ):
     '''
     Calculates time-delays and rolls abandonment at this joint node
@@ -769,11 +770,13 @@ def time_slip_at_gate(G: nx.DiGraph,
         if rng.random() < prob:
             mark_all_abandonment(G, owning_project, pipe_downstream, capture_pipe)
             record_abandonment(owning_project, tech, stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe)
+            abandonment_log.append((owning_project, stage))
 
 def threshold_failed(G, joint_node):
     return G.nodes[joint_node]["below_threshold"] == True
 
-def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe):
+def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe,
+                           abandonment_log):
     '''
     If threshold test is not met, return True and collapse the owner of the joint_node
     Otherwise, return False
@@ -781,6 +784,7 @@ def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t,
     if threshold_failed(G, joint_node):
         mark_all_abandonment(G, owner, pipe_downstream, capture_pipe)
         record_abandonment(owner, get_tech(G, owner), stage, abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe)
+        abandonment_log.append((owner, stage))
         return True
 
     return False
@@ -815,6 +819,8 @@ def apply_attrition(G: nx.DiGraph,
     rng = random.Random(SEED + replication_seed)
     abandoned_t, abandoned_s, abandoned_c = {}, {}, {}
 
+    abandonment_log = []
+
     order = traversal_order(G)
     
     #-------- Definition joint nodes ----------
@@ -824,12 +830,13 @@ def apply_attrition(G: nx.DiGraph,
         if get_tech(G, project) == "storage":
             continue # because storage projects don't get their own def joint node
         def_joint_node = (cluster_naming(project), "definition joint node")
-        time_slip_at_gate(G, rng, def_joint_node, abandoned_t, abandoned_s, abandoned_c, 
+        time_slip_at_gate(G, rng, def_joint_node, abandoned_t, abandoned_s, abandoned_c, abandonment_log,
                           base_rate, max_rate, capture_tolerance, transport_tolerance, 
                           storage_tolerance, late_penalty, pipe_downstream, capture_pipe)
         CPM(G, threshold_frac)
         if threshold_test_at_gate(G, def_joint_node, project, "definition joint node", 
-                                  abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe):
+                                  abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe,
+                                  abandonment_log):
             continue # if we fail the threshold test, the entire cluster collapses
 
     #-------- FID joint nodes ----------
@@ -837,15 +844,17 @@ def apply_attrition(G: nx.DiGraph,
         if project in abandoned_t or project in abandoned_s:
             continue
         FID_joint_node = (cluster_naming(project), "FID joint node")
-        time_slip_at_gate(G, rng, FID_joint_node, abandoned_t, abandoned_s, abandoned_c, 
+        time_slip_at_gate(G, rng, FID_joint_node, abandoned_t, abandoned_s, abandoned_c, abandonment_log,
                           base_rate, max_rate, capture_tolerance, transport_tolerance, 
-                          storage_tolerance, late_penalty, pipe_downstream, capture_pipe)
+                          storage_tolerance, late_penalty, pipe_downstream, capture_pipe,
+                          )
         CPM(G, threshold_frac)
         if threshold_test_at_gate(G, FID_joint_node, project, "FID joint node", 
-                                  abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe):
+                                  abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe,
+                                  abandonment_log):
             continue
 
-    return abandoned_s, abandoned_t, abandoned_c
+    return abandoned_s, abandoned_t, abandoned_c, abandonment_log
 
 #==================================================================
 # RUNNING THE MODEL
@@ -911,7 +920,7 @@ def monte_carlo(n_reps,
 
         CPM(G, threshold_frac) # initial CPM gives each node ES and EF 
 
-        a_s, a_t, a_c = apply_attrition(G, pipe_downstream, capture_pipe, base_rate, threshold_frac,
+        a_s, a_t, a_c, abandonment_log = apply_attrition(G, pipe_downstream, capture_pipe, base_rate, threshold_frac,
                                          max_rate, capture_tolerance, transport_tolerance, storage_tolerance,
                                          late_penalty, replication_seed = rep)
 
@@ -925,6 +934,9 @@ def monte_carlo(n_reps,
             if not G.nodes[fid]["below_threshold"] and G.nodes[fid]["abandoned"] is None:
                 final_vol += G.nodes[fid]["actual_volume"]
 
+        # checking abandonment cascade
+        fail_trigger = abandonment_log[0][0] if abandonment_log else None # first project that got abandoned
+        
         results.append({
                 "a_c": a_c,
                 "a_t": a_t,
@@ -937,7 +949,10 @@ def monte_carlo(n_reps,
                 "num_cap": num_cap,
                 "capture abandoned": len(a_c),
                 "completion": max(finite) if finite else 0,
-                "final volume": final_vol
+                "final volume": final_vol,
+                "fail trigger": fail_trigger,
+                "collapsed": final_vol < 1e-9,
+                "n_triggers": len(abandonment_log)
             }
         )
     return results
