@@ -41,7 +41,7 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s,
         project, stage = n[0], n[1]
         ES = d.get("ES")
         EF = d.get("EF", 0.0)
-        
+
         abandoned = d.get("abandoned") is not None
         tech = d.get("tech")
 
@@ -65,6 +65,7 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, abandoned_t, abandoned_s,
             "project_type": d.get("project_type"),
             "ES": ES,
             "EF": EF,
+            "delay": d.get("delay", None),
             "volume": d.get("volume"),
             "actual_volume": d.get("actual_volume", None),
             "committed_volume": d.get("committed_volume", None),
@@ -342,9 +343,10 @@ def deployment_over_time(data):
     return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90})
 
 #==================================================================
-# ABANDONMENT SUMMARY NOTE: THIS IS WRONG BECAUSE RUN 0 SHOULD BE ALL ABANDONED
+# ABANDONMENT SUMMARY 
 #==================================================================
 
+# NOTE: ABANDONMENT_SUMMARY IS INCOMPLETE
 def abandonment_summary(data):
     df = pd.read_csv(data)
 
@@ -374,8 +376,19 @@ def abandonment_cascades(monte_carlo_results):
     return result
 
 #==================================================================
-# BOTTLENECK ANALYSIS NOTE: INCOMPLETE, NEED TO CONSIDER COLLECTION
+# DELAY ANALYSIS NOTE: INCOMPLETE, NEED TO CONSIDER COLLECTION
 #==================================================================
+
+def delay_analysis(data):
+    # group by project type, for each, calculate delays at each stage by 
+    # this stage ES - last stage EF. Aggregate 
+    # delay and source of delay
+    df = pd.read_csv(data)
+    stages = ["definition", "approval", "FID joint node", "definition joint node"]
+    delay_rows = df[(df["stage"].isin(stages))]
+    result = delay_rows.groupby(["project_type", "stage"])["delay"].mean().reset_index()
+    result = result.sort_values("delay", ascending=False)
+    return result
 
 def bottleneck_analysis(data):
     '''
@@ -431,9 +444,10 @@ if __name__ == "__main__":
     #===========================
     # Getting node level data
     #===========================
-    results, nodes = monte_carlo(300)
-    nodes.to_csv('w2_clusters_nodes.csv', index=False)
-    abandonment_cascades(results).to_csv("clusters_abandonment_cascades.csv", index=False)
+    # results, nodes = monte_carlo(300)
+    # nodes.to_csv('w2_clusters_nodes.csv', index=False)
+    # abandonment_cascades(results).to_csv("clusters_abandonment_cascades.csv", index=False)
+    delay_analysis("w2_clusters_nodes.csv").to_csv("delay_by_type.csv", index=False)
     # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
     # print(abandonment_summary('trial_1.csv'))
 

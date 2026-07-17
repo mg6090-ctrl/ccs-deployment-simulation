@@ -226,7 +226,8 @@ def projGraph(replication_seed=0,
                 committed_volume = 0.0,
                 project_type = project_data.PROJECT_TYPE[storage],
                 s_cluster = storage,
-                abandoned = None
+                abandoned = None,
+                delay = 0.0
                 )
         # create storage commissioning node
         G.add_node(
@@ -241,7 +242,8 @@ def projGraph(replication_seed=0,
             committed_volume = 0.0,
             project_type = project_data.PROJECT_TYPE[storage],
             s_cluster = storage,
-            abandoned = None
+            abandoned = None,
+            delay = 0.0
         )
         # create storage joint FID node
         G.add_node(
@@ -257,7 +259,8 @@ def projGraph(replication_seed=0,
             s_cluster = storage,
             project_type = project_data.PROJECT_TYPE[storage],
             below_threshold = None,
-            abandoned = None
+            abandoned = None,
+            delay = 0.0
         )
     
     # Step 2: build all the transport nodes
@@ -286,7 +289,8 @@ def projGraph(replication_seed=0,
                 predecessor = preds,
                 t_cluster = transport,
                 project_type = project_data.PROJECT_TYPE[transport],
-                abandoned = None
+                abandoned = None,
+                delay = 0.0
             )
         # create transport commissioning node
         G.add_node(
@@ -303,7 +307,8 @@ def projGraph(replication_seed=0,
             predecessor = preds,
             t_cluster = transport,
             project_type = project_data.PROJECT_TYPE[transport],
-            abandoned = None
+            abandoned = None,
+            delay = 0.0
         )
         # built transport joint definition and joint FID nodes
         for stage in ["definition", "approval"]:
@@ -322,7 +327,8 @@ def projGraph(replication_seed=0,
                 successor = succ,
                 predecessor = preds,
                 below_threshold = None,
-                abandoned = None
+                abandoned = None,
+                delay = 0.0
             )
 
     # Step 3: build all the capture nodes
@@ -341,7 +347,8 @@ def projGraph(replication_seed=0,
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 immediate_transport = immediate_transport,
-                abandoned = None
+                abandoned = None,
+                delay = 0.0
             )
         
         # add capture commissioning node
@@ -356,7 +363,8 @@ def projGraph(replication_seed=0,
             project_type = project_data.PROJECT_TYPE[capture],
             actual_volume = 0.0,
             committed_volume = 0.0,
-            abandoned = None
+            abandoned = None,
+            delay = 0.0
         )
     
     return G
@@ -615,7 +623,8 @@ def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
 #==================================================================
 
 def delay_at_joint(G: nx.DiGraph, joint, party_node):
-    return G.nodes[joint]["EF"] - G.nodes[party_node]["EF"]
+    delay = G.nodes[joint]["EF"] - G.nodes[party_node]["EF"]
+    return delay
 
 def cluster_owner(child_joint_node):
     '''
@@ -753,6 +762,15 @@ def time_slip_at_gate(G: nx.DiGraph,
 
         # get the delay of each predecessor at the joint node
         delay = delay_at_joint(G, joint_node, node)
+
+        # record the delay experienced by the node at the joint (e.g. delay at def joint recorded on def node;
+        # delay at FID joint node recorded on approval node)
+        if delay == float("inf"):
+            G.nodes[node]["delay"] = None
+        elif delay >= 0:
+            G.nodes[node]["delay"] = delay
+        else:
+            G.nodes[node]["delay"] = 0
 
         # get tech to calculate attrition probability
         if G.nodes[node]["tech"] == "joint":
