@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import hashlib
-import w2_project_data as project_data
+import w2_extreme_project_data as project_data
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)

@@ -432,8 +432,8 @@ if __name__ == "__main__":
     # Getting node level data
     #===========================
     results, nodes = monte_carlo(300)
-    # nodes.to_csv('w_2_nodes.csv', index=False)
-    abandonment_cascades(results).to_csv("abandonment_cascades.csv", index=False)
+    nodes.to_csv('w2_clusters_nodes.csv', index=False)
+    abandonment_cascades(results).to_csv("clusters_abandonment_cascades.csv", index=False)
     # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)
     # print(abandonment_summary('trial_1.csv'))
 

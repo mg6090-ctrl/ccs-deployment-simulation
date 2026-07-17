@@ -126,7 +126,7 @@ def w2_final_vol_distribution(w2_node_data):
     final_vols = final_vols.reindex(all_reps, fill_value=0)
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.hist(final_vols, bins=20, color="#2c6fbb", edgecolor="white")
+    ax.hist(final_vols, bins=20, range=(0,35), color="#2c6fbb", edgecolor="white")
     ax.set_xlabel("final delivered volume")
     ax.set_ylabel("number of reps")
     ax.set_title("W2 deployment distribution across reps")
@@ -142,7 +142,7 @@ def w11_final_vol_distribution(w11_node_data):
     final_vols = final_vols.reindex(all_reps, fill_value=0)
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.hist(final_vols, bins=20, color="#bb782c", edgecolor="white")
+    ax.hist(final_vols, bins=20, range=(0, 35), color="#bb782c", edgecolor="white")
     ax.set_xlabel("final delivered volume")
     ax.set_ylabel("number of reps")
     ax.set_title("W1.1 deployment distribution across reps")
@@ -158,7 +158,7 @@ def w12_final_vol_distribution(w12_node_data):
     final_vols = final_vols.reindex(all_reps, fill_value=0)
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.hist(final_vols, bins=20, color="#3abb2c", edgecolor="white")
+    ax.hist(final_vols, bins=20, range=(0,35), color="#3abb2c", edgecolor="white")
     ax.set_xlabel("final delivered volume")
     ax.set_ylabel("number of reps")
     ax.set_title("W1.2 deployment distribution across reps")
