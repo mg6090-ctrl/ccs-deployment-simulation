@@ -211,7 +211,8 @@ def projGraph(replication_seed=0,
                 project_type = project_data.PROJECT_TYPE[storage],
                 actual_volume = 0.0,
                 committed_volume = 0.0,
-                abandoned = None
+                abandoned = None,
+                delay = 0.0
                 )
         # create storage commissioning node
         G.add_node(
@@ -225,7 +226,8 @@ def projGraph(replication_seed=0,
             project_type = project_data.PROJECT_TYPE[storage],
             actual_volume = 0.0,
             committed_volume = 0.0,
-            abandoned = None
+            abandoned = None,
+            delay = 0.0
         )
     
     # Step 2: build all the transport nodes
@@ -251,7 +253,8 @@ def projGraph(replication_seed=0,
                 committed_volume = 0.0,
                 successor = succ,
                 predecessor = preds,
-                abandoned = None
+                abandoned = None,
+                delay = 0.0
             )
         # create transport commissioning node
         G.add_node(
@@ -267,7 +270,8 @@ def projGraph(replication_seed=0,
             committed_volume = 0.0,
             successor = succ,
             predecessor = preds,
-            abandoned = None
+            abandoned = None,
+            delay = 0.0
         )
 
     # Step 3: build all the capture nodes
@@ -286,7 +290,8 @@ def projGraph(replication_seed=0,
                 actual_volume = 0.0,
                 committed_volume = 0.0,
                 immediate_transport = immediate_transport,
-                abandoned = None
+                abandoned = None,
+                delay = 0.0
             )
         
         # add capture commissioning node
@@ -301,7 +306,8 @@ def projGraph(replication_seed=0,
             project_type = project_data.PROJECT_TYPE[capture],
             actual_volume = 0.0,
             committed_volume = 0.0,
-            abandoned = None
+            abandoned = None,
+            delay = 0.0
         )
     
     return G
@@ -472,6 +478,8 @@ def calculate_delay(G: nx.DiGraph, project, stage):
 
         original_EF = EF_of_predecessor + own_duration
         delay = actual_EF - original_EF
+
+        G.nodes[(project, stage)]["delay"] = delay 
 
         return delay
     

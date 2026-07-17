@@ -60,6 +60,7 @@ def collect_node_rows(G: nx.DiGraph, rep, abandoned_c, base_year=2026):
             "project_type": d.get("project_type"),
             "ES": ES,
             "EF": EF,
+            "delay": d.get("delay"),
             "volume": d.get("volume"),
             "actual_volume": d.get("actual_volume", None),
             "committed_volume": d.get("committed_volume", None),
@@ -241,6 +242,17 @@ def deployment_over_time(data):
     return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90})
 
 #==================================================================
+# DELAY ANALYSIS
+#==================================================================
+
+def delay_analysis(data):
+    df = pd.read_csv(data)
+    delay_rows = df[(df["tech"] == "capture") & (df["stage"] == "approval")]
+    result = delay_rows.groupby("project_type")["delay"].mean().reset_index()
+    result.sort_values("delay", ascending=False)
+    return result
+
+#==================================================================
 # SENSITIVITY ANALYSIS
 #==================================================================
 
@@ -282,8 +294,9 @@ if __name__ == "__main__":
     #===========================
     # Getting node level data
     #===========================
-    _, nodes = monte_carlo(300)
-    nodes.to_csv("w1_1_nodes.csv", index=False)
+    # _, nodes = monte_carlo(300)
+    # nodes.to_csv("w1_1_nodes.csv", index=False)
+    delay_analysis("w1_1_nodes.csv").to_csv("w1_1_delay_by_type.csv", index=False)
 
     #===========================
     # Single var sweeps
