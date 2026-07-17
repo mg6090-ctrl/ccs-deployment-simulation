@@ -8,6 +8,7 @@ import world_1_s1 as w1_1
 import world_1_s2 as w1_2
 import world_2 as w2
 import project_data as project_data
+import w2_project_data as w2_project_data
 
 app = Flask(__name__)
 
@@ -158,12 +159,12 @@ def run_model():
         w2_uni_sampling = w2_params.get('uni_sampling', False)
         w2_no_sampling = w2_params.get('no_sampling', False)
         w2_base_rate = w2_params.get('base_rate', w2.BASE_RATE)
-        w2_caps = w2_params.get('caps', project_data.CAPTURE)
-        w2_caps_vol = w2_params.get('caps_vol', project_data.CAPTURE_VOLUMES)
-        w2_trans = w2_params.get('trans', project_data.TRANSPORT)
-        w2_trans_vol = w2_params.get('trans_vol', project_data.TRANSPORT_VOLUMES)
-        w2_stor = w2_params.get('stor', project_data.STORAGE)
-        w2_stor_vol = w2_params.get('stor_vol', project_data.STORAGE_VOLUMES)
+        w2_caps = w2_params.get('caps', w2_project_data.CAPTURE)
+        w2_caps_vol = w2_params.get('caps_vol', w2_project_data.CAPTURE_VOLUMES)
+        w2_trans = w2_params.get('trans', w2_project_data.TRANSPORT)
+        w2_trans_vol = w2_params.get('trans_vol', w2_project_data.TRANSPORT_VOLUMES)
+        w2_stor = w2_params.get('stor', w2_project_data.STORAGE)
+        w2_stor_vol = w2_params.get('stor_vol', w2_project_data.STORAGE_VOLUMES)
         w2_threshold_frac = w2_params.get('threshold_frac', w2.THRESHOLD_FRAC)
         w2_max = w2_params.get('max_rate', w2.MAX_RATE)
         w2_cap_tol = w2_params.get('cap_tol', w2.CAPTURE_TOLERANCE)
