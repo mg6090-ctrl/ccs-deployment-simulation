@@ -337,10 +337,11 @@ def deployment_over_time(data):
 
     arr = np.array(cumulative_vol_per_year)
     mean = arr.mean(axis=0) # averages across reps for each time point
+    sd = arr.std(axis=0)
     p10  = np.percentile(arr, 10, axis=0)
     p90  = np.percentile(arr, 90, axis=0)
 
-    return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90})
+    return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90, "sd": sd})
 
 #==================================================================
 # ABANDONMENT SUMMARY 

@@ -43,10 +43,19 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
 
     fig, ax = plt.subplots(figsize=(9, 5))
 
+    error_11 = w11_deployment["sd"]
+    error_12 = w12_deployment["sd"]
+    error_2 = w2_deployment["sd"]
+
     # the mean line
-    line2,  = ax.plot(w2_deployment["year"], w2_deployment["mean"], color="#2c6fbb", lw=2, label="World 2")
-    line11,  = ax.plot(w11_deployment["year"], w11_deployment["mean"], color="#bb782c", lw=2, label="World 1.1")
-    line12,  = ax.plot(w12_deployment["year"], w12_deployment["mean"], color="#3abb2c", lw=2, label="World 1.2")
+    line2,  = ax.plot(w2_deployment["year"], w2_deployment["mean"], color="#2c6fbb", lw=2, label="World 2", marker = 'o')
+    # plt.errorbar(w2_deployment["year"], w2_deployment["mean"], yerr = error_2, ecolor="#2c6fbb", capsize=5)
+
+    line11,  = ax.plot(w11_deployment["year"], w11_deployment["mean"], color="#bb782c", lw=2, label="World 1.1", marker = '^')
+    # plt.errorbar(w11_deployment["year"], w11_deployment["mean"], yerr = error_11, ecolor="#bb782c", capsize=5)
+
+    line12,  = ax.plot(w12_deployment["year"], w12_deployment["mean"], color="#3abb2c", lw=2, label="World 1.2", marker = 's')
+    # plt.errorbar(w12_deployment["year"], w12_deployment["mean"], yerr = error_12, ecolor="#3abb2c", capsize=5)
 
     # the p10-p90 uncertainty band (shaded region between two curves)
     ax.fill_between(w2_deployment["year"], w2_deployment["p10"], w2_deployment["p90"], color="#2c6fbb", alpha=0.2, label="World 2 10th–90th percentile")
