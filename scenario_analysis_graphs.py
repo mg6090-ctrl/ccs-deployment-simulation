@@ -58,7 +58,7 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
 
     target = project_data.PLANNED_CAP_VOLUME
     
-    ax.axhline(y=target, xmax = 0.91, color="black", linestyle = "--")
+    ax.axhline(y=target, xmax = 0.95, color="black", linestyle = "--")
     ax.annotate(
         text=f"Goal\n{target:.1f}",
         xy=(2045, target),
