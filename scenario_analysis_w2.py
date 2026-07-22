@@ -1,5 +1,5 @@
 import world_2 as w2
-import w2_extreme_project_data as project_data
+import actual_data as project_data
 import networkx as nx
 from world_2 import (
     buildmodel,

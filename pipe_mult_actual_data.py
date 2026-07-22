@@ -470,38 +470,38 @@ STORAGE_VOLUMES = {
 
 # dictionary for transport project duration
 TRANSPORT = {
-    "projT11":  DURATION_BY_TYPE[PROJECT_TYPE["projT11"]],
-    "projT12":  DURATION_BY_TYPE[PROJECT_TYPE["projT12"]],
-    "projT13":  DURATION_BY_TYPE[PROJECT_TYPE["projT13"]],
-    "projT14":  DURATION_BY_TYPE[PROJECT_TYPE["projT14"]],
-    "projT15":  DURATION_BY_TYPE[PROJECT_TYPE["projT15"]],
-    "projT16":  DURATION_BY_TYPE[PROJECT_TYPE["projT16"]],
-    "projT17":  DURATION_BY_TYPE[PROJECT_TYPE["projT17"]],
-    "projT18":  DURATION_BY_TYPE[PROJECT_TYPE["projT18"]],
-    "projT19":  DURATION_BY_TYPE[PROJECT_TYPE["projT19"]],
-    "projT110":  DURATION_BY_TYPE[PROJECT_TYPE["projT110"]],
-    "projT111":  DURATION_BY_TYPE[PROJECT_TYPE["projT111"]],
+    "projT11":  {stage: PIPE_MULT["projT11"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT11"]].items()},
+    "projT12":  {stage: PIPE_MULT["projT12"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT12"]].items()},
+    "projT13":  {stage: PIPE_MULT["projT13"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT13"]].items()},
+    "projT14":  {stage: PIPE_MULT["projT14"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT14"]].items()},
+    "projT15":  {stage: PIPE_MULT["projT15"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT15"]].items()},
+    "projT16":  {stage: PIPE_MULT["projT16"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT16"]].items()},
+    "projT17":  {stage: PIPE_MULT["projT17"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT17"]].items()},
+    "projT18":  {stage: PIPE_MULT["projT18"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT18"]].items()},
+    "projT19":  {stage: PIPE_MULT["projT19"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT19"]].items()},
+    "projT110":  {stage: PIPE_MULT["projT110"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT110"]].items()},
+    "projT111":  {stage: PIPE_MULT["projT111"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT111"]].items()},
 
-    "projT21":  DURATION_BY_TYPE[PROJECT_TYPE["projT21"]],
-    "projT22":  DURATION_BY_TYPE[PROJECT_TYPE["projT22"]],
-    "projT23":  DURATION_BY_TYPE[PROJECT_TYPE["projT23"]],
-    "projT24":  DURATION_BY_TYPE[PROJECT_TYPE["projT24"]],
-    "projT25":  DURATION_BY_TYPE[PROJECT_TYPE["projT25"]],
+    "projT21":  {stage: PIPE_MULT["projT21"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT21"]].items()},
+    "projT22":  {stage: PIPE_MULT["projT22"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT22"]].items()},
+    "projT23":  {stage: PIPE_MULT["projT23"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT23"]].items()},
+    "projT24":  {stage: PIPE_MULT["projT24"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT24"]].items()},
+    "projT25":  {stage: PIPE_MULT["projT25"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT25"]].items()},
 
-    "projT31":  DURATION_BY_TYPE[PROJECT_TYPE["projT31"]],
-    "projT32":  DURATION_BY_TYPE[PROJECT_TYPE["projT32"]],
-    "projT33":  DURATION_BY_TYPE[PROJECT_TYPE["projT33"]],
+    "projT31":  {stage: PIPE_MULT["projT31"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT31"]].items()},
+    "projT32":  {stage: PIPE_MULT["projT32"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT32"]].items()},
+    "projT33":  {stage: PIPE_MULT["projT33"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT33"]].items()},
 
-    "projT41":  DURATION_BY_TYPE[PROJECT_TYPE["projT41"]],
-    "projT42":  DURATION_BY_TYPE[PROJECT_TYPE["projT42"]],
+    "projT41":  {stage: PIPE_MULT["projT41"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT41"]].items()},
+    "projT42":  {stage: PIPE_MULT["projT42"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT42"]].items()},
 
-    "projT51":  DURATION_BY_TYPE[PROJECT_TYPE["projT51"]],
-    "projT52":  DURATION_BY_TYPE[PROJECT_TYPE["projT52"]],
-    "projT53":  DURATION_BY_TYPE[PROJECT_TYPE["projT53"]],
-    "projT54":  DURATION_BY_TYPE[PROJECT_TYPE["projT54"]],
-    "projT55":  DURATION_BY_TYPE[PROJECT_TYPE["projT55"]],
-    "projT56":  DURATION_BY_TYPE[PROJECT_TYPE["projT56"]],
-    "projT57":  DURATION_BY_TYPE[PROJECT_TYPE["projT57"]]
+    "projT51":  {stage: PIPE_MULT["projT51"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT51"]].items()},
+    "projT52":  {stage: PIPE_MULT["projT52"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT52"]].items()},
+    "projT53":  {stage: PIPE_MULT["projT53"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT53"]].items()},
+    "projT54":  {stage: PIPE_MULT["projT54"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT54"]].items()},
+    "projT55":  {stage: PIPE_MULT["projT55"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT55"]].items()},
+    "projT56":  {stage: PIPE_MULT["projT56"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT56"]].items()},
+    "projT57":  {stage: PIPE_MULT["projT57"] * dur for stage, dur in DURATION_BY_TYPE[PROJECT_TYPE["projT57"]].items()}
 }
 
 # transport volumes REMEMBER TO ADD THESE!
