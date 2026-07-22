@@ -23,7 +23,7 @@ from scenario_analysis_w1_2 import(
     deployment_over_time as w12_deployment_over_time
 )
 
-import pipe_mult_trial as project_data
+import pipe_mult_tests as project_data
 
 #==================================================================
 # COMPARISON CHARTS
