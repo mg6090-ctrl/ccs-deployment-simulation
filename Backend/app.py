@@ -7,18 +7,33 @@ from flask_cors import CORS
 import world_1_s1 as w1_1
 import world_1_s2 as w1_2
 import world_2 as w2
-import actual_data as project_data
-import actual_data as w2_project_data
+import scenario_analysis_w1_1 as w1_1_analysis
+import scenario_analysis_w1_2 as w1_2_analysis
+import scenario_analysis_w2 as w2_analysis
+import pipe_mult_tests as project_data
+import pipe_mult_tests as w2_project_data
+
+DEFAULT_END_YEAR = 2045
 
 app = Flask(__name__)
 
 CORS(app)
+
+def deployment_timeline(analysis_module, node_df, end_year):
+    timeline = analysis_module.deployment_over_time(node_df, end_year)
+    return {
+        "year": timeline["year"].tolist(),
+        "mean": timeline["mean"].tolist(),
+        "p10": timeline["p10"].tolist(),
+        "p90": timeline["p90"].tolist()
+    }
 
 @app.route('/api/run-model', methods = ['GET', 'POST'])
 def run_model():
     data = request.get_json(silent = True) or {}
 
     scenarios = data.get("scenarios", [])
+    end_year = data.get("end_year", DEFAULT_END_YEAR)
 
     results = {}
 
@@ -63,17 +78,17 @@ def run_model():
             switch = False
             override = None
 
-        w1_1_results = w1_1.monte_carlo(n_reps = w1_1_n_reps, 
-                       base_rate = w1_1_base_rate, 
+        w1_1_results, w1_1_node_df = w1_1_analysis.monte_carlo(n_reps = w1_1_n_reps,
+                       base_rate = w1_1_base_rate,
                        max_rate = max_rate,
                        cap_tolerance = cap_tolerance,
-                       caps = w1_1_caps, 
+                       caps = w1_1_caps,
                        caps_vol = w1_1_caps_vol,
-                       trans = w1_1_trans, 
+                       trans = w1_1_trans,
                        trans_vol = w1_1_trans_vol,
-                       stor = w1_1_stor, 
-                       stor_vol = w1_1_stor_vol, 
-                       frac_split = w1_1_frac_split, 
+                       stor = w1_1_stor,
+                       stor_vol = w1_1_stor_vol,
+                       frac_split = w1_1_frac_split,
                        sampling = switch,
                        dist_override = override)
 
@@ -82,7 +97,8 @@ def run_model():
         w1_1_bundle = {}
         w1_1_bundle["summary"] = w1_1_summary
         w1_1_bundle["reps"] = w1_1_results
-        
+        w1_1_bundle["deployment"] = deployment_timeline(w1_1_analysis, w1_1_node_df, end_year)
+
         results['world1_1'] = w1_1_bundle
     
     # world 1.2 params
@@ -127,17 +143,17 @@ def run_model():
             switch = False
             override = None
 
-        w1_2_results = w1_2.monte_carlo(n_reps = w1_2_n_reps, 
-                       base_rate = w1_2_base_rate, 
+        w1_2_results, w1_2_node_df = w1_2_analysis.monte_carlo(n_reps = w1_2_n_reps,
+                       base_rate = w1_2_base_rate,
                        max_rate = max_rate,
                        cap_tolerance = cap_tolerance,
-                       caps = w1_2_caps, 
+                       caps = w1_2_caps,
                        caps_vol = w1_2_caps_vol,
-                       trans = w1_2_trans, 
+                       trans = w1_2_trans,
                        trans_vol = w1_2_trans_vol,
-                       stor = w1_2_stor, 
-                       stor_vol = w1_2_stor_vol, 
-                       frac_split = w1_2_frac_split, 
+                       stor = w1_2_stor,
+                       stor_vol = w1_2_stor_vol,
+                       frac_split = w1_2_frac_split,
                        sampling = switch,
                        hammock_threshold = w1_2_hammock_threshold,
                        dist_override = override)
@@ -147,7 +163,8 @@ def run_model():
         w1_2_bundle = {}
         w1_2_bundle["summary"] = w1_2_summary
         w1_2_bundle["reps"] = w1_2_results
-        
+        w1_2_bundle["deployment"] = deployment_timeline(w1_2_analysis, w1_2_node_df, end_year)
+
         results['world1_2'] = w1_2_bundle
 
     # world 2 params
@@ -195,13 +212,13 @@ def run_model():
             switch = False
             override = None
 
-        w2_results = w2.monte_carlo(n_reps = w2_n_reps, 
-                       base_rate = w2_base_rate, 
-                       capture_durations = w2_caps, 
-                       capture_volumes = w2_caps_vol, 
-                       transport_durations = w2_trans, 
-                       transport_volumes = w2_trans_vol, 
-                       storage_durations = w2_stor, 
+        w2_results, w2_node_df = w2_analysis.monte_carlo(n_reps = w2_n_reps,
+                       base_rate = w2_base_rate,
+                       capture_durations = w2_caps,
+                       capture_volumes = w2_caps_vol,
+                       transport_durations = w2_trans,
+                       transport_volumes = w2_trans_vol,
+                       storage_durations = w2_stor,
                        storage_volumes = w2_stor_vol,
                        threshold_frac = w2_threshold_frac,
                        max_rate = w2_max,
@@ -211,12 +228,13 @@ def run_model():
                        sampling = switch,
                        dist_override=override,
                        late_penalty=w2_late_penalty)
-        
+
         w2_summary = w2.analyze_monte_carlo(w2_results)
-        
+
         w2_bundle = {}
         w2_bundle["summary"] = w2_summary
         w2_bundle["reps"] = w2_results
+        w2_bundle["deployment"] = deployment_timeline(w2_analysis, w2_node_df, end_year)
 
         results['world2'] = w2_bundle
 

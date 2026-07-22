@@ -505,7 +505,7 @@ STORAGE_VOLUMES = {
 }
 
 # pipe length multiplier is only applied to the construction stage in this trial
-SCALED_STAGES = {"construction"}
+SCALED_STAGES = {"definition", "approval", "construction"}
 
 def scaled_transport_duration(project, DICT):
     mult = DICT[project]
@@ -515,7 +515,7 @@ def scaled_transport_duration(project, DICT):
     }
 
 # dictionary for transport project duration
-TRANSPORT = {project: scaled_transport_duration(project, PIPE_MULT_MIN) for project in PIPE_MULT_MIN}
+TRANSPORT = {project: scaled_transport_duration(project, PIPE_MULT) for project in PIPE_MULT}
 
 # transport volumes REMEMBER TO ADD THESE!
 TRANSPORT_VOLUMES = {
