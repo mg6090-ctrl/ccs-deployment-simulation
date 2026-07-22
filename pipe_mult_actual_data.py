@@ -25,36 +25,36 @@ DURATION_BY_TYPE = {
 #==================================================================
 
 PIPE_MULT = {
-    "projT11":  0.78,
+    "projT11":  0.77,
     "projT12":  0.24,
-    "projT13":  0.70,
+    "projT13":  0.69,
     "projT14":  1.04,
-    "projT15":  0.94,
+    "projT15":  0.93,
     "projT16":  1.84,
-    "projT17":  0.98,
-    "projT18":  2.35,
-    "projT19":  0.71,
+    "projT17":  0.97,
+    "projT18":  2.34,
+    "projT19":  0.70,
     "projT110":  0.42,
-    "projT111":  1.16,
+    "projT111":  1.15,
 
     "projT21":  0.76,
     "projT22":  0.21,
     "projT23":  0.43,
-    "projT24":  0.78,
-    "projT25":  1.67,
+    "projT24":  0.77,
+    "projT25":  1.66,
 
     "projT31":  0.58,
-    "projT32":  0.46,
-    "projT33":  0.70,
+    "projT32":  0.45,
+    "projT33":  0.69,
 
-    "projT41":  0.24,
-    "projT42":  1.01,
+    "projT41":  0.42,
+    "projT42":  1.00,
 
-    "projT51":  2.00,
+    "projT51":  1.99,
     "projT52":  0.16,
-    "projT53":  1.52,
-    "projT54":  2.75,
-    "projT55":  2.54,
+    "projT53":  1.51,
+    "projT54":  2.73,
+    "projT55":  2.53,
     "projT56":  0.44,
     "projT57":  0.59
 }
@@ -253,6 +253,7 @@ TRUNKS = [
           # group 1 — NEED TO CONFIRM
           "projT11",
           "projT13",
+          "projT14",
           "projT16",
 
           "projT18",
