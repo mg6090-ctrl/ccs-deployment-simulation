@@ -23,7 +23,7 @@ from scenario_analysis_w1_2 import(
     deployment_over_time as w12_deployment_over_time
 )
 
-import pipe_mult_actual_data as project_data
+import pipe_mult_trial as project_data
 
 #==================================================================
 # COMPARISON CHARTS
@@ -36,10 +36,10 @@ def final_vol_compare():
 # DEPLOYMENT OVER TIME
 #==================================================================
 
-def deployment_over_time_compare(w11_data, w12_data, w2_data):
-    w11_deployment = w11_deployment_over_time(w11_data)
-    w12_deployment = w12_deployment_over_time(w12_data)
-    w2_deployment = w2_deployment_over_time(w2_data)
+def deployment_over_time_compare(w11_data, w12_data, w2_data, end_year):
+    w11_deployment = w11_deployment_over_time(w11_data, end_year)
+    w12_deployment = w12_deployment_over_time(w12_data, end_year)
+    w2_deployment = w2_deployment_over_time(w2_data, end_year)
 
     fig, ax = plt.subplots(figsize=(9, 5))
 
@@ -63,14 +63,14 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
     ax.fill_between(w12_deployment["year"], w12_deployment["p10"], w12_deployment["p90"], color="#3abb2c", alpha=0.2, label="World 1.2 10th–90th percentile")
 
     ax.set_xlabel("year")
-    ax.set_xticks(range(2025, 2047, 2))
+    ax.set_xticks(range(2025, end_year+2, 2))
 
     target = project_data.PLANNED_CAP_VOLUME
     
     ax.axhline(y=target, xmax = 0.95, color="black", linestyle = "--")
     ax.annotate(
         text=f"Goal\n{target:.1f}",
-        xy=(2045, target),
+        xy=(end_year, target),
         xytext=(1,0),
         textcoords="offset points",
         va="center",
@@ -79,13 +79,13 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
         fontweight="bold"
     )
 
-    last_w2_y = w2_deployment["mean"][19]
-    last_w11_y = w11_deployment["mean"][19]
-    last_w12_y = w12_deployment["mean"][19]
+    last_w2_y = w2_deployment["mean"][end_year-2026]
+    last_w11_y = w11_deployment["mean"][end_year-2026]
+    last_w12_y = w12_deployment["mean"][end_year-2026]
 
     ax.annotate(
         text=f"{last_w2_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(2045, last_w2_y),              # Position of the data point
+        xy=(end_year, last_w2_y),              # Position of the data point
         xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
         textcoords="offset points",       # Uses point offset instead of data coordinates
         va="center",                      # Vertically centers the text on the line
@@ -96,7 +96,7 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
 
     ax.annotate(
         text=f"{last_w11_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(2045, last_w11_y),              # Position of the data point
+        xy=(end_year, last_w11_y),              # Position of the data point
         xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
         textcoords="offset points",       # Uses point offset instead of data coordinates
         va="center",                      # Vertically centers the text on the line
@@ -107,7 +107,7 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
 
     ax.annotate(
         text=f"{last_w12_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(2045, last_w12_y),              # Position of the data point
+        xy=(end_year, last_w12_y),              # Position of the data point
         xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
         textcoords="offset points",       # Uses point offset instead of data coordinates
         va="center",                      # Vertically centers the text on the line
@@ -117,7 +117,7 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data):
     )
 
     ax.set_ylabel("commissioned annual capture volume (Mt/yr)")
-    ax.set_title("Deployment over time")
+    ax.set_title(f"Deployment to {end_year}")
     ax.legend()
     plt.tight_layout()
     plt.savefig("deployment_comparison.png", dpi=120)

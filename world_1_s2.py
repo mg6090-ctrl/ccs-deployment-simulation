@@ -2,7 +2,7 @@ import networkx as nx
 import random
 import hashlib
 import numpy as np
-import pipe_mult_actual_data as project_data 
+import pipe_mult_trial as project_data 
 import matplotlib as plt
 
 #==================================================================

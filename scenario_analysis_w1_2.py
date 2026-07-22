@@ -1,5 +1,5 @@
 import world_1_s2 as w1_2
-import pipe_mult_actual_data as project_data
+import pipe_mult_trial as project_data
 import networkx as nx
 from world_1_s2 import (
     build_model,
@@ -217,7 +217,7 @@ def analyze_monte_carlo(results):
 # DEPLOYMENT OVER TIME
 #==================================================================
 
-def deployment_over_time(data):
+def deployment_over_time(data, end_year):
     '''
     For each rep, cumulative volume captured over time 
     Returns a dataframe of time, mean, p10, p90 over reps which we can then use to plot 
@@ -225,7 +225,7 @@ def deployment_over_time(data):
     cumulative_vol_per_year = []
 
     df = data
-    full_years = list(range(2026, 2046))
+    full_years = list(range(2026, end_year+1))
 
     reps = df["rep"].unique()
     for rep in reps:
