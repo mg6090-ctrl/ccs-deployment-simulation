@@ -25,41 +25,75 @@ DURATION_BY_TYPE = {
 #==================================================================
 
 PIPE_MULT_MIN = {
+    "projT11":  1,
+    "projT12":  1.15,
+    "projT13":  3.63,
+    "projT14":  2.47,
+    "projT15":  1.49,
+    "projT16":  1,
+    "projT17":  1,
+    "projT18":  1.29,
+    "projT19":  1.29,
+    "projT110":  1.02,
+    "projT111":  1.05,
+
+    "projT21":  1,
+    "projT22":  1.33,
+    "projT23":  1,
+
+    "projT31":  1.74,
+    "projT32":  1,
+    "projT33":  1,
+
+    "projT41":  1,
+
+    "projT51":  1,
+    "projT52":  1,
+    "projT53":  1,
+    "projT54":  1,
+    "projT55":  2.95,
+    "projT56":  1.44,
+    "projT57":  1.23,
+    "projT58":  1,
+    "projT59":  1,
+    "projT510":  1,
+    "projT511":  1
 }
 
 PIPE_MULT = {
-    "projT11":  0.77,
-    "projT12":  0.24,
-    "projT13":  0.69,
-    "projT14":  1.04,
-    "projT15":  0.93,
-    "projT16":  1.84,
-    "projT17":  0.97,
-    "projT18":  2.34,
-    "projT19":  0.70,
-    "projT110":  0.42,
-    "projT111":  1.15,
+    "projT11":  0.65,
+    "projT12":  1.15,
+    "projT13":  3.63,
+    "projT14":  2.47,
+    "projT15":  1.49,
+    "projT16":  0.25,
+    "projT17":  0.73,
+    "projT18":  1.29,
+    "projT19":  1.29,
+    "projT110":  1.02,
+    "projT111":  1.05,
 
-    "projT21":  0.76,
-    "projT22":  0.21,
-    "projT23":  0.43,
-    "projT24":  0.77,
-    "projT25":  1.66,
+    "projT21":  0.59,
+    "projT22":  1.33,
+    "projT23":  0.37,
 
-    "projT31":  0.58,
-    "projT32":  0.45,
-    "projT33":  0.69,
+    "projT31":  1.74,
+    "projT32":  0.76,
+    "projT33":  0.77,
 
-    "projT41":  0.42,
-    "projT42":  1.00,
+    "projT41":  0.19,
 
-    "projT51":  1.99,
-    "projT52":  0.16,
-    "projT53":  1.51,
-    "projT54":  2.73,
-    "projT55":  2.53,
-    "projT56":  0.44,
-    "projT57":  0.59
+    "projT51":  0.22,
+    "projT52":  0.34,
+    "projT53":  0.36,
+    "projT54":  0.50,
+    "projT55":  2.95,
+    "projT56":  1.44,
+    "projT57":  1.23,
+    "projT58":  0.54,
+    "projT59":  0.24,
+    "projT510":  0.24,
+    "projT511":  0.14
 }
 
 NO_PIPE_MULT = {project: 1 for project in PIPE_MULT}
@@ -130,30 +164,30 @@ PROJECT_TYPE = {
                 "projC32": "NGCC",
 
                 # storages
-               "projS1": "storage", 
-               "projS2": "storage", 
-               "projS3": "storage", 
-               "projS5": "storage", 
-               "projS10": "storage", 
+                "projS1": "storage", 
+                "projS2": "storage", 
+                "projS3": "storage", 
+                "projS5": "storage", 
+                "projS10": "storage", 
 
                 # group 1 transports
-               "projT11": "transport", "projT12": "transport", "projT13": "transport", "projT14": "transport",
-               "projT15": "transport", "projT16": "transport", "projT17": "transport", "projT18": "transport", "projT19": "transport",
-               "projT110": "transport", "projT111": "transport",
+                "projT11": "transport", "projT12": "transport", "projT13": "transport", "projT14": "transport",
+                "projT15": "transport", "projT16": "transport", "projT17": "transport", "projT18": "transport", "projT19": "transport",
+                "projT110": "transport", "projT111": "transport",
 
                 # group 2 transports
-               "projT21": "transport", "projT22": "transport", "projT23": "transport",
+                "projT21": "transport", "projT22": "transport", "projT23": "transport",
 
                 # group 2 transports
-               "projT31": "transport", "projT32": "transport", "projT33": "transport", 
+                "projT31": "transport", "projT32": "transport", "projT33": "transport", 
 
                 # group 4 transports 
-               "projT41": "transport",
+                "projT41": "transport",
 
                 # group 5 transports
-               "projT51": "transport", "projT52": "transport", "projT53": "transport", "projT54": "transport", "projT55": "transport",
-               "projT56": "transport", "projT57": "transport", "projT58": "transport", "projT59": "transport", "projT510": "transport", 
-               "projT511": "transport"
+                "projT51": "transport", "projT52": "transport", "projT53": "transport", "projT54": "transport", "projT55": "transport",
+                "projT56": "transport", "projT57": "transport", "projT58": "transport", "projT59": "transport", "projT510": "transport", 
+                "projT511": "transport"
                }
 
 #==================================================================
@@ -190,10 +224,10 @@ PIPE_DOWNSTREAM = {
 
                    # group 5
                    "projT51": "projS5",
-                   "projT52": "projS5",
+                   "projT52": "projT55",
                    "projT53": "projT55",
                    "projT54": "projT55",
-                   "projT55": "projTS5",
+                   "projT55": "projS5",
                    "projT56": "projT55",
                    "projT57": "projT55",
                    "projT58": "projT55",
@@ -238,6 +272,7 @@ CAPTURE_PIPE = {
                 "projC47": "projT32",
                 "projC40": "projT33",
                 "projC44": "projT33",
+                "projC28": "projT31",
 
                 # group 4
                 "projC56": "projT41",
@@ -283,7 +318,6 @@ TRUNKS = [
 
           # group 5
           "projT51",
-          "projT52",
           "projT55" 
           ]
 
@@ -423,7 +457,7 @@ def scaled_transport_duration(project, DICT):
 TRANSPORT_PROJECTS = [project for project, ptype in PROJECT_TYPE.items() if ptype == "transport"]
 
 # dictionary for transport project duration (defaults to a 1x multiplier if missing from PIPE_MULT)
-TRANSPORT = {project: scaled_transport_duration(project, PIPE_MULT) for project in TRANSPORT_PROJECTS}
+TRANSPORT = {project: scaled_transport_duration(project, NO_PIPE_MULT) for project in TRANSPORT_PROJECTS}
 
 # transport volumes REMEMBER TO ADD THESE!
 TRANSPORT_VOLUMES = {project: total_vol(project) for project in TRANSPORT_PROJECTS}
