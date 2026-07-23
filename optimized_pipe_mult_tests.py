@@ -21,27 +21,24 @@ DURATION_BY_TYPE = {
 }
 
 #==================================================================
-# DURATION MULTIPLIERS FOR PIPELINE
+# DURATION MULTIPLIERS FOR PIPELINE NOTE: THIS WILL NEED TO CHANGE!
 #==================================================================
 
 PIPE_MULT_MIN = {
     "projT11":  1,
-    "projT12":  1.15,
-    "projT13":  3.63,
-    "projT14":  2.47,
-    "projT15":  1.49,
+    "projT12":  1,
+    "projT13":  4.11,
+    "projT14":  1.88,
+    "projT15":  1.13,
     "projT16":  1,
-    "projT17":  1,
-    "projT18":  1.29,
-    "projT19":  1.29,
-    "projT110":  1.02,
-    "projT111":  1.05,
+    "projT18":  1.16,
+    "projT111":  1,
 
     "projT21":  1,
-    "projT22":  1.33,
+    "projT22":  1,
     "projT23":  1,
 
-    "projT31":  1.74,
+    "projT31":  1.32,
     "projT32":  1,
     "projT33":  1,
 
@@ -51,49 +48,38 @@ PIPE_MULT_MIN = {
     "projT52":  1,
     "projT53":  1,
     "projT54":  1,
-    "projT55":  2.95,
-    "projT56":  1.44,
-    "projT57":  1.23,
-    "projT58":  1,
-    "projT59":  1,
-    "projT510":  1,
-    "projT511":  1
+    "projT55":  1.78,
+    "projT56":  2.43,
+    "projT57":  1
 }
 
 PIPE_MULT = {
-    "projT11":  0.65,
-    "projT12":  1.15,
-    "projT13":  3.63,
-    "projT14":  2.47,
-    "projT15":  1.49,
-    "projT16":  0.25,
-    "projT17":  0.73,
-    "projT18":  1.29,
-    "projT19":  1.29,
-    "projT110":  1.02,
-    "projT111":  1.05,
+    "projT11":  0.49,
+    "projT12":  0.87,
+    "projT13":  4.11,
+    "projT14":  1.88,
+    "projT15":  1.13,
+    "projT16":  0.97,
+    "projT18":  1.16,
+    "projT111":  0.80,
 
-    "projT21":  0.59,
-    "projT22":  1.33,
-    "projT23":  0.37,
+    "projT21":  0.45,
+    "projT22":  0.88,
+    "projT23":  0.41,
 
-    "projT31":  1.74,
-    "projT32":  0.76,
-    "projT33":  0.77,
+    "projT31":  1.32,
+    "projT32":  0.58,
+    "projT33":  0.58,
 
-    "projT41":  0.19,
+    "projT41":  0.15,
 
-    "projT51":  0.22,
-    "projT52":  0.34,
-    "projT53":  0.36,
-    "projT54":  0.50,
-    "projT55":  2.95,
-    "projT56":  1.44,
-    "projT57":  1.23,
-    "projT58":  0.54,
-    "projT59":  0.24,
-    "projT510":  0.24,
-    "projT511":  0.14
+    "projT51":  0.17,
+    "projT52":  0.26,
+    "projT53":  0.27,
+    "projT54":  0.38,
+    "projT55":  1.78,
+    "projT56":  2.43,
+    "projT57":  0.94
 }
 
 NO_PIPE_MULT = {project: 1 for project in PIPE_MULT}
@@ -172,8 +158,7 @@ PROJECT_TYPE = {
 
                 # group 1 transports
                 "projT11": "transport", "projT12": "transport", "projT13": "transport", "projT14": "transport",
-                "projT15": "transport", "projT16": "transport", "projT17": "transport", "projT18": "transport", "projT19": "transport",
-                "projT110": "transport", "projT111": "transport",
+                "projT15": "transport", "projT16": "transport", "projT18": "transport", "projT111": "transport",
 
                 # group 2 transports
                 "projT21": "transport", "projT22": "transport", "projT23": "transport",
@@ -186,8 +171,7 @@ PROJECT_TYPE = {
 
                 # group 5 transports
                 "projT51": "transport", "projT52": "transport", "projT53": "transport", "projT54": "transport", "projT55": "transport",
-                "projT56": "transport", "projT57": "transport", "projT58": "transport", "projT59": "transport", "projT510": "transport", 
-                "projT511": "transport"
+                "projT56": "transport", "projT57": "transport"
                }
 
 #==================================================================
@@ -203,16 +187,13 @@ PIPE_DOWNSTREAM = {
                    "projT14": "projT13",
                    "projT15": "projT13",
                    "projT16": "projT13",
-                   "projT17": "projT13",
                    "projT18": "projT13",
-                   "projT19": "projT17",
-                   "projT110": "projT16",
                    "projT111": "projT15",
 
                    # group 2
                    "projT21": "projS2",
-                   "projT22": "projS2",
-                   "projT23": "projT22",
+                   "projT22": "projT23",
+                   "projT23": "projS2",
                    
                    # group 3
                    "projT31": "projS3",
@@ -224,28 +205,24 @@ PIPE_DOWNSTREAM = {
 
                    # group 5
                    "projT51": "projS5",
-                   "projT52": "projT55",
-                   "projT53": "projT55",
+                   "projT52": "projT56",
+                   "projT53": "projT56",
                    "projT54": "projT55",
-                   "projT55": "projS5",
-                   "projT56": "projT55",
-                   "projT57": "projT55",
-                   "projT58": "projT55",
-                   "projT59": "projT56",
-                   "projT510": "projT59",
-                   "projT511": "projT56"
+                   "projT55": "projT56",
+                   "projT56": "projS5",
+                   "projT57": "projT55"
                    }
 
 # stores the transport every single capture flows into next
 CAPTURE_PIPE = {
                 # group 1 
                 "projC52": "projT18",
-                "projC19": "projT13",
-                "projC42": "projT19",
-                "projC55": "projT17",
-                "projC50": "projT17",
-                "projC48": "projT110",
-                "projC37": "projT110",
+                "projC19": "projT18",
+                "projC42": "projT13",
+                "projC55": "projT13",
+                "projC50": "projT13",
+                "projC48": "projT16",
+                "projC37": "projT16",
                 "projC41": "projT16",
                 "projC38": "projT13",
                 "projC29": "projT13",
@@ -289,14 +266,14 @@ CAPTURE_PIPE = {
                 "projC22": "projT55", 
                 "projC18": "projT55",
                 "projC20": "projT55",
-                "projC33": "projT58",
+                "projC33": "projT55",
                 "projC25": "projT57",
                 "projC32": "projT57",
-                "projC7": "projT511",
+                "projC7": "projT56",
                 "projC23": "projT56", 
-                "projC8": "projT59",
-                "projC1": "projT59",
-                "projC2": "projT510",
+                "projC8": "projT56",
+                "projC1": "projT56",
+                "projC2": "projT56",
                 }
 
 TRUNKS = [
@@ -318,7 +295,7 @@ TRUNKS = [
 
           # group 5
           "projT51",
-          "projT55" 
+          "projT56" 
           ]
 
 #==================================================================
@@ -444,7 +421,7 @@ STORAGE = {
 STORAGE_VOLUMES = {project: total_vol(project) for project in STORAGE}
 
 # pipe length multiplier is only applied to the construction stage in this trial
-SCALED_STAGES = {"approval", "construction"}
+SCALED_STAGES = {"construction"}
 
 def scaled_transport_duration(project, DICT):
     mult = DICT.get(project, 1)

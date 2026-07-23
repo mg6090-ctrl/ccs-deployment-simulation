@@ -1,5 +1,5 @@
 import world_1_s1 as w1_1
-import pipe_mult_tests as project_data
+import optimized_pipe_mult_tests as project_data
 import networkx as nx
 from world_1_s1 import (
     build_model,
@@ -296,8 +296,8 @@ if __name__ == "__main__":
     # Getting node level data
     #===========================
     # _, nodes = monte_carlo(300)
-    # nodes.to_csv("w1_1_nodes.csv", index=False)
-    delay_analysis("w1_1_nodes.csv").to_csv("w1_1_delay_by_type.csv", index=False)
+    # nodes.to_csv("optimized_w1_1_nodes.csv", index=False)
+    delay_analysis("optimized_w1_1_nodes.csv").to_csv("optimized_w1_1_delay_by_type.csv", index=False)
 
     #===========================
     # Single var sweeps
