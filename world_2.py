@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import hashlib
-import optimized_pipe_mult_tests as project_data
+import pipe_mult_tests as project_data
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
