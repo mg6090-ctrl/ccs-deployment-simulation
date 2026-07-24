@@ -42,6 +42,7 @@ PHASE_ENFORCEMENT = {
     "projC21": 0,
     "projC24": 0,
     "projC13": 0,
+    "projC12": 0,
 
     # group 2
     "projC49": 0,
@@ -172,6 +173,7 @@ PROJECT_TYPE = {
                 "projC21": "refinery",
                 "projC13": "NGCC",
                 "projC24": "NGCC",
+                "projC12": "NGCC",
 
                 # group 2
                 "projC49": "biomass_gasification",
@@ -298,6 +300,7 @@ CAPTURE_PIPE = {
                 "projC21": "projT12",
                 "projC24": "projT11",
                 "projC13": "projT11",
+                "projC12": "projT15",
 
                 # group 2
                 "projC49": "projT21",
@@ -432,6 +435,7 @@ CAPTURE_VOLUMES = {
     "projC21": 2.16,
     "projC24": 3.38,
     "projC13": 2.46,
+    "projC12": 1.70,
 
     # group 2
     "projC49": 1.00,

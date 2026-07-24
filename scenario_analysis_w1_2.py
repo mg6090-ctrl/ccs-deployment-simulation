@@ -296,9 +296,9 @@ if __name__ == "__main__":
     #===========================
     # Getting node level data
     #===========================
-    #_, nodes = monte_carlo(300)
-    #nodes.to_csv("optimized_w1_2_nodes.csv", index=False)
-    delay_analysis("optimized_w1_2_nodes.csv").to_csv("optimized_w1_2_delay_by_type.csv", index=False)
+    _, nodes = monte_carlo(300)
+    nodes.to_csv("phase3_nohammock_nonopt_w1_2_nodes.csv", index=False)
+    # delay_analysis("phase2_nohammock_nonopt_w1_2_nodes.csv").to_csv("phase2_nohammock_nonopt_w1_2_delay_by_type.csv", index=False)
 
     #===========================
     # Single var sweeps

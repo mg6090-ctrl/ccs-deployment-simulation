@@ -22,65 +22,130 @@ DURATION_BY_TYPE = {
 
 PHASE_ENFORCEMENT = {
     # group 1 
-    "projC52": 0,
-    "projC19": 0,
-    "projC50": 0,
-    "projC55": 0,
-    "projC42": 0,
-    "projC41": 0,
-    "projC37": 0,
-    "projC48": 0,
-    "projC38": 0,
-    "projC29": 0,
-    "projC39": 0,
-    "projC51": 0,
-    "projC60": 0,
-    "projC59": 0,
-    "projC53": 0,
-    "projC45": 0,
-    "projC4": 0,
-    "projC21": 0,
-    "projC24": 0,
-    "projC13": 0,
+    "projC52": 60,
+    "projC19": 120,
+    "projC50": 36,
+    "projC55": 36,
+    "projC42": 60,
+    "projC41": 36,
+    "projC37": 36,
+    "projC48": 36,
+    "projC38": 120,
+    "projC29": 120,
+    "projC39": 36,
+    "projC51": 72,
+    "projC60": 72,
+    "projC59": 120,
+    "projC53": 120,
+    "projC45": 120,
+    "projC4": 36,
+    "projC21": 36,
+    "projC24": 36,
+    "projC13": 36,
+    "projC12": 72,
 
     # group 2
-    "projC49": 0,
-    "projC54": 0,
-    "projC46": 0,
-    "projC0": 0,
-    "projC57": 0,
+    "projC49": 36,
+    "projC54": 36,
+    "projC46": 36,
+    "projC0": 72,
+    "projC57": 60,
 
     # group 3
-    "projC26": 0,
-    "projC47": 0,
-    "projC40": 0, 
-    "projC44": 0,
-    "projC28": 0,
+    "projC26": 72,
+    "projC47": 36,
+    "projC40": 36, 
+    "projC44": 36,
+    "projC28": 72,
 
     # group 4
-    "projC56": 0,
-    "projC31": 0,
+    "projC56": 36,
+    "projC31": 60,
 
     # group 5
-    "projC10": 0,
-    "projC43": 0,
-    "projC27": 0,
-    "projC58": 0,
-    "projC16": 0,
-    "projC17": 0,
-    "projC35": 0,
-    "projC22": 0,
-    "projC18": 0,
-    "projC20": 0,
-    "projC33": 0,
-    "projC25": 0,
-    "projC32": 0,
-    "projC7": 0,
-    "projC8": 0,
-    "projC23": 0,
-    "projC1": 0,
-    "projC2": 0
+    "projC10": 60,
+    "projC43": 36,
+    "projC27": 36,
+    "projC58": 36,
+    "projC16": 36,
+    "projC17": 36,
+    "projC35": 36,
+    "projC22": 120,
+    "projC18": 120,
+    "projC20": 120,
+    "projC33": 36,
+    "projC25": 60,
+    "projC32": 60,
+    "projC7": 60,
+    "projC8": 60,
+    "projC23": 60,
+    "projC1": 36,
+    "projC2": 36
 }
+
+PHASE_ENFORCEMENT_CCS = {
+    # group 1 
+    "projC52": 120,
+    "projC19": 60,
+    "projC50": 72,
+    "projC55": 72,
+    "projC12": 72,
+    "projC42": 120,
+    "projC41": 72,
+    "projC37": 120,
+    "projC48": 120,
+    "projC38": 120,
+    "projC29": 72,
+    "projC39": 120,
+    "projC51": 72,
+    "projC60": 120,
+    "projC59": 120,
+    "projC53": 72,
+    "projC45": 72,
+    "projC4": 60,
+    "projC21": 36,
+    "projC24": 72,
+    "projC13": 72,
+
+    # group 2
+    "projC49": 120,
+    "projC54": 120,
+    "projC46": 120,
+    "projC0": 72,
+    "projC57": 72,
+
+    # group 3
+    "projC26": 60,
+    "projC47": 120,
+    "projC40": 120, 
+    "projC44": 120,
+    "projC28": 72,
+
+    # group 4
+    "projC56": 120,
+    "projC31": 60,
+
+    # group 5
+    "projC10": 60,
+    "projC43": 120,
+    "projC27": 36,
+    "projC58": 72,
+    "projC16": 72,
+    "projC17": 36,
+    "projC35": 36,
+    "projC22": 72,
+    "projC18": 36,
+    "projC20": 36,
+    "projC33": 60,
+    "projC25": 60,
+    "projC32": 60,
+    "projC7": 60,
+    "projC8": 72,
+    "projC23": 36,
+    "projC1": 60,
+    "projC2": 72
+}
+
 
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
@@ -186,6 +251,7 @@ PROJECT_TYPE = {
                 "projC21": "refinery",
                 "projC13": "NGCC",
                 "projC24": "NGCC",
+                "projC12": "NGCC",
 
                 # group 2
                 "projC49": "biomass_gasification",
@@ -321,6 +387,7 @@ CAPTURE_PIPE = {
                 "projC21": "projT12",
                 "projC24": "projT11",
                 "projC13": "projT11",
+                "projC12": "projT15",
 
                 # group 2
                 "projC49": "projT21",
@@ -455,6 +522,7 @@ CAPTURE_VOLUMES = {
     "projC21": 2.16,
     "projC24": 3.38,
     "projC13": 2.46,
+    "projC12": 1.70,
 
     # group 2
     "projC49": 1.00,

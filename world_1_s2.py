@@ -118,15 +118,17 @@ def sample_duration(mean, project, stage, replication_seed, sampling, dist_overr
     else:
         raise ValueError(f"unknown dist {dist}")
 
-    if (project_type != "transport") and (project_type != "storage") and (stage == "definition"):
-        sample = round(sample) + project_data.PHASE_ENFORCEMENT[project]
-
     if round(sample) >= maximum:
-        return maximum
+        sample = maximum
     elif round(sample) <= minimum:
-        return minimum
+        sample = minimum
     else:
-        return round(sample)
+        sample = round(sample)
+
+    if (project_type != "transport") and (project_type != "storage") and (stage == "definition"):
+        sample = round(sample) + project_data.PHASE_ENFORCEMENT_CCS[project]
+
+    return sample 
 
 #==================================================================
 # DAG CONSTRUCTION
@@ -610,7 +612,7 @@ def build_model(replication_seed=0, sampling=False,
                   transport_durations, transport_volumes,
                   dist_override)
     projEdges(G, pipe_downstream, capture_pipe, capture_volumes, storage_volumes, transport_volumes, frac_split, replication_seed)
-    add_hammock_node(G, capture_volumes, transport_volumes)
+    # add_hammock_node(G, capture_volumes, transport_volumes)
     return G
 
 #==================================================================
