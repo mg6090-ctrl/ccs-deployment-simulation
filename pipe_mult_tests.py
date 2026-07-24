@@ -20,7 +20,7 @@ DURATION_BY_TYPE = {
     "cement": {"definition": 24, "approval": 12, "construction": 36},
 }
 
-PHASE_ENFORCEMENT = {
+ORIGINAL_PHASE_ENFORCEMENT = {
     # group 1 
     "projC52": 60,
     "projC19": 120,
@@ -83,7 +83,70 @@ PHASE_ENFORCEMENT = {
     "projC2": 36
 }
 
-PHASE_ENFORCEMENT_CCS = {
+PHASE_ENFORCEMENT_STAGES_MODEL = {
+    # group 1 
+    "projC52": 2,
+    "projC19": 4,
+    "projC50": 1,
+    "projC55": 1,
+    "projC42": 2,
+    "projC41": 1,
+    "projC37": 1,
+    "projC48": 1,
+    "projC38": 4,
+    "projC29": 4,
+    "projC39": 1,
+    "projC51": 3,
+    "projC60": 3,
+    "projC59": 4,
+    "projC53": 4,
+    "projC45": 4,
+    "projC4": 1,
+    "projC21": 1,
+    "projC24": 1,
+    "projC13": 1,
+    "projC12": 3,
+
+    # group 2
+    "projC49": 1,
+    "projC54": 1,
+    "projC46": 1,
+    "projC0": 3,
+    "projC57": 2,
+
+    # group 3
+    "projC26": 3,
+    "projC47": 1,
+    "projC40": 1, 
+    "projC44": 1,
+    "projC28": 3,
+
+    # group 4
+    "projC56": 1,
+    "projC31": 2,
+
+    # group 5
+    "projC10": 2,
+    "projC43": 1,
+    "projC27": 1,
+    "projC58": 1,
+    "projC16": 1,
+    "projC17": 1,
+    "projC35": 1,
+    "projC22": 4,
+    "projC18": 4,
+    "projC20": 4,
+    "projC33": 1,
+    "projC25": 2,
+    "projC32": 2,
+    "projC7": 2,
+    "projC8": 2,
+    "projC23": 2,
+    "projC1": 1,
+    "projC2": 1
+}
+
+PHASE_ENFORCEMENT_SIMCCS = {
     # group 1 
     "projC52": 120,
     "projC19": 60,
@@ -146,6 +209,73 @@ PHASE_ENFORCEMENT_CCS = {
     "projC2": 72
 }
 
+PHASE_ENFORCEMENT_STAGES_NEW = {
+    # group 1 
+    "projC52": 3,
+        "projC19": 2,
+    "projC50": 2,
+    "projC55": 2,
+    "projC42": 3,
+    "projC41": 2,
+    "projC37": 3,
+    "projC48": 3,
+    "projC38": 4,
+        "projC29": 2,
+    "projC39": 3,
+    "projC51": 3,
+    "projC60": 3,
+    "projC59": 4,
+    "projC53": 4,
+    "projC45": 4,
+        "projC4": 2,
+        "projC21": 4,
+        "projC24": 1,
+        "projC13": 1,
+        "projC12": 2,
+
+    # group 2
+    "projC49": 3,
+    "projC54": 3,
+    "projC46": 3,
+        "projC0": 2,
+    "projC57": 3,
+
+    # group 3
+        "projC26": 2,
+    "projC47": 3,
+    "projC40": 2, 
+    "projC44": 2,
+        "projC28": 2,
+
+    # group 4
+    "projC56": 2,
+        "projC31": 2,
+
+    # group 5
+        "projC10": 2,
+    "projC43": 2,
+        "projC27": 1,
+    "projC58": 2,
+        "projC16": 1,
+        "projC17": 1,
+        "projC35": 1,
+        "projC22": 2,
+        "projC18": 2,
+        "projC20": 2,
+        "projC33": 1,
+        "projC25": 2,
+        "projC32": 2,
+        "projC7": 2,
+        "projC8": 2,
+    "projC23": 4,
+        "projC1": 1,
+        "projC2": 1
+}
+
+NO_PHASE_ENFORCEMENT = {cap: 0 for cap in PHASE_ENFORCEMENT_STAGES_NEW}
+
+PHASE_TESTING = [40, 58, 76, 94]
+PHASE_ENFORCEMENT_TEST = {cap: PHASE_TESTING[PHASE_ENFORCEMENT_STAGES_NEW[cap]-1] for cap in PHASE_ENFORCEMENT_STAGES_NEW}
 
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
