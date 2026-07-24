@@ -20,6 +20,68 @@ DURATION_BY_TYPE = {
     "cement": {"definition": 24, "approval": 12, "construction": 36},
 }
 
+PHASE_ENFORCEMENT = {
+    # group 1 
+    "projC52": 0,
+    "projC19": 0,
+    "projC50": 0,
+    "projC55": 0,
+    "projC42": 0,
+    "projC41": 0,
+    "projC37": 0,
+    "projC48": 0,
+    "projC38": 0,
+    "projC29": 0,
+    "projC39": 0,
+    "projC51": 0,
+    "projC60": 0,
+    "projC59": 0,
+    "projC53": 0,
+    "projC45": 0,
+    "projC4": 0,
+    "projC21": 0,
+    "projC24": 0,
+    "projC13": 0,
+
+    # group 2
+    "projC49": 0,
+    "projC54": 0,
+    "projC46": 0,
+    "projC0": 0,
+    "projC57": 0,
+
+    # group 3
+    "projC26": 0,
+    "projC47": 0,
+    "projC40": 0, 
+    "projC44": 0,
+    "projC28": 0,
+
+    # group 4
+    "projC56": 0,
+    "projC31": 0,
+
+    # group 5
+    "projC10": 0,
+    "projC43": 0,
+    "projC27": 0,
+    "projC58": 0,
+    "projC16": 0,
+    "projC17": 0,
+    "projC35": 0,
+    "projC22": 0,
+    "projC18": 0,
+    "projC20": 0,
+    "projC33": 0,
+    "projC25": 0,
+    "projC32": 0,
+    "projC7": 0,
+    "projC8": 0,
+    "projC23": 0,
+    "projC1": 0,
+    "projC2": 0
+}
+
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
 #==================================================================

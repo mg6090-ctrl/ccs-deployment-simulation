@@ -118,7 +118,9 @@ def sample_duration(mean, project, stage, replication_seed, sampling, dist_overr
     else:
         raise ValueError(f"unknown dist {dist}")
 
-    # check that it is within bounds
+    if (project_type != "transport") and (project_type != "storage") and (stage == "definition"):
+        sample = round(sample) + project_data.PHASE_ENFORCEMENT[project]
+
     if round(sample) >= maximum:
         return maximum
     elif round(sample) <= minimum:
