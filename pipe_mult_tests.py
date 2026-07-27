@@ -212,7 +212,7 @@ PHASE_ENFORCEMENT_SIMCCS = {
 PHASE_ENFORCEMENT_STAGES_NEW = {
     # group 1 
     "projC52": 3,
-        "projC19": 2,
+    "projC19": 3,
     "projC50": 2,
     "projC55": 2,
     "projC42": 3,
@@ -220,62 +220,64 @@ PHASE_ENFORCEMENT_STAGES_NEW = {
     "projC37": 3,
     "projC48": 3,
     "projC38": 4,
-        "projC29": 2,
+    "projC29": 3,
     "projC39": 3,
     "projC51": 3,
     "projC60": 3,
     "projC59": 4,
     "projC53": 4,
     "projC45": 4,
-        "projC4": 2,
-        "projC21": 4,
-        "projC24": 1,
-        "projC13": 1,
-        "projC12": 2,
+    "projC4": 2,
+    "projC21": 4,
+    "projC24": 1,
+    "projC13": 1,
+    "projC12": 2,
 
     # group 2
     "projC49": 3,
     "projC54": 3,
     "projC46": 3,
-        "projC0": 2,
+    "projC0": 2,
     "projC57": 3,
 
     # group 3
-        "projC26": 2,
+    "projC26": 3,
     "projC47": 3,
     "projC40": 2, 
     "projC44": 2,
-        "projC28": 2,
+    "projC28": 3,
 
     # group 4
     "projC56": 2,
-        "projC31": 2,
+    "projC31": 2,
 
     # group 5
-        "projC10": 2,
+    "projC10": 2,
     "projC43": 2,
-        "projC27": 1,
+    "projC27": 1,
     "projC58": 2,
-        "projC16": 1,
-        "projC17": 1,
-        "projC35": 1,
-        "projC22": 2,
-        "projC18": 2,
-        "projC20": 2,
-        "projC33": 1,
-        "projC25": 2,
-        "projC32": 2,
-        "projC7": 2,
-        "projC8": 2,
+    "projC16": 1,
+    "projC17": 1,
+    "projC35": 1,
+    "projC22": 3,
+    "projC18": 3,
+    "projC20": 3,
+    "projC33": 1,
+    "projC25": 2,
+    "projC32": 2,
+    "projC7": 2,
+    "projC8": 2,
     "projC23": 4,
-        "projC1": 1,
-        "projC2": 1
+    "projC1": 1,
+    "projC2": 1
 }
 
 NO_PHASE_ENFORCEMENT = {cap: 0 for cap in PHASE_ENFORCEMENT_STAGES_NEW}
 
 PHASE_TESTING = [40, 58, 76, 94]
 PHASE_ENFORCEMENT_TEST = {cap: PHASE_TESTING[PHASE_ENFORCEMENT_STAGES_NEW[cap]-1] for cap in PHASE_ENFORCEMENT_STAGES_NEW}
+
+# PHASE_TESTING[NO_PHASE_ENFORCEMENT[cap]-1]
 
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
