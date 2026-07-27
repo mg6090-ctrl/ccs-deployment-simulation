@@ -457,6 +457,19 @@ PIPE_MULT = {
     "projT615": 0,
     "projT616": 0,
     "projT617": 0,
+    "projT618": 0,
+    "projT619": 0,
+    "projT620": 0,
+    "projT621": 0,
+    "projT622": 0,
+    "projT623": 0,
+    "projT624": 0,
+    "projT625": 0,
+    "projT626": 0,
+    "projT627": 0,
+    "projT628": 0,
+    "projT629": 0,
+    "projT630": 0,
 }
 
 NO_PIPE_MULT = {project: 1 for project in PIPE_MULT}
