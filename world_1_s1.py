@@ -120,11 +120,16 @@ def sample_duration(mean, project, stage, replication_seed, sampling, dist_overr
 
     # check that it is within bounds
     if round(sample) >= maximum:
-        return maximum
+        sample = maximum
     elif round(sample) <= minimum:
-        return minimum
+        sample = minimum
     else:
-        return round(sample)
+        sample = round(sample)
+
+    if (project in project_data.DAC_PROJECTS) and (stage == "definition"):
+        sample = sample + project_data.W11_2_PHASE[project]
+
+    return sample
 
 #==================================================================
 # DAG CONSTRUCTION

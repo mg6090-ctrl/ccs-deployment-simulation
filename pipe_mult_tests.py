@@ -143,7 +143,26 @@ PHASE_ENFORCEMENT_STAGES_MODEL = {
     "projC8": 2,
     "projC23": 2,
     "projC1": 1,
-    "projC2": 1
+    "projC2": 1,
+
+    #DACs
+    "projC61": 4,
+    "projC62": 4,
+    "projC63": 4,
+    "projC64": 4,
+    "projC65": 4,
+    "projC66": 4,
+    "projC67": 4,
+    "projC68": 4,
+    "projC69": 4,
+    "projC610": 4,
+    "projC611": 4,
+    "projC612": 4,
+    "projC613": 4,
+    "projC614": 4,
+    "projC615": 4,
+    "projC616": 4,
+    "projC617": 4,
 }
 
 PHASE_ENFORCEMENT_SIMCCS = {
@@ -269,7 +288,40 @@ PHASE_ENFORCEMENT_STAGES_NEW = {
     "projC8": 2,
     "projC23": 4,
     "projC1": 1,
-    "projC2": 1
+    "projC2": 1,
+
+    #DACs
+    "projC61": 3,
+    "projC62": 3,
+    "projC63": 3,
+    "projC64": 3,
+    "projC65": 3,
+    "projC66": 3,
+    "projC67": 3,
+    "projC68": 3,
+    "projC69": 3,
+    "projC610": 3,
+    "projC611": 3,
+    "projC612": 3,
+    "projC613": 3,
+    "projC614": 3,
+    "projC615": 3,
+    "projC616": 3,
+    "projC617": 3,
+    "projC618": 3,
+    "projC619": 3,
+    "projC620": 3,
+    "projC621": 3,
+    "projC622": 3,
+    "projC623": 3,
+    "projC624": 3,
+    "projC625": 3,
+    "projC626": 3,
+    "projC627": 3,
+    "projC628": 3,
+    "projC629": 3,
+    "projC630": 3,
+
 }
 
 NO_PHASE_ENFORCEMENT = {cap: 0 for cap in PHASE_ENFORCEMENT_STAGES_NEW}
@@ -277,7 +329,40 @@ NO_PHASE_ENFORCEMENT = {cap: 0 for cap in PHASE_ENFORCEMENT_STAGES_NEW}
 PHASE_TESTING = [40, 58, 76, 94]
 PHASE_ENFORCEMENT_TEST = {cap: PHASE_TESTING[PHASE_ENFORCEMENT_STAGES_NEW[cap]-1] for cap in PHASE_ENFORCEMENT_STAGES_NEW}
 
-# PHASE_TESTING[NO_PHASE_ENFORCEMENT[cap]-1]
+DAC_PROJECTS = {
+    "projC61": 3,
+    "projC62": 3,
+    "projC63": 3,
+    "projC64": 3,
+    "projC65": 3,
+    "projC66": 3,
+    "projC67": 3,
+    "projC68": 3,
+    "projC69": 3,
+    "projC610": 3,
+    "projC611": 3,
+    "projC612": 3,
+    "projC613": 3,
+    "projC614": 3,
+    "projC615": 3,
+    "projC616": 3,
+    "projC617": 3,
+    "projC618": 3,
+    "projC619": 3,
+    "projC620": 3,
+    "projC621": 3,
+    "projC622": 3,
+    "projC623": 3,
+    "projC624": 3,
+    "projC625": 3,
+    "projC626": 3,
+    "projC627": 3,
+    "projC628": 3,
+    "projC629": 3,
+    "projC630": 3,
+}
+
+W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
 
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
@@ -352,7 +437,26 @@ PIPE_MULT = {
     "projT58":  0.54,
     "projT59":  0.24,
     "projT510":  0.24,
-    "projT511":  0.14
+    "projT511":  0.14,
+
+    #DACs
+    "projT61": 0,
+    "projT62": 0,
+    "projT63": 0,
+    "projT64": 0,
+    "projT65": 0,
+    "projT66": 0,
+    "projT67": 0,
+    "projT68": 0,
+    "projT69": 0,
+    "projT610": 0,
+    "projT611": 0,
+    "projT612": 0,
+    "projT613": 0,
+    "projT614": 0,
+    "projT615": 0,
+    "projT616": 0,
+    "projT617": 0,
 }
 
 NO_PIPE_MULT = {project: 1 for project in PIPE_MULT}
@@ -423,12 +527,76 @@ PROJECT_TYPE = {
                 "projC25": "cement",
                 "projC32": "NGCC",
 
+                # DACS
+                "projC61": "DAC",
+                "projC62": "DAC",
+                "projC63": "DAC",
+                "projC64": "DAC",
+                "projC65": "DAC",
+                "projC66": "DAC",
+                "projC67": "DAC",
+                "projC68": "DAC",
+                "projC69": "DAC",
+                "projC610": "DAC",
+                "projC611": "DAC",
+                "projC612": "DAC",
+                "projC613": "DAC",
+                "projC614": "DAC",
+                "projC615": "DAC",
+                "projC616": "DAC",
+                "projC617": "DAC",
+                "projC618": "DAC",
+                "projC619": "DAC",
+                "projC620": "DAC",
+                "projC621": "DAC",
+                "projC622": "DAC",
+                "projC623": "DAC",
+                "projC624": "DAC",
+                "projC625": "DAC",
+                "projC626": "DAC",
+                "projC627": "DAC",
+                "projC628": "DAC",
+                "projC629": "DAC",
+                "projC630": "DAC",
+
                 # storages
                 "projS1": "storage", 
                 "projS2": "storage", 
                 "projS3": "storage", 
                 "projS5": "storage", 
                 "projS10": "storage", 
+
+                # DAC storages
+                "projS61": "storage",
+                "projS62": "storage",
+                "projS63": "storage",
+                "projS64": "storage",
+                "projS65": "storage",
+                "projS66": "storage",
+                "projS67": "storage",
+                "projS68": "storage",
+                "projS69": "storage",
+                "projS610": "storage",
+                "projS611": "storage",
+                "projS612": "storage",
+                "projS613": "storage",
+                "projS614": "storage",
+                "projS615": "storage",
+                "projS616": "storage",
+                "projS617": "storage",
+                "projS618": "storage",
+                "projS619": "storage",
+                "projS620": "storage",
+                "projS621": "storage",
+                "projS622": "storage",
+                "projS623": "storage",
+                "projS624": "storage",
+                "projS625": "storage",
+                "projS626": "storage",
+                "projS627": "storage",
+                "projS628": "storage",
+                "projS629": "storage",
+                "projS630": "storage",
 
                 # group 1 transports
                 "projT11": "transport", "projT12": "transport", "projT13": "transport", "projT14": "transport",
@@ -447,7 +615,16 @@ PROJECT_TYPE = {
                 # group 5 transports
                 "projT51": "transport", "projT52": "transport", "projT53": "transport", "projT54": "transport", "projT55": "transport",
                 "projT56": "transport", "projT57": "transport", "projT58": "transport", "projT59": "transport", "projT510": "transport", 
-                "projT511": "transport"
+                "projT511": "transport",
+
+                # DAC transports
+                "projT61": "transport", "projT62": "transport", "projT63": "transport", "projT64": "transport", "projT65": "transport", 
+                "projT66": "transport", "projT67": "transport", "projT68": "transport", "projT69": "transport", "projT610": "transport", 
+                "projT611": "transport", "projT612": "transport", "projT613": "transport", "projT614": "transport", "projT615": "transport", 
+                "projT616": "transport", "projT617": "transport", "projT618": "transport", 
+                "projT619": "transport", "projT620": "transport", "projT621": "transport", "projT622": "transport", "projT623": "transport", 
+                "projT624": "transport", "projT625": "transport", "projT626": "transport", "projT627": "transport", "projT628": "transport", 
+                "projT629": "transport", "projT630": "transport"
                }
 
 #==================================================================
@@ -493,7 +670,39 @@ PIPE_DOWNSTREAM = {
                    "projT58": "projT55",
                    "projT59": "projT56",
                    "projT510": "projT59",
-                   "projT511": "projT56"
+                   "projT511": "projT56",
+
+                    # DACS
+                    "projT61": "projS61",
+                    "projT62": "projS62",
+                    "projT63": "projS63",
+                    "projT64": "projS64",
+                    "projT65": "projS65",
+                    "projT66": "projS66",
+                    "projT67": "projS67",
+                    "projT68": "projS68",
+                    "projT69": "projS69",
+                    "projT610": "projS610",
+                    "projT611": "projS611",
+                    "projT612": "projS612",
+                    "projT613": "projS613",
+                    "projT614": "projS614",
+                    "projT615": "projS615",
+                    "projT616": "projS616",
+                    "projT617": "projS617",
+                    "projT618": "projS618", 
+                    "projT619": "projS619", 
+                    "projT620": "projS620", 
+                    "projT621": "projS621", 
+                    "projT622": "projS622", 
+                    "projT623": "projS623", 
+                    "projT624": "projS624", 
+                    "projT625": "projS625", 
+                    "projT626": "projS626", 
+                    "projT627": "projS627", 
+                    "projT628": "projS628", 
+                    "projT629": "projS629", 
+                    "projT630": "projS630"
                    }
 
 # stores the transport every single capture flows into next
@@ -558,6 +767,38 @@ CAPTURE_PIPE = {
                 "projC8": "projT59",
                 "projC1": "projT59",
                 "projC2": "projT510",
+
+                # DACS
+                "projC61": "projT61",
+                "projC62": "projT62",
+                "projC63": "projT63",
+                "projC64": "projT64",
+                "projC65": "projT65",
+                "projC66": "projT66",
+                "projC67": "projT67",
+                "projC68": "projT68",
+                "projC69": "projT69",
+                "projC610": "projT610",
+                "projC611": "projT611",
+                "projC612": "projT612",
+                "projC613": "projT613",
+                "projC614": "projT614",
+                "projC615": "projT615",
+                "projC616": "projT616",
+                "projC617": "projT617",
+                "projC618": "projT618",
+                "projC619": "projT619",
+                "projC620": "projT620",
+                "projC621": "projT621",
+                "projC622": "projT622",
+                "projC623": "projT623",
+                "projC624": "projT624",
+                "projC625": "projT625",
+                "projC626": "projT626",
+                "projC627": "projT627",
+                "projC628": "projT628",
+                "projC629": "projT629",
+                "projC630": "projT630",
                 }
 
 TRUNKS = [
@@ -579,7 +820,39 @@ TRUNKS = [
 
           # group 5
           "projT51",
-          "projT55" 
+          "projT55",
+
+          # DACS
+          "projT61",
+          "projT62",
+          "projT63",
+          "projT64",
+          "projT65",
+          "projT66",
+          "projT67",
+          "projT68",
+          "projT69",
+          "projT610",
+          "projT611",
+          "projT612",
+          "projT613",
+          "projT614",
+          "projT615",
+          "projT616",
+          "projT617",
+          "projT618", 
+          "projT619", 
+          "projT620", 
+          "projT621", 
+          "projT622", 
+          "projT623", 
+          "projT624", 
+          "projT625", 
+          "projT626", 
+          "projT627",
+          "projT628",
+          "projT629", 
+          "projT630"
           ]
 
 #==================================================================
@@ -692,7 +965,39 @@ CAPTURE_VOLUMES = {
     "projC8": 0.75,
     "projC23": 3.06,
     "projC1": 5.39,
-    "projC2": 2.37  
+    "projC2": 2.37,
+
+    # DACs
+    "projC61": 1,
+    "projC62": 1,
+    "projC63": 1,
+    "projC64": 1,
+    "projC65": 1,
+    "projC66": 1,
+    "projC67": 1,
+    "projC68": 1,
+    "projC69": 1,
+    "projC610": 1,
+    "projC611": 1,
+    "projC612": 1,
+    "projC613": 1,
+    "projC614": 1,
+    "projC615": 1,
+    "projC616": 1,
+    "projC617": 1,
+    "projC618": 1,
+    "projC619": 1,
+    "projC620": 1,
+    "projC621": 1,
+    "projC622": 1,
+    "projC623": 1,
+    "projC624": 1,
+    "projC625": 1,
+    "projC626": 1,
+    "projC627": 1,
+    "projC628": 1,
+    "projC629": 1,
+    "projC630": 1
 }
 
 # dictionary for storage project duration
