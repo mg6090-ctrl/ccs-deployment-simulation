@@ -64,17 +64,32 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data, end_year):
     ax.fill_between(w12_deployment["year"], w12_deployment["p10"], w12_deployment["p90"], color="#3abb2c", alpha=0.2, label="World 1.2 10th–90th percentile")
 
     ax.set_xlabel("year")
+    ax.set_xlim(2025, end_year+1.5)
     ax.set_xticks(range(2025, end_year+2, 2))
+    ax.grid(axis="y", alpha=0.3)
 
-    target = project_data.PLANNED_CAP_VOLUME
+    maxCap = project_data.PLANNED_CAP_VOLUME
     
-    ax.axhline(y=target, xmax = 0.95, color="black", linestyle = "--")
+    ax.axhline(y=maxCap, xmax = 1, color="grey", linestyle = "--")
     ax.annotate(
-        text=f"Goal\n{target:.1f}",
-        xy=(end_year, target),
-        xytext=(1,0),
+        text=f"Max Capturable: {maxCap:.1f}",
+        xy=(2025, maxCap),
+        xytext=(3,-3),
         textcoords="offset points",
-        va="center",
+        va="top",
+        ha="left",
+        color="grey",
+        fontweight="bold"
+    )
+
+    target = 100
+    ax.axhline(y=target, xmax = 1, color="black", linestyle = "--")
+    ax.annotate(
+        text=f"Target: {target:.1f}",
+        xy=(2025, target),
+        xytext=(3,-3),
+        textcoords="offset points",
+        va="top",
         ha="left",
         color="black",
         fontweight="bold"
@@ -85,36 +100,39 @@ def deployment_over_time_compare(w11_data, w12_data, w2_data, end_year):
     last_w12_y = w12_deployment["mean"][end_year-2026]
 
     ax.annotate(
-        text=f"{last_w2_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(end_year, last_w2_y),              # Position of the data point
-        xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
-        textcoords="offset points",       # Uses point offset instead of data coordinates
-        va="center",                      # Vertically centers the text on the line
-        ha="left",                        # Aligns text to start left and go right
-        color=line2.get_color(),           # Matches label color to the line color
-        fontweight="bold"                 # Makes it easy to read
+        text=f"{last_w2_y:.1f}",            
+        xy=(end_year, last_w2_y),              
+        xytext=(6, -5),                    
+        textcoords="offset points",       
+        va="center",                      
+        ha="left",                        
+        color=line2.get_color(),          
+        fontweight="bold",
+        clip_on = False              
     )
 
     ax.annotate(
-        text=f"{last_w11_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(end_year, last_w11_y),              # Position of the data point
-        xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
-        textcoords="offset points",       # Uses point offset instead of data coordinates
-        va="center",                      # Vertically centers the text on the line
-        ha="left",                        # Aligns text to start left and go right
-        color=line11.get_color(),           # Matches label color to the line color
-        fontweight="bold"                 # Makes it easy to read
+        text=f"{last_w11_y:.1f}",            
+        xy=(end_year, last_w11_y),         
+        xytext=(6, -5),                    
+        textcoords="offset points",       
+        va="center",                      
+        ha="left",                        
+        color=line11.get_color(),           
+        fontweight="bold",
+        clip_on = False                 
     )
 
     ax.annotate(
-        text=f"{last_w12_y:.1f}",            # Formats value to 1 decimal place (e.g., "16.0")
-        xy=(end_year, last_w12_y),              # Position of the data point
-        xytext=(1, 0),                    # Offset the text slightly to the right (8 points)
-        textcoords="offset points",       # Uses point offset instead of data coordinates
-        va="center",                      # Vertically centers the text on the line
-        ha="left",                        # Aligns text to start left and go right
-        color=line12.get_color(),           # Matches label color to the line color
-        fontweight="bold"                 # Makes it easy to read
+        text=f"{last_w12_y:.1f}",            
+        xy=(end_year, last_w12_y),             
+        xytext=(6, -5),                    
+        textcoords="offset points",      
+        va="center",                      
+        ha="left",                        
+        color=line12.get_color(),           
+        fontweight="bold",
+        clip_on = False                  
     )
 
     ax.set_ylabel("commissioned annual capture volume (Mt/yr)")
