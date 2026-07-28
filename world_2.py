@@ -942,15 +942,21 @@ def monte_carlo(n_reps,
     num_trans = len(transport_volumes)
     num_stor = len(storage_volumes)
 
+    # graph structure (nodes/edges) doesn't depend on replication_seed or sampling in this model,
+    # only node attributes (durations) do — so the topological order is identical every rep and
+    # only needs to be computed once for the whole sweep
+    topo_order = None
+
     for rep in range(n_reps):
         G = buildmodel(replication_seed=rep, sampling=sampling,
-                       trunks=trunks, pipe_downstream=pipe_downstream, capture_pipe=capture_pipe, 
+                       trunks=trunks, pipe_downstream=pipe_downstream, capture_pipe=capture_pipe,
                        capture_durations=capture_durations,
                        capture_volumes=capture_volumes, storage_durations=storage_durations,
                        storage_volumes=storage_volumes, transport_durations=transport_durations,
                        transport_volumes=transport_volumes, dist_override=dist_override)
 
-        topo_order = list(nx.topological_sort(G)) # graph structure is fixed for this rep, so sort once and reuse it
+        if topo_order is None:
+            topo_order = list(nx.topological_sort(G))
 
         CPM(G, threshold_frac, topo_order) # initial CPM gives each node ES and EF
 
