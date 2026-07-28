@@ -90,45 +90,47 @@ def sample_duration(mean, project, stage, replication_seed, sampling, dist_overr
     Sample one stage duration, centered on `mean` (the fixed duration).
     Returns a positive integer (months).
     '''
+    project_type = project_data.PROJECT_TYPE[project]
+
     # fixed guard — this allows us to fall back to default durations when we are not sampling
     if not sampling or mean <= 0:
-        return mean
-
-    # create the random number generator -> hash gives seed number, which seeds a random number generator
-    rng = np.random.default_rng(stable_seed(project, stage, replication_seed)) 
-
-    project_type = project_data.PROJECT_TYPE[project]
-    cv = CV_BY_TYPE[project_type][stage]["cv"]
-    minimum = CV_BY_TYPE[project_type][stage]["min"]
-    maximum = CV_BY_TYPE[project_type][stage]["max"]
-
-    std = cv * mean
-    dist = dist_override if dist_override is not None else CV_BY_TYPE[project_type][stage]["dist"]
-    
-    # conversions for the different distributions
-    if dist == "normal":
-        sample = rng.normal(mean, std)
-    elif dist == "lognormal":
-        # convert desired mean/std into lognormal's underlying mu/sigma
-        sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
-        mu = np.log(mean) - 0.5 * sigma ** 2
-        sample = rng.lognormal(mu, sigma)
-    elif dist == "uniform":
-        sample = rng.uniform(mean - std, mean + std)
+        sample = mean
     else:
-        raise ValueError(f"unknown dist {dist}")
+        # create the random number generator -> hash gives seed number, which seeds a random number generator
+        rng = np.random.default_rng(stable_seed(project, stage, replication_seed))
 
-    if round(sample) >= maximum:
-        sample = maximum
-    elif round(sample) <= minimum:
-        sample = minimum
-    else:
-        sample = round(sample)
+        cv = CV_BY_TYPE[project_type][stage]["cv"]
+        minimum = CV_BY_TYPE[project_type][stage]["min"]
+        maximum = CV_BY_TYPE[project_type][stage]["max"]
 
+        std = cv * mean
+        dist = dist_override if dist_override is not None else CV_BY_TYPE[project_type][stage]["dist"]
+
+        # conversions for the different distributions
+        if dist == "normal":
+            sample = rng.normal(mean, std)
+        elif dist == "lognormal":
+            # convert desired mean/std into lognormal's underlying mu/sigma
+            sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
+            mu = np.log(mean) - 0.5 * sigma ** 2
+            sample = rng.lognormal(mu, sigma)
+        elif dist == "uniform":
+            sample = rng.uniform(mean - std, mean + std)
+        else:
+            raise ValueError(f"unknown dist {dist}")
+
+        if round(sample) >= maximum:
+            sample = maximum
+        elif round(sample) <= minimum:
+            sample = minimum
+        else:
+            sample = round(sample)
+
+    # phase enforcement applies regardless of whether we're stochastically sampling
     if (project_type != "transport") and (project_type != "storage") and (stage == "definition"):
         sample = round(sample) + project_data.PHASE_ENFORCEMENT_TEST[project]
 
-    return sample 
+    return sample
 
 #==================================================================
 # DAG CONSTRUCTION

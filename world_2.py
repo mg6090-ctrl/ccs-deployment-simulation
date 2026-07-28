@@ -88,43 +88,43 @@ def sample_duration(mean, project, stage, replication_seed=0, sampling = False, 
     Sample one stage duration, centered on `mean` (the fixed duration).
     Returns a positive integer (months).
     '''
-    # if 
     if not sampling or mean <= 0:
-        return mean
-
-    rng = np.random.default_rng(_stable_seed(project, stage, replication_seed))
-
-    project_type = project_data.PROJECT_TYPE[project]
-    cv = CV_BY_TYPE[project_type][stage]["cv"]
-    minimum = CV_BY_TYPE[project_type][stage]["min"]
-    maximum = CV_BY_TYPE[project_type][stage]["max"]
-
-    std = cv * mean
-
-    dist = dist_override if dist_override is not None else CV_BY_TYPE[project_type][stage]["dist"]
-
-    if dist == "normal":
-        sample = rng.normal(mean, std)
-    elif dist == "lognormal":
-        # convert desired mean/std into lognormal's underlying mu/sigma
-        sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
-        mu = np.log(mean) - 0.5 * sigma ** 2
-        sample = rng.lognormal(mu, sigma)
-    elif dist == "uniform":
-        sample = rng.uniform(mean - std, mean + std)
+        sample = mean
     else:
-        raise ValueError(f"unknown dist {dist}")
+        rng = np.random.default_rng(_stable_seed(project, stage, replication_seed))
 
-    if round(sample) >= maximum:
-        sample = maximum
-    elif round(sample) <= minimum:
-        sample = minimum
-    else:
-        sample = round(sample)
-    
+        project_type = project_data.PROJECT_TYPE[project]
+        cv = CV_BY_TYPE[project_type][stage]["cv"]
+        minimum = CV_BY_TYPE[project_type][stage]["min"]
+        maximum = CV_BY_TYPE[project_type][stage]["max"]
+
+        std = cv * mean
+
+        dist = dist_override if dist_override is not None else CV_BY_TYPE[project_type][stage]["dist"]
+
+        if dist == "normal":
+            sample = rng.normal(mean, std)
+        elif dist == "lognormal":
+            # convert desired mean/std into lognormal's underlying mu/sigma
+            sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
+            mu = np.log(mean) - 0.5 * sigma ** 2
+            sample = rng.lognormal(mu, sigma)
+        elif dist == "uniform":
+            sample = rng.uniform(mean - std, mean + std)
+        else:
+            raise ValueError(f"unknown dist {dist}")
+
+        if round(sample) >= maximum:
+            sample = maximum
+        elif round(sample) <= minimum:
+            sample = minimum
+        else:
+            sample = round(sample)
+
+    # phase enforcement applies regardless of whether we're stochastically sampling
     if (project in project_data.DAC_PROJECTS) and (stage == "definition"):
         sample = sample + project_data.W11_2_PHASE[project]
-    
+
     return sample
 
 #==================================================================
@@ -574,12 +574,15 @@ def threshold_gating(arrivals, capacity, fraction):
             return arrival_time
     return None # if the capacity is never filled, then the gate won't fire
 
-def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC):
+def CPM(G: nx.DiGraph, threshold_frac=THRESHOLD_FRAC, topo_order=None):
     '''
     Description: runs critical path method (CPM), updating ES and EF and checking thresholds
     Args: G
     '''
-    for node in nx.topological_sort(G):
+    if topo_order is None:
+        topo_order = nx.topological_sort(G)
+
+    for node in topo_order:
         
         if G.nodes[node].get("abandoned") is not None:
             continue # abandoned nodes do not participate in scheduling
@@ -811,13 +814,16 @@ def threshold_test_at_gate(G: nx.DiGraph, joint_node, owner, stage, abandoned_t,
 
     return False
 
-def traversal_order(G):
+def traversal_order(G, topo_order=None):
     '''
-    Produces an ordered list of pipes (and storage) in leaf-to-root order 
+    Produces an ordered list of pipes (and storage) in leaf-to-root order
     Helper method for apply attrition
     '''
+    if topo_order is None:
+        topo_order = nx.topological_sort(G)
+
     traverse = []
-    for node in nx.topological_sort(G):
+    for node in topo_order:
         if G.nodes[node]["stage"] == "FID joint node":
             project = cluster_owner(node)
             traverse.append(project)
@@ -833,8 +839,9 @@ def apply_attrition(G: nx.DiGraph,
                     capture_tolerance=CAPTURE_TOLERANCE,
                     transport_tolerance=TRANSPORT_TOLERANCE, 
                     storage_tolerance=STORAGE_TOLERANCE,
-                    late_penalty=LATE_PENALTY, 
-                    replication_seed = 0):
+                    late_penalty=LATE_PENALTY,
+                    replication_seed = 0,
+                    topo_order=None):
     '''
     Apply attrition to the graph
     '''
@@ -843,8 +850,11 @@ def apply_attrition(G: nx.DiGraph,
 
     abandonment_log = []
 
-    order = traversal_order(G)
-    
+    if topo_order is None:
+        topo_order = list(nx.topological_sort(G))
+
+    order = traversal_order(G, topo_order)
+
     #-------- Definition joint nodes ----------
     for project in order:
         if project in abandoned_t or project in abandoned_s:
@@ -853,10 +863,10 @@ def apply_attrition(G: nx.DiGraph,
             continue # because storage projects don't get their own def joint node
         def_joint_node = (cluster_naming(project), "definition joint node")
         time_slip_at_gate(G, rng, def_joint_node, abandoned_t, abandoned_s, abandoned_c, abandonment_log,
-                          base_rate, max_rate, capture_tolerance, transport_tolerance, 
+                          base_rate, max_rate, capture_tolerance, transport_tolerance,
                           storage_tolerance, late_penalty, pipe_downstream, capture_pipe)
-        CPM(G, threshold_frac)
-        if threshold_test_at_gate(G, def_joint_node, project, "definition joint node", 
+        CPM(G, threshold_frac, topo_order)
+        if threshold_test_at_gate(G, def_joint_node, project, "definition joint node",
                                   abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe,
                                   abandonment_log):
             continue # if we fail the threshold test, the entire cluster collapses
@@ -867,11 +877,11 @@ def apply_attrition(G: nx.DiGraph,
             continue
         FID_joint_node = (cluster_naming(project), "FID joint node")
         time_slip_at_gate(G, rng, FID_joint_node, abandoned_t, abandoned_s, abandoned_c, abandonment_log,
-                          base_rate, max_rate, capture_tolerance, transport_tolerance, 
+                          base_rate, max_rate, capture_tolerance, transport_tolerance,
                           storage_tolerance, late_penalty, pipe_downstream, capture_pipe,
                           )
-        CPM(G, threshold_frac)
-        if threshold_test_at_gate(G, FID_joint_node, project, "FID joint node", 
+        CPM(G, threshold_frac, topo_order)
+        if threshold_test_at_gate(G, FID_joint_node, project, "FID joint node",
                                   abandoned_t, abandoned_s, abandoned_c, pipe_downstream, capture_pipe,
                                   abandonment_log):
             continue
@@ -940,11 +950,13 @@ def monte_carlo(n_reps,
                        storage_volumes=storage_volumes, transport_durations=transport_durations,
                        transport_volumes=transport_volumes, dist_override=dist_override)
 
-        CPM(G, threshold_frac) # initial CPM gives each node ES and EF 
+        topo_order = list(nx.topological_sort(G)) # graph structure is fixed for this rep, so sort once and reuse it
+
+        CPM(G, threshold_frac, topo_order) # initial CPM gives each node ES and EF
 
         a_s, a_t, a_c, abandonment_log = apply_attrition(G, pipe_downstream, capture_pipe, base_rate, threshold_frac,
                                          max_rate, capture_tolerance, transport_tolerance, storage_tolerance,
-                                         late_penalty, replication_seed = rep)
+                                         late_penalty, replication_seed = rep, topo_order = topo_order)
 
         finite = [G.nodes[n]["EF"] for n in G.nodes
                 if G.nodes[n]["EF"] != float("inf") and G.nodes[n]["abandoned"] is None]
