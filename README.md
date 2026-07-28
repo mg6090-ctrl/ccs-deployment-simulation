@@ -1,5 +1,5 @@
 # Carbon Capture and Storage Deployment Simulation
-A simulation framework for Carbon Capture and Storage (CCS) deployment. Developed to evaluate policy options for Net Zero California's bid to operationalize 100 million Mt/yr of carbon capture by 2024. This framework is an adaptation of the CADENCE model developed by Claire Goldberg
+A simulation framework for Carbon Capture and Storage (CCS) deployment. Developed to evaluate policy options for Net Zero California's bid to operationalize 100 million Mt/yr of carbon capture by 2045. This framework is an adaptation of the CADENCE model developed by Claire Goldberg
 
 ## World 1: Coordinated
 - Transport and storage infrastructure proceed with backing (their investment decisions are not impacted by wait-time)
@@ -11,7 +11,7 @@ A simulation framework for Carbon Capture and Storage (CCS) deployment. Develope
 
 ### Scenario 2: Infrastructure Build-Out
 - Enforcement of a front-loaded transport and storage build-out
-- Capture projects begin definition when transport and storage build-out meets threshold
+- Capture projects begin definition in phases
 
 ## World 2: Uncoordinated
 - Each CCS project involves three: capture, transport, and storage
