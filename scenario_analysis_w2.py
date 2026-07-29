@@ -446,7 +446,7 @@ if __name__ == "__main__":
     # Getting node level data
     #===========================
     results, nodes = monte_carlo(300)
-    nodes.to_csv('DACphase_w2_nodes.csv', index=False)
+    nodes.to_csv('w2uncoord_w2_nodes.csv', index=False)
     # abandonment_cascades(results).to_csv("clusters_abandonment_cascades.csv", index=False)
     # delay_analysis("w2_clusters_nodes.csv").to_csv("delay_by_type.csv", index=False)
     # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)

@@ -11,7 +11,7 @@ import scenario_analysis_w1_1 as w1_1_analysis
 import scenario_analysis_w1_2 as w1_2_analysis
 import scenario_analysis_w2 as w2_analysis
 import coordinated_network_data as project_data
-import coordinated_network_data as w2_project_data
+import w2_uncoordinated_data as w2_project_data
 
 DEFAULT_END_YEAR = 2045
 
