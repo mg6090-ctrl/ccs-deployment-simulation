@@ -936,7 +936,7 @@ CAPTURE_VOLUMES = {
     "projC59": 0.51,
     "projC53": 1.10,
     "projC45": 2.62,
-    "projC4": 0.69,
+    "projC4": 0.74,
     "projC21": 2.16,
     "projC24": 3.38,
     "projC13": 2.46,
@@ -1026,7 +1026,16 @@ STORAGE_VOLUMES = {project: total_vol(project) for project in STORAGE}
 # pipe length multiplier is only applied to the construction stage in this trial
 SCALED_STAGES = {"definition", "construction"}
 
+# DAC has no real pipeline — its transport entries are a proxy with duration 0.
+# derived from CAPTURE_PIPE rather than name-matching "projT6*" so it stays correct
+# if the DAC project ids ever change.
+DAC_TRANSPORT_PROJECTS = {CAPTURE_PIPE[capture] for capture in DAC_PROJECTS}
+
 def scaled_transport_duration(project, DICT):
+    # DAC transports are a proxy for "no pipeline exists" — zero out every stage,
+    # not just the SCALED_STAGES ones, so approval isn't left at the unscaled default
+    if project in DAC_TRANSPORT_PROJECTS:
+        return {stage: 0 for stage in DURATION_BY_TYPE[PROJECT_TYPE[project]]}
     mult = DICT.get(project, 1)
     return {
         stage: (mult * dur if stage in SCALED_STAGES else dur)
