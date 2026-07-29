@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import hashlib
-import pipe_mult_tests as project_data
+import w2_uncoordinated_data as project_data
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -441,7 +441,7 @@ def projEdges(G: nx.DiGraph,
                 (transport, stage),
                 joint_node
             )
-            
+
             d_caps, d_pipes = immediate_upstream_project(transport, pipe_downstream, capture_pipe)
             # for each upstream capture, add an edge from cap def/app to the trans def/app joint 
             for cap in d_caps:

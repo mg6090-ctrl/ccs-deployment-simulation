@@ -1,5 +1,5 @@
 import world_2 as w2
-import pipe_mult_tests as project_data
+import w2_uncoordinated_data as project_data
 import networkx as nx
 from world_2 import (
     buildmodel,

@@ -2,7 +2,7 @@ import networkx as nx
 import random
 import hashlib
 import numpy as np
-import pipe_mult_tests as project_data 
+import coordinated_network_data as project_data 
 
 #==================================================================
 # CONSTANTS (PARAMETERS)
