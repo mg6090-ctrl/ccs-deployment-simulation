@@ -418,9 +418,8 @@ def projEdges(G: nx.DiGraph,
                 (cluster_naming(storage), joint_naming("approval")),
                 (capture, "construction")
             )
-            # DAC has no transport to coordinate through — the capture commits
-            # directly at the storage's own FID joint node instead of via a
-            # transport cluster's FID joint node
+            # DAC has no transport — the capture commits
+            # directly at the storage's own FID joint node
             if capture in project_data.DAC_PROJECTS:
                 G.add_edge(
                     (capture, "approval"),
