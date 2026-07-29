@@ -315,30 +315,25 @@ def projGraph(replication_seed=0,
             delay = 0.0
         )
         # built transport joint definition and joint FID nodes
-        # DAC transports are a proxy for "no pipeline exists" — they get no
-        # joint nodes, since there's no partner to coordinate with. Their
-        # stage nodes above still exist (disconnected, duration 0) so generic
-        # helpers like get_tech/mark_own_abandonment keep working on them.
-        if transport not in project_data.DAC_TRANSPORT_PROJECTS:
-            for stage in ["definition", "approval"]:
-                G.add_node(
-                    (transport_cluster, joint_naming(stage)),
-                    duration = 0.0,
-                    stage = joint_naming(stage),
-                    tech = "joint",
-                    ES = 0.0,
-                    EF = 0.0,
-                    volume = transport_volumes[transport],
-                    actual_volume = 0.0,
-                    committed_volume = 0.0,
-                    t_cluster = transport,
-                    project_type = project_data.PROJECT_TYPE[transport],
-                    successor = succ,
-                    predecessor = preds,
-                    below_threshold = None,
-                    abandoned = None,
-                    delay = 0.0
-                )
+        for stage in ["definition", "approval"]:
+            G.add_node(
+                (transport_cluster, joint_naming(stage)),
+                duration = 0.0,
+                stage = joint_naming(stage),
+                tech = "joint",
+                ES = 0.0,
+                EF = 0.0,
+                volume = transport_volumes[transport],
+                actual_volume = 0.0,
+                committed_volume = 0.0,
+                t_cluster = transport,
+                project_type = project_data.PROJECT_TYPE[transport],
+                successor = succ,
+                predecessor = preds,
+                below_threshold = None,
+                abandoned = None,
+                delay = 0.0
+            )
 
     # Step 3: build all the capture nodes
     for capture in capture_volumes:
@@ -433,9 +428,6 @@ def projEdges(G: nx.DiGraph,
                 )
 
         for pipe in pipes:
-            # DAC transports have no construction node to gate (proxy node only)
-            if pipe in project_data.DAC_TRANSPORT_PROJECTS:
-                continue
             G.add_edge(
                 (cluster_naming(storage), joint_naming("approval")),
                 (pipe, "construction")
@@ -444,9 +436,6 @@ def projEdges(G: nx.DiGraph,
     # Step 2: add edges in definition and approval stages for transport and capture
     for stage in ["definition", "approval"]:
         for transport in transport_volumes:
-            # DAC transports have no joint nodes to wire up
-            if transport in project_data.DAC_TRANSPORT_PROJECTS:
-                continue
             joint_node = (cluster_naming(transport), joint_naming(stage))
             # add edge from transport def/app to transport def/app joint
             G.add_edge(
@@ -470,10 +459,6 @@ def projEdges(G: nx.DiGraph,
 
     # Step 3: add trunk edges
     for trunk in trunks:
-        # DAC trunks have no joint nodes — the direct capture -> storage FID
-        # edge added in Step 1 already covers their commitment gating
-        if trunk in project_data.DAC_TRANSPORT_PROJECTS:
-            continue
         # add edge from trunk def joint to trunk app
         G.add_edge(
             (cluster_naming(trunk), joint_naming("definition")),
@@ -507,18 +492,12 @@ def projEdges(G: nx.DiGraph,
             (capture, "construction"),
             (capture, "commissioning")
         )
-        if capture in project_data.DAC_PROJECTS:
-            # no transport to gate on — commissioning waits on the storage instead
-            stor = project_storage(capture, "capture", pipe_downstream, capture_pipe)
-            G.add_edge(
-                (stor, "commissioning"),
-                (capture, "commissioning")
-            )
-        else:
-            G.add_edge(
-                (capture_pipe[capture], "commissioning"),
-                (capture, "commissioning")
-            )
+        # for DAC captures, capture_pipe[capture] is the storage directly (no
+        # transport in between), so this gates commissioning on the storage instead
+        G.add_edge(
+            (capture_pipe[capture], "commissioning"),
+            (capture, "commissioning")
+        )
         G.add_edge(
             (capture, "definition"),
             (capture, "approval")
@@ -529,9 +508,6 @@ def projEdges(G: nx.DiGraph,
         )
 
     for transport in transport_volumes:
-        # DAC transports are a disconnected proxy node — no edges to wire up
-        if transport in project_data.DAC_TRANSPORT_PROJECTS:
-            continue
         G.add_edge(
             (transport, "construction"),
             (transport, "commissioning")
@@ -727,11 +703,9 @@ def mark_own_abandonment(G:nx.DiGraph, owning_proj):
         # mark its own nodes with abandoned = True
         for s in ["definition", "approval", "construction", "commissioning"]:
             G.nodes[(owning_proj, s)]["abandoned"] = True
-        # DAC transports are a disconnected proxy node with no joint nodes
-        if owning_proj not in project_data.DAC_TRANSPORT_PROJECTS:
-            # separate case for joint nodes because of different naming
-            for s in [joint_naming("definition"), joint_naming("approval")]:
-                G.nodes[(cluster_naming(owning_proj), s)]["abandoned"] = True
+        # separate case for joint nodes because of different naming
+        for s in [joint_naming("definition"), joint_naming("approval")]:
+            G.nodes[(cluster_naming(owning_proj), s)]["abandoned"] = True
     elif get_tech(G, owning_proj) == "storage":
         for s in ["definition", "approval", "construction", "commissioning"]:
             G.nodes[(owning_proj, s)]["abandoned"] = True 
@@ -764,8 +738,7 @@ def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned
             if cap not in abandoned_c:
                 abandoned_c[cap] = stage
         for pipe in pipes:
-            # DAC transports are excluded from transport bookkeeping entirely
-            if pipe not in abandoned_t and pipe not in project_data.DAC_TRANSPORT_PROJECTS:
+            if pipe not in abandoned_t:
                 abandoned_t[pipe] = stage
 
     elif tech == "storage":
@@ -776,8 +749,7 @@ def record_abandonment(project, tech, stage, abandoned_t, abandoned_s, abandoned
             if cap not in abandoned_c:
                 abandoned_c[cap] = stage
         for pipe in pipes:
-            # DAC transports are excluded from transport bookkeeping entirely
-            if pipe not in abandoned_t and pipe not in project_data.DAC_TRANSPORT_PROJECTS:
+            if pipe not in abandoned_t:
                 abandoned_t[pipe] = stage
 
 def time_slip_at_gate(G: nx.DiGraph, 
@@ -994,9 +966,7 @@ def monte_carlo(n_reps,
     results = []
 
     num_cap = len(capture_volumes)
-    # DAC transports are a disconnected proxy node, not a real coordination point,
-    # so they're excluded from the transport population/denominator
-    num_trans = len([t for t in transport_volumes if t not in project_data.DAC_TRANSPORT_PROJECTS])
+    num_trans = len(transport_volumes)
     num_stor = len(storage_volumes)
 
     # graph structure (nodes/edges) doesn't depend on replication_seed or sampling in this model,

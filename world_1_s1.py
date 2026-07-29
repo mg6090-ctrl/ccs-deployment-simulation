@@ -440,9 +440,11 @@ def projEdges(G: nx.DiGraph,
     
     for capture in capture_volumes:
         # if capture feeds into a transport that is dependent on other transports, we gate
-        # the definition of the capture with the commissioning of the dependent transport 
+        # the definition of the capture with the commissioning of the dependent transport
         # (transport one layer down, not necessarily the trunk)
-        if get_tech(G, pipe_downstream[capture_pipe[capture]]) == "transport":
+        # DAC captures have no transport at all (capture_pipe points straight at a
+        # storage), so capture_pipe[capture] is never a pipe_downstream key for them
+        if capture_pipe[capture] in pipe_downstream and get_tech(G, pipe_downstream[capture_pipe[capture]]) == "transport":
             G.add_edge(
                 (pipe_downstream[capture_pipe[capture]], "commissioning"),
                 (capture, "definition")

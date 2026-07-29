@@ -439,37 +439,7 @@ PIPE_MULT = {
     "projT510":  0.24,
     "projT511":  0.14,
 
-    #DACs
-    "projT61": 0,
-    "projT62": 0,
-    "projT63": 0,
-    "projT64": 0,
-    "projT65": 0,
-    "projT66": 0,
-    "projT67": 0,
-    "projT68": 0,
-    "projT69": 0,
-    "projT610": 0,
-    "projT611": 0,
-    "projT612": 0,
-    "projT613": 0,
-    "projT614": 0,
-    "projT615": 0,
-    "projT616": 0,
-    "projT617": 0,
-    "projT618": 0,
-    "projT619": 0,
-    "projT620": 0,
-    "projT621": 0,
-    "projT622": 0,
-    "projT623": 0,
-    "projT624": 0,
-    "projT625": 0,
-    "projT626": 0,
-    "projT627": 0,
-    "projT628": 0,
-    "projT629": 0,
-    "projT630": 0,
+    # note: no DAC pipe multipliers — DAC has no transport project at all
 }
 
 NO_PIPE_MULT = {project: 1 for project in PIPE_MULT}
@@ -630,14 +600,8 @@ PROJECT_TYPE = {
                 "projT56": "transport", "projT57": "transport", "projT58": "transport", "projT59": "transport", "projT510": "transport", 
                 "projT511": "transport",
 
-                # DAC transports
-                "projT61": "transport", "projT62": "transport", "projT63": "transport", "projT64": "transport", "projT65": "transport", 
-                "projT66": "transport", "projT67": "transport", "projT68": "transport", "projT69": "transport", "projT610": "transport", 
-                "projT611": "transport", "projT612": "transport", "projT613": "transport", "projT614": "transport", "projT615": "transport", 
-                "projT616": "transport", "projT617": "transport", "projT618": "transport", 
-                "projT619": "transport", "projT620": "transport", "projT621": "transport", "projT622": "transport", "projT623": "transport", 
-                "projT624": "transport", "projT625": "transport", "projT626": "transport", "projT627": "transport", "projT628": "transport", 
-                "projT629": "transport", "projT630": "transport"
+                # note: no DAC transports — DAC has no real pipeline, so CAPTURE_PIPE
+                # points DAC captures straight at their storage (see dac_no_pipeline_proxy)
                }
 
 #==================================================================
@@ -685,37 +649,7 @@ PIPE_DOWNSTREAM = {
                    "projT510": "projT59",
                    "projT511": "projT56",
 
-                    # DACS
-                    "projT61": "projS61",
-                    "projT62": "projS62",
-                    "projT63": "projS63",
-                    "projT64": "projS64",
-                    "projT65": "projS65",
-                    "projT66": "projS66",
-                    "projT67": "projS67",
-                    "projT68": "projS68",
-                    "projT69": "projS69",
-                    "projT610": "projS610",
-                    "projT611": "projS611",
-                    "projT612": "projS612",
-                    "projT613": "projS613",
-                    "projT614": "projS614",
-                    "projT615": "projS615",
-                    "projT616": "projS616",
-                    "projT617": "projS617",
-                    "projT618": "projS618", 
-                    "projT619": "projS619", 
-                    "projT620": "projS620", 
-                    "projT621": "projS621", 
-                    "projT622": "projS622", 
-                    "projT623": "projS623", 
-                    "projT624": "projS624", 
-                    "projT625": "projS625", 
-                    "projT626": "projS626", 
-                    "projT627": "projS627", 
-                    "projT628": "projS628", 
-                    "projT629": "projS629", 
-                    "projT630": "projS630"
+                    # note: no DAC transports here: see CAPTURE_PIPE
                    }
 
 # stores the transport every single capture flows into next
@@ -781,37 +715,38 @@ CAPTURE_PIPE = {
                 "projC1": "projT59",
                 "projC2": "projT510",
 
-                # DACS
-                "projC61": "projT61",
-                "projC62": "projT62",
-                "projC63": "projT63",
-                "projC64": "projT64",
-                "projC65": "projT65",
-                "projC66": "projT66",
-                "projC67": "projT67",
-                "projC68": "projT68",
-                "projC69": "projT69",
-                "projC610": "projT610",
-                "projC611": "projT611",
-                "projC612": "projT612",
-                "projC613": "projT613",
-                "projC614": "projT614",
-                "projC615": "projT615",
-                "projC616": "projT616",
-                "projC617": "projT617",
-                "projC618": "projT618",
-                "projC619": "projT619",
-                "projC620": "projT620",
-                "projC621": "projT621",
-                "projC622": "projT622",
-                "projC623": "projT623",
-                "projC624": "projT624",
-                "projC625": "projT625",
-                "projC626": "projT626",
-                "projC627": "projT627",
-                "projC628": "projT628",
-                "projC629": "projT629",
-                "projC630": "projT630",
+                # DACs feed straight into its storage; DACs do not have
+                # a pipeline, so no intermediate transport projects exist
+                "projC61": "projS61",
+                "projC62": "projS62",
+                "projC63": "projS63",
+                "projC64": "projS64",
+                "projC65": "projS65",
+                "projC66": "projS66",
+                "projC67": "projS67",
+                "projC68": "projS68",
+                "projC69": "projS69",
+                "projC610": "projS610",
+                "projC611": "projS611",
+                "projC612": "projS612",
+                "projC613": "projS613",
+                "projC614": "projS614",
+                "projC615": "projS615",
+                "projC616": "projS616",
+                "projC617": "projS617",
+                "projC618": "projS618",
+                "projC619": "projS619",
+                "projC620": "projS620",
+                "projC621": "projS621",
+                "projC622": "projS622",
+                "projC623": "projS623",
+                "projC624": "projS624",
+                "projC625": "projS625",
+                "projC626": "projS626",
+                "projC627": "projS627",
+                "projC628": "projS628",
+                "projC629": "projS629",
+                "projC630": "projS630",
                 }
 
 TRUNKS = [
@@ -835,37 +770,7 @@ TRUNKS = [
           "projT51",
           "projT55",
 
-          # DACS
-          "projT61",
-          "projT62",
-          "projT63",
-          "projT64",
-          "projT65",
-          "projT66",
-          "projT67",
-          "projT68",
-          "projT69",
-          "projT610",
-          "projT611",
-          "projT612",
-          "projT613",
-          "projT614",
-          "projT615",
-          "projT616",
-          "projT617",
-          "projT618", 
-          "projT619", 
-          "projT620", 
-          "projT621", 
-          "projT622", 
-          "projT623", 
-          "projT624", 
-          "projT625", 
-          "projT626", 
-          "projT627",
-          "projT628",
-          "projT629", 
-          "projT630"
+          # note: no DAC trunks — DAC has no transport projects
           ]
 
 #==================================================================
@@ -1026,16 +931,7 @@ STORAGE_VOLUMES = {project: total_vol(project) for project in STORAGE}
 # pipe length multiplier is only applied to the construction stage in this trial
 SCALED_STAGES = {"definition", "construction"}
 
-# DAC has no real pipeline — its transport entries are a proxy with duration 0.
-# derived from CAPTURE_PIPE rather than name-matching "projT6*" so it stays correct
-# if the DAC project ids ever change.
-DAC_TRANSPORT_PROJECTS = {CAPTURE_PIPE[capture] for capture in DAC_PROJECTS}
-
 def scaled_transport_duration(project, DICT):
-    # DAC transports are a proxy for "no pipeline exists" — zero out every stage,
-    # not just the SCALED_STAGES ones, so approval isn't left at the unscaled default
-    if project in DAC_TRANSPORT_PROJECTS:
-        return {stage: 0 for stage in DURATION_BY_TYPE[PROJECT_TYPE[project]]}
     mult = DICT.get(project, 1)
     return {
         stage: (mult * dur if stage in SCALED_STAGES else dur)
