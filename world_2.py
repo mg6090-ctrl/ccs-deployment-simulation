@@ -865,7 +865,7 @@ def apply_attrition(G: nx.DiGraph,
 
     order = traversal_order(G, topo_order)
 
-    #-------- DAC capture definition-stage attrition (flat rate) ----------
+    #-------- No-pipe captures definition-stage attrition (flat rate) ----------
     for capture in project_data.NO_PIPE_PROJECTS:
         if already_abandoned(G, (capture, "definition")):
             continue
