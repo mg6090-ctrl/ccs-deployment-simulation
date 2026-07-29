@@ -420,7 +420,7 @@ def projEdges(G: nx.DiGraph,
             )
             # DAC has no transport — the capture commits
             # directly at the storage's own FID joint node
-            if capture in project_data.DAC_PROJECTS:
+            if capture in project_data.NO_PIPE_PROJECTS:
                 G.add_edge(
                     (capture, "approval"),
                     (cluster_naming(storage), "FID joint node")
@@ -866,7 +866,7 @@ def apply_attrition(G: nx.DiGraph,
     order = traversal_order(G, topo_order)
 
     #-------- DAC capture definition-stage attrition (flat rate) ----------
-    for capture in project_data.DAC_PROJECTS:
+    for capture in project_data.NO_PIPE_PROJECTS:
         if already_abandoned(G, (capture, "definition")):
             continue
         G.nodes[(capture, "definition")]["delay"] = 0

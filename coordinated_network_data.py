@@ -425,13 +425,13 @@ PIPE_MULT = {
     "projT32":  0.76,
     "projT33":  0.77,
 
-    "projT41":  0.19,
+    "projT41":  0.18,
 
     "projT51":  0.22,
     "projT52":  0.34,
     "projT53":  0.36,
     "projT54":  0.50,
-    "projT55":  2.95,
+    "projT55":  2.96,
     "projT56":  1.44,
     "projT57":  1.23,
     "projT58":  0.54,
