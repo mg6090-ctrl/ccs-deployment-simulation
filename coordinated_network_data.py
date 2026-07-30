@@ -20,69 +20,6 @@ DURATION_BY_TYPE = {
     "cement": {"definition": 24, "approval": 12, "construction": 36},
 }
 
-ORIGINAL_PHASE_ENFORCEMENT = {
-    # group 1 
-    "projC52": 60,
-    "projC19": 120,
-    "projC50": 36,
-    "projC55": 36,
-    "projC42": 60,
-    "projC41": 36,
-    "projC37": 36,
-    "projC48": 36,
-    "projC38": 120,
-    "projC29": 120,
-    "projC39": 36,
-    "projC51": 72,
-    "projC60": 72,
-    "projC59": 120,
-    "projC53": 120,
-    "projC45": 120,
-    "projC4": 36,
-    "projC21": 36,
-    "projC24": 36,
-    "projC13": 36,
-    "projC12": 72,
-
-    # group 2
-    "projC49": 36,
-    "projC54": 36,
-    "projC46": 36,
-    "projC0": 72,
-    "projC57": 60,
-
-    # group 3
-    "projC26": 72,
-    "projC47": 36,
-    "projC40": 36, 
-    "projC44": 36,
-    "projC28": 72,
-
-    # group 4
-    "projC56": 36,
-    "projC31": 60,
-
-    # group 5
-    "projC10": 60,
-    "projC43": 36,
-    "projC27": 36,
-    "projC58": 36,
-    "projC16": 36,
-    "projC17": 36,
-    "projC35": 36,
-    "projC22": 120,
-    "projC18": 120,
-    "projC20": 120,
-    "projC33": 36,
-    "projC25": 60,
-    "projC32": 60,
-    "projC7": 60,
-    "projC8": 60,
-    "projC23": 60,
-    "projC1": 36,
-    "projC2": 36
-}
-
 PHASE_ENFORCEMENT_STAGES_MODEL = {
     # group 1 
     "projC52": 2,
@@ -364,50 +301,12 @@ DAC_PROJECTS = {
 
 W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
 
-# world_2.py looks up NO_PIPE_PROJECTS (renamed from DAC_PROJECTS in the
-# uncoordinated data files); kept as an alias here since world_1_s1.py/
-# world_1_s2.py still reference DAC_PROJECTS by that name directly.
+# world_2.py looks up NO_PIPE_PROJECTS; world_1_s1.py and world_1_s2.py still refer to DAC_PROJECTS
 NO_PIPE_PROJECTS = DAC_PROJECTS
 
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
 #==================================================================
-
-PIPE_MULT_MIN = {
-    "projT11":  1,
-    "projT12":  1.15,
-    "projT13":  3.63,
-    "projT14":  2.47,
-    "projT15":  1.49,
-    "projT16":  1,
-    "projT17":  1,
-    "projT18":  1.29,
-    "projT19":  1.29,
-    "projT110":  1.02,
-    "projT111":  1.05,
-
-    "projT21":  1,
-    "projT22":  1.33,
-    "projT23":  1,
-
-    "projT31":  1.74,
-    "projT32":  1,
-    "projT33":  1,
-
-    "projT41":  1,
-
-    "projT51":  1,
-    "projT52":  1,
-    "projT53":  1,
-    "projT54":  1,
-    "projT55":  2.95,
-    "projT56":  1.44,
-    "projT57":  1.23,
-    "projT58":  1,
-    "projT59":  1,
-    "projT510":  1,
-    "projT511":  1
-}
 
 PIPE_MULT = {
     "projT11":  0.65,
@@ -605,8 +504,7 @@ PROJECT_TYPE = {
                 "projT56": "transport", "projT57": "transport", "projT58": "transport", "projT59": "transport", "projT510": "transport", 
                 "projT511": "transport",
 
-                # note: no DAC transports — DAC has no real pipeline, so CAPTURE_PIPE
-                # points DAC captures straight at their storage (see dac_no_pipeline_proxy)
+                # note: no DAC transports — DAC has no real pipeline, so CAPTURE_PIPE points DAC captures straight at their storage
                }
 
 #==================================================================
