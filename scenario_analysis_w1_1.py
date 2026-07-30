@@ -253,6 +253,24 @@ def delay_analysis(data):
     result.sort_values("delay", ascending=False)
     return result
 
+def abandonment_by_type(data):
+    df = pd.read_csv(data)
+
+    # one row per capture per rep (definition stage = always present, one per capture)
+    caps = df[(df["tech"] == "capture") & (df["stage"] == "definition")]
+
+    # per rep, per project type: what fraction of captures abandoned?
+    rate_per_rep = caps.groupby(["rep", "project_type"])["abandoned"].mean().reset_index()
+
+    # now summarize those rates across reps, by project type
+    result = rate_per_rep.groupby("project_type")["abandoned"].agg(
+        mean="mean",
+        p10=lambda x: x.quantile(0.10),
+        p90=lambda x: x.quantile(0.90),
+    ).reset_index()
+    result = result.sort_values("mean", ascending=False)
+    return result
+
 #==================================================================
 # SENSITIVITY ANALYSIS
 #==================================================================
@@ -296,8 +314,9 @@ if __name__ == "__main__":
     # Getting node level data
     #===========================
     _, nodes = monte_carlo(300)
-    nodes.to_csv("DACphase_nonopt_w1_1_nodes.csv", index=False)
+    nodes.to_csv("Testphase_nonopt_w1_1_nodes.csv", index=False)
     # delay_analysis("optimized_w1_1_nodes.csv").to_csv("optimized_w1_1_delay_by_type.csv", index=False)
+    # abandonment_by_type('Testphase_nonopt_w1_1_nodes.csv').to_csv("abandonment_by_type.csv", index=False)
 
     #===========================
     # Single var sweeps

@@ -103,62 +103,250 @@ NO_PIPE_PROJECTS = [
     "projC630",
 ]
 
+# add in phasing for all BECCS and refineries (captures + transports)
+W2_BRD_PROJECTS = {
+    # group 1 
+        "projC52": 3,
+        "projT52": 3,
+        "projS52": 3,
+
+        "projC50": 2,
+        "projT50": 2,
+        "projS50": 2,
+
+        "projC55": 2,
+        "projT55": 2,
+        "projS55": 2,
+
+        "projC42": 3,
+        "projT42": 3,
+        "projS42": 3,
+
+        "projC41": 2,
+        "projT41": 2,
+        "projS41": 2,
+
+        "projC37": 3,
+        "projS37": 3,
+        "projT37": 3,
+
+        "projC48": 3,
+        "projT48": 3,
+        "projS48": 3,
+
+        "projC38": 4,
+        "projT38": 4,
+        "projS38": 4,
+
+        "projC39": 3,
+        "projT39": 3,
+        "projS39": 3,
+
+        "projC51": 3,
+        "projT51": 3,
+        "projS51": 3,
+
+        "projC60": 3,
+        "projT60": 3,
+        "projS60": 3,
+
+        "projC59": 4,
+        "projT59": 4,
+        "projS59": 4,
+
+        "projC53": 4,
+        "projT53": 4,
+        "projS53": 4,
+
+        "projC45": 4,
+        "projT45": 4,
+        "projS45": 4,
+
+        "projC21": 4,
+        "projT21": 4,
+        "projS21": 4,
+    
+        # group 2
+        "projC49": 3,
+        "projT49": 3,
+        "projS49": 3,
+
+        "projC54": 3,
+        "projT54": 3,
+        "projS54": 3,
+
+        "projC46": 3,
+        "projT46": 3,
+        "projS46": 3,
+
+        "projC57": 3,
+        "projT57": 3,
+        "projS57": 3,
+    
+        # group 3
+        "projC47": 3,
+        "projT47": 3,
+        "projS47": 3,
+
+        "projC40": 2, 
+        "projT40": 2,
+        "projS40": 2,
+
+        "projC44": 2,
+        "projT44": 2,
+        "projS44": 2,
+    
+        # group 4
+        "projC56": 2,
+        "projT56": 2,
+        "projS56": 2,
+    
+        # group 5
+        
+        "projC43": 2,
+        "projT43": 2,
+        "projS43": 2,
+
+        "projC23": 4,
+        "projT23": 4,
+        "projS23": 4,
+        
+        "projC58": 2,
+        "projT58": 2,
+        "projS58": 2,
+
+        # DAC
+        "projC61": 3,
+        "projS61": 3,
+
+            "projC62": 3,
+            "projS62": 3,
+
+            "projC63": 3,
+            "projS63": 3,
+
+            "projC64": 4,
+            "projS64": 4,
+
+            "projC65": 4,
+            "projS64": 4,
+
+            "projC66": 4,
+            "projS66": 4,
+
+            "projC67": 4,
+            "projS67": 4,
+
+            "projC68": 4,
+            "projS68": 4,
+
+            "projC69": 4,
+            "projS69": 4,
+
+            "projC610": 5,
+            "projS610": 5,
+            "projC611": 5,
+            "projS611": 5,
+            "projC612": 5,
+            "projS612": 5,
+            "projC613": 5,
+            "projS613": 5,
+            "projC614": 5,
+            "projS614": 5,
+            "projC615": 5,
+            "projS615": 5,
+            "projC616": 5,
+            "projS616": 5,
+            "projC617": 5,
+            "projS617": 5,
+            "projC618": 5,
+            "projS618": 5,
+            "projC619": 5,
+            "projS619": 5,
+            "projC620": 5,
+            "projS620": 5,
+            "projC621": 5,
+            "projS621": 5,
+            "projC622": 5,
+            "projS622": 5,
+            "projC623": 5,
+            "projS623": 5,
+            "projC624": 5,
+            "projS624": 5,
+            "projC625": 5,
+            "projS625": 5,
+            "projC626": 5,
+            "projS626": 5,
+            "projC627": 5,
+            "projS627": 5,
+            "projC628": 5,
+            "projS628": 5,
+            "projC629": 5,
+            "projS629": 5,
+            "projC630": 5,
+            "projS630": 5,
+
+}
+
+W2_BRD_PHASE = {proj: PHASE_TESTING[W2_BRD_PROJECTS[proj]-1] for proj in W2_BRD_PROJECTS}
+
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
 #==================================================================
 
 PIPE_MULT = {
-        "projT0": 0.06,
-        "projT1": 2.58,
-        "projT2": 2.85,
-        "projT4": 0.34,
-        "projT7": 2.08,
-        "projT8": 2.20,
-        "projT10": 0.06,
-        "projT12": 0.06,
-        "projT13": 0.06,
-        "projT16": 0.06,
-        "projT17": 0.62,
-        "projT18": 2.07,
-        "projT19": 0.14,
-        "projT20": 2.53,
-        "projT21": 0.52,
-        "projT22": 2.02,
-        "projT23": 2.15,
-        "projT24": 0.06,
-        "projT25": 2.73,
-        "projT26": 1.11,
-        "projT27": 0.28,
-        "projT28": 0.06,
-        "projT29": 0.09,
-        "projT31": 0.06,
-        "projT32": 3.67,
-        "projT33": 2.58,
-        "projT35": 0.48,
+        "projT0": 0.29,
+        "projT1": 1.99,
+        "projT2": 2.16,
+        "projT4": 0.47,
+        "projT7": 1.67,
+        "projT8": 1.74,
+        "projT10": 0.29,
+        "projT12": 0.29,
+        "projT13": 0.29,
+        "projT16": 0.37,
+        "projT17": 0.74,
+        "projT18": 1.66,
+        "projT19": 1.26,
+        "projT20": 1.96,
+        "projT21": 0.59,
+        "projT22": 1.62,
+        "projT23": 1.71,
+        "projT24": 0.29,
+        "projT25": 2.09,
+        "projT26": 0.92,
+        "projT27": 0.52,
+        "projT28": 0.29,
+        "projT29": 0.42,
+        "projT31": 0.32,
+        "projT32": 2.70,
+        "projT33": 1.99,
+        "projT35": 0.68,
+        
+        "projT37": 0.34,
+        "projT38": 0.34,
+        "projT39": 0.75,
         
         
-        "projT39": 0.62,
+        "projT42": 2.10,
+        "projT43": 0.30,
         
+        "projT45": 1.26,
         
-        "projT42": 1.78,
-
+        "projT47": 0.83,
+        "projT48": 0.82,
         
-        "projT45": 1.37,
+        "projT50": 1.24,
+        "projT51": 0.92,
+        "projT52": 2.14,
+        "projT53": 0.99,
         
-        "projT47": 0.62,
-        "projT48": 0.45,
-        
-        "projT50": 0.10,
-        "projT51": 0.72,
-        "projT52": 1.47,
-        "projT53": 0.89,
-        
-        "projT55": 0.44,
-        
-        "projT57": 0.58,
-        "projT58": 0.15,
-        "projT59": 0.09,
-        "projT60": 0.18,
+        "projT55": 1.23,
+        "projT56": 0.32,
+        "projT57": 0.72,
+        "projT58": 0.44,
+        "projT59": 0.36,
+        "projT60": 0.56,
 
     # note: no DAC pipe multipliers — DAC has no transport project at all
 }
@@ -376,13 +564,13 @@ PROJECT_TYPE = {
                 "projT32": "transport",
                 "projT33": "transport",
                 "projT35": "transport",
-                
-                
+                "projT37": "transport",
+                "projT38": "transport",
                 "projT39": "transport",
-                
+
                 
                 "projT42": "transport",
-                
+                "projT43": "transport",
                 
                 "projT45": "transport",
                 
@@ -395,7 +583,7 @@ PROJECT_TYPE = {
                 "projT53": "transport",
                 
                 "projT55": "transport",
-                
+                "projT56": "transport",
                 "projT57": "transport",
                 "projT58": "transport",
                 "projT59": "transport",
@@ -439,12 +627,13 @@ PIPE_DOWNSTREAM = {
                     "projT33": "projS33",
                     "projT35": "projS35",
                     
-                    
+                    "projT37": "projS37",
+                    "projT38": "projS38",
                     "projT39": "projS39",
                     
                     
                     "projT42": "projS42",
-                    
+                    "projT43": "projS43",
                     
                     "projT45": "projS45",
                     
@@ -457,7 +646,7 @@ PIPE_DOWNSTREAM = {
                     "projT53": "projS53",
                     
                     "projT55": "projS55",
-                    
+                    "projT56": "projS56",
                     "projT57": "projS57",
                     "projT58": "projS58",
                     "projT59": "projS59",
@@ -475,9 +664,9 @@ CAPTURE_PIPE = {
                 "projC55": "projT55",
                 "projC50": "projT50",
                 "projC48": "projT48",
-                "projC37": "projS37",
+                "projC37": "projT37",
                 "projC41": "projS41",
-                "projC38": "projS38",
+                "projC38": "projT38",
                 "projC29": "projT29",
                 "projC45": "projT45",
                 "projC53": "projT53",
@@ -506,11 +695,11 @@ CAPTURE_PIPE = {
                 "projC28": "projT28",
 
                 # group 4
-                "projC56": "projS56",
+                "projC56": "projT56",
                 "projC31": "projT31",
 
                 # group 5
-                "projC43": "projS43",
+                "projC43": "projT43",
                 "projC10": "projT10",
                 "projC27": "projT27",
                 "projC58": "projT58",

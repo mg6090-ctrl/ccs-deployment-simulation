@@ -127,8 +127,8 @@ def sample_duration(mean, project, stage, replication_seed, sampling, dist_overr
             sample = round(sample)
 
     # phase enforcement applies regardless of whether we're stochastically sampling
-    if (project in project_data.DAC_PROJECTS) and (stage == "definition"):
-        sample = sample + project_data.W11_2_PHASE[project]
+    if (project in project_data.W11_PHASING_PROJ) and (stage == "definition"):
+        sample = sample + project_data.W11_PHASING[project]
 
     return sample
 

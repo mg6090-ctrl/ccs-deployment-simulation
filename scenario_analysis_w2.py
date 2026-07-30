@@ -343,8 +343,31 @@ def deployment_over_time(data, end_year):
 
     return pd.DataFrame({"year": list(full_years), "mean": mean, "p10": p10, "p90": p90, "sd": sd})
 
+def final_volume_by_type(data):
+    '''
+    Final completed volume (captures that reached commissioning without being abandoned),
+    broken down by project_type. Returns mean/p10/p90 across reps per type, plus each
+    type's share of the total mean final volume.
+    '''
+    df = pd.read_csv(data)
+
+    comm = df[(df["tech"] == "capture") & (df["stage"] == "commissioning") & (df["abandoned"] == False)]
+    vol_per_rep = comm.groupby(["rep", "project_type"])["volume"].sum()
+
+    # pivot so every project_type has an entry (0) in reps where it contributed nothing
+    by_rep = vol_per_rep.unstack("project_type", fill_value=0.0)
+
+    result = pd.DataFrame({
+        "mean": by_rep.mean(),
+        "p10": by_rep.quantile(0.10),
+        "p90": by_rep.quantile(0.90),
+    })
+    result["share"] = result["mean"] / result["mean"].sum()
+    result = result.reset_index().sort_values("mean", ascending=False)
+    return result
+
 #==================================================================
-# ABANDONMENT SUMMARY 
+# ABANDONMENT SUMMARY
 #==================================================================
 
 # NOTE: ABANDONMENT_SUMMARY IS INCOMPLETE
@@ -373,6 +396,24 @@ def abandonment_cascades(monte_carlo_results):
     # mean: avg number of times the entire cluster collapsed in those reps when this failed first
     
     result = cascade_df.groupby("fail trigger")["collapsed"].agg(["mean", "count"]).reset_index()
+    result = result.sort_values("mean", ascending=False)
+    return result
+
+def abandonment_by_type(data):
+    df = pd.read_csv(data)
+
+    # one row per capture per rep (definition stage = always present, one per capture)
+    caps = df[(df["tech"] == "capture") & (df["stage"] == "definition")]
+
+    # per rep, per project type: what fraction of captures abandoned?
+    rate_per_rep = caps.groupby(["rep", "project_type"])["abandoned"].mean().reset_index()
+
+    # now summarize those rates across reps, by project type
+    result = rate_per_rep.groupby("project_type")["abandoned"].agg(
+        mean="mean",
+        p10=lambda x: x.quantile(0.10),
+        p90=lambda x: x.quantile(0.90),
+    ).reset_index()
     result = result.sort_values("mean", ascending=False)
     return result
 
@@ -447,6 +488,8 @@ if __name__ == "__main__":
     #===========================
     results, nodes = monte_carlo(300)
     nodes.to_csv('w2uncoord_w2_nodes.csv', index=False)
+    # abandonment_by_type("w2uncoord_w2_nodes.csv").to_csv("w2_delay_by_type.csv", index=False)
+
     # abandonment_cascades(results).to_csv("clusters_abandonment_cascades.csv", index=False)
     # delay_analysis("w2_clusters_nodes.csv").to_csv("delay_by_type.csv", index=False)
     # deployment_over_time('trial_1.csv').to_csv('deployment_trial_1.csv', index=False)

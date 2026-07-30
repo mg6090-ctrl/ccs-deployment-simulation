@@ -301,6 +301,79 @@ DAC_PROJECTS = {
 
 W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
 
+W11_PHASING_PROJ = {
+    "projC61": 3,
+    "projS61": 3,
+    
+    "projC62": 3,
+    "projS62": 3,
+
+    "projC63": 3,
+    "projS63": 3,
+
+    "projC64": 4,
+    "projS64": 4,
+
+    "projC65": 4,
+    "projS64": 4,
+
+    "projC66": 4,
+    "projS66": 4,
+
+    "projC67": 4,
+    "projS67": 4,
+
+    "projC68": 4,
+    "projS68": 4,
+
+    "projC69": 4,
+    "projS69": 4,
+
+    "projC610": 5,
+    "projS610": 5,
+    "projC611": 5,
+    "projS611": 5,
+    "projC612": 5,
+    "projS612": 5,
+    "projC613": 5,
+    "projS613": 5,
+    "projC614": 5,
+    "projS614": 5,
+    "projC615": 5,
+    "projS615": 5,
+    "projC616": 5,
+    "projS616": 5,
+    "projC617": 5,
+    "projS617": 5,
+    "projC618": 5,
+    "projS618": 5,
+    "projC619": 5,
+    "projS619": 5,
+    "projC620": 5,
+    "projS620": 5,
+    "projC621": 5,
+    "projS621": 5,
+    "projC622": 5,
+    "projS622": 5,
+    "projC623": 5,
+    "projS623": 5,
+    "projC624": 5,
+    "projS624": 5,
+    "projC625": 5,
+    "projS625": 5,
+    "projC626": 5,
+    "projS626": 5,
+    "projC627": 5,
+    "projS627": 5,
+    "projC628": 5,
+    "projS628": 5,
+    "projC629": 5,
+    "projS629": 5,
+    "projC630": 5,
+    "projS630": 5,
+}
+W11_PHASING = {proj: PHASE_TESTING[W11_PHASING_PROJ[proj]-1] for proj in W11_PHASING_PROJ}
+
 # world_2.py looks up NO_PIPE_PROJECTS; world_1_s1.py and world_1_s2.py still refer to DAC_PROJECTS
 NO_PIPE_PROJECTS = DAC_PROJECTS
 

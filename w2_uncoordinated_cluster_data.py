@@ -57,6 +57,72 @@ DAC_PROJECTS = {
 
 W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
 
+# add in phasing for all BECCS and refineries (captures + transports)
+W2_PHASE = {
+    # group 1 
+        "projC52": 3,
+        "projT52": 3,
+
+        "projC50": 2,
+        "projT50": 2,
+
+        "projC55": 2,
+        "projT55": 2,
+
+        "projC42": 3,
+        "projT42": 3,
+        "projC41": 2,
+        "projT41": 2,
+        "projC37": 3,
+        "projT37": 3,
+        "projC48": 3,
+        "projT48": 3,
+        "projC38": 4,
+        "projT38": 4,
+        "projC39": 3,
+        "projT39": 3,
+        "projC51": 3,
+        "projT51": 3,
+        "projC60": 3,
+        "projT60": 3,
+        "projC59": 4,
+        "projT59": 4,
+        "projC53": 4,
+        "projT53": 4,
+        "projC45": 4,
+        "projT45": 4,
+    
+        # group 2
+        "projC49": 3,
+        "projT49": 3,
+        "projC54": 3,
+        "projT54": 3,
+        "projC46": 3,
+        "projT46": 3,
+        "projC57": 3,
+        "projT57": 3,
+    
+        # group 3
+        "projC47": 3,
+        "projT47": 3,
+        "projC40": 2, 
+        "projT40": 2,
+        "projC44": 2,
+        "projT44": 2,
+    
+        # group 4
+        "projC56": 2,
+        "projT56": 2,
+    
+        # group 5
+        
+        "projC43": 2,
+        "projT43": 2,
+        
+        "projC58": 2,
+        "projT58": 2,
+}
+
 NO_PIPE_PROJECTS = {
     "projC61": 3,
     "projC62": 3,

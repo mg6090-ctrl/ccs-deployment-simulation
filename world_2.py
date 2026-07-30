@@ -121,9 +121,9 @@ def sample_duration(mean, project, stage, replication_seed=0, sampling = False, 
         else:
             sample = round(sample)
 
-    # phase enforcement for DAC applies regardless of whether we're stochastically sampling
-    if (project in project_data.DAC_PROJECTS) and (stage == "definition"):
-        sample = sample + project_data.W11_2_PHASE[project]
+    # phase enforcement for DAC, BECCS, refineries applies regardless of whether we're stochastically sampling
+    if (project in project_data.W2_BRD_PROJECTS) and (stage == "definition"):
+        sample = sample + project_data.W2_BRD_PHASE[project]
 
     return sample
 
