@@ -364,6 +364,11 @@ DAC_PROJECTS = {
 
 W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
 
+# world_2.py looks up NO_PIPE_PROJECTS (renamed from DAC_PROJECTS in the
+# uncoordinated data files); kept as an alias here since world_1_s1.py/
+# world_1_s2.py still reference DAC_PROJECTS by that name directly.
+NO_PIPE_PROJECTS = DAC_PROJECTS
+
 #==================================================================
 # DURATION MULTIPLIERS FOR PIPELINE
 #==================================================================

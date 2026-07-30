@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import hashlib
-import w2_uncoordinated_data as project_data
+import w2_uncoordinated_independent_data as project_data
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -121,7 +121,7 @@ def sample_duration(mean, project, stage, replication_seed=0, sampling = False, 
         else:
             sample = round(sample)
 
-    # phase enforcement applies regardless of whether we're stochastically sampling
+    # phase enforcement for DAC applies regardless of whether we're stochastically sampling
     if (project in project_data.DAC_PROJECTS) and (stage == "definition"):
         sample = sample + project_data.W11_2_PHASE[project]
 
