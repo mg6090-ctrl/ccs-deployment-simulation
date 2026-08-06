@@ -2,7 +2,7 @@ import networkx as nx
 import random
 import hashlib
 import numpy as np
-import coordinated_network_data as project_data 
+import coordinated_network_data_6sinksv2 as project_data 
 import matplotlib as plt
 
 #==================================================================

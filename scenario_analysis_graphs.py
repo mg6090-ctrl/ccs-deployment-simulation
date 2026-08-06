@@ -24,7 +24,7 @@ from scenario_analysis_w1_2 import(
     deployment_over_time as w12_deployment_over_time
 )
 
-import coordinated_network_data as project_data
+import coordinated_network_data_6sinksv2 as project_data
 
 #==================================================================
 # COMPARISON CHARTS
