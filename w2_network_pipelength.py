@@ -1,8 +1,8 @@
 import pandas as pd
 
-df = pd.read_csv("pipelines_uncoordinated_fixedsinks.csv")
+df = pd.read_csv("uncoordinated_sequential_pipelines.csv")
 
-avg_length = (df["length_km"].sum())/61.0
+avg_length = (df["length_km"].sum())/49.0
 
 df["multiplier"] = df["length_km"]/avg_length
 

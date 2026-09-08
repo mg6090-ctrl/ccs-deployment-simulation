@@ -1,5 +1,5 @@
 import world_2 as w2
-import sinks_7_network_data as project_data
+import sinks_12_network_data as project_data
 import networkx as nx
 from world_2 import (
     buildmodel,
