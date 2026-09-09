@@ -37,6 +37,8 @@ PHASE_ENFORCEMENT_STAGES_NEW = {
     "projC29": 3,
     "projC10": 2,
     "projC39": 3,
+    "projC25": 3,
+    "projC37": 3,
 
     # group 2
     "projC36": 3,
@@ -382,7 +384,7 @@ PROJECT_TYPE = {
                 "projC4": "hydrogen",
                 "projC12": "refinery",
                 "projC3": "hydrogen",
-                "projC23": "biomass_gasification",
+                "projC36": "biomass_gasification",
 
                 # group 3
                 "projC31": "biomass_gasification",
@@ -544,8 +546,8 @@ PIPE_DOWNSTREAM = {
                    # group 5
                    "projT51": "projS3",
                    "projT52": "projT51",
-                   "projT53": "projT51",
                    "projT54": "projT51",
+                   "projT55": "projT51",
                    "projT56": "projT51",
                    "projT58": "projT51",
                    "projT59": "projT51",
