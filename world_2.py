@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import hashlib
-import sinks_12_network_data as project_data
+import sinks_7_network_data as project_data
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)

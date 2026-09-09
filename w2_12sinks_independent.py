@@ -57,6 +57,16 @@ DAC_PROJECTS = {
     "projC629": 5,
     "projC630": 5,
     "projC631": 3,
+    "projC632": 5,
+        "projC633": 5,
+        "projC634": 5,
+        "projC635": 5,
+        "projC636": 5,
+        "projC637": 5,
+        "projC638": 5,
+        "projC639": 5,
+        "projC640": 5,
+        "projC641": 5,
 }
 
 W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
@@ -92,7 +102,17 @@ NO_PIPE_PROJECTS = [
     "projC628",
     "projC629",
     "projC630",
-    "projC631"
+    "projC631",
+        "projC632",
+        "projC633",
+        "projC634",
+        "projC635",
+        "projC636",
+        "projC637",
+        "projC638",
+        "projC639",
+        "projC640",
+        "projC641",
 ]
 
 # phasing for BECCS (3) and refineries (4), derived from uncoordinated_multipliers.csv;
@@ -204,10 +224,11 @@ W2_BRD_PROJECTS = {
         "projT60": 3,
         "projS60": 3,
 
-        # DAC
         "projC61": 3,
+        "projT61": 3,
         "projS61": 3,
 
+        # DAC
             "projC62": 3,
             "projS62": 3,
 
@@ -274,6 +295,28 @@ W2_BRD_PROJECTS = {
             "projS629": 5,
             "projC630": 5,
             "projS630": 5,
+            "projC631": 3,
+            "projS631": 3,
+                            "projC632": 5,
+                            "projS633": 5,
+                            "projC633": 5,
+                            "projS633": 5,
+                            "projC634": 5,
+                            "projS634": 5,
+                            "projC635": 5,
+                            "projS635": 5,
+                            "projC636": 5,
+                            "projS636": 5,
+                            "projC637": 5,
+                            "projS637": 5,
+                            "projC638": 5,
+                            "projS638": 5,
+                            "projC639": 5,
+                            "projS639": 5,
+                            "projC640": 5,
+                            "projS640": 5,
+                            "projC641": 5,
+                            "projS641": 5,
 
 }
 
@@ -374,6 +417,16 @@ PROJECT_TYPE = {
                 "projC629": "DAC",
                 "projC630": "DAC",
                 "projC631": "DAC",
+                "projC632": "DAC",
+                "projC633": "DAC",
+                "projC634": "DAC",
+                "projC635": "DAC",
+                "projC636": "DAC",
+                "projC637": "DAC",
+                "projC638": "DAC",
+                "projC639": "DAC",
+                "projC640": "DAC",
+                "projC641": "DAC",
 
                 # storages (one per non-DAC capture, from uncoordinated_multipliers.csv)
                 "projS0": "storage",
@@ -457,6 +510,17 @@ PROJECT_TYPE = {
                 "projS629": "storage",
                 "projS630": "storage",
                 "projS631": "storage",
+                "projS632": "storage",
+                "projS633": "storage",
+                "projS633": "storage",
+                "projS634": "storage",
+                "projS635": "storage",
+                "projS636": "storage",
+                "projS637": "storage",
+                "projS638": "storage",
+                "projS639": "storage",
+                "projS640": "storage",
+                "projS641": "storage",
 
                 # transports (one per non-DAC capture, from uncoordinated_multipliers.csv)
                 "projT0": "transport",
@@ -657,7 +721,18 @@ CAPTURE_PIPE = {
                 "projC628": "projS628",
                 "projC629": "projS629",
                 "projC630": "projS630",
-                "projC631": "projS631"
+                "projC631": "projS631",
+                "projC632": "projS632",
+                "projC633": "projS633",
+                "projC634": "projS634",
+                "projC635": "projS635",
+                "projC636": "projS636",
+                "projC637": "projS637",
+                "projC638": "projS638",
+                "projC639": "projS639",
+                "projC640": "projS640",
+                "projC641": "projS641",
+
                 }
 
 TRUNKS = [transport for transport in PIPE_DOWNSTREAM]
@@ -794,7 +869,17 @@ CAPTURE_VOLUMES = {
     "projC628": 1,
     "projC629": 1,
     "projC630": 1,
-    "projC631": 1
+    "projC631": 1,
+    "projC632": 1,
+            "projC633": 1,
+            "projC634": 1,
+            "projC635": 1,
+            "projC636": 1,
+            "projC637": 1,
+            "projC638": 1,
+            "projC639": 1,
+            "projC640": 1,
+            "projC641": 1,
 }
 
 # dictionary for storage project duration

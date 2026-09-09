@@ -12,5 +12,3 @@ UNCOORD_PIPE_MULT = {
     "projT" + str(serial): ratio
     for serial, ratio in zip(df["source_id"], df["multiplier"])
 }
-
-PROJECTS 

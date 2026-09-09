@@ -112,6 +112,16 @@ PHASE_ENFORCEMENT_STAGES_NEW = {
     "projC628": 5,
     "projC629": 5,
     "projC630": 5,
+    "projC631": 5,
+    "projC632": 5,
+    "projC633": 5,
+    "projC634": 5,
+    "projC635": 5,
+    "projC636": 5,
+    "projC637": 5,
+    "projC638": 5,
+    "projC639": 5,
+    "projC640": 5,
 
 }
 
@@ -151,6 +161,16 @@ DAC_PROJECTS = {
     "projC628": 5,
     "projC629": 5,
     "projC630": 5,
+    "projC631": 5,
+    "projC632": 5,
+    "projC633": 5,
+    "projC634": 5,
+    "projC635": 5,
+    "projC636": 5,
+    "projC637": 5,
+    "projC638": 5,
+    "projC639": 5,
+    "projC640": 5,
 }
 
 W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
@@ -225,6 +245,26 @@ W11_PHASING_PROJ = {
     "projS629": 5,
     "projC630": 5,
     "projS630": 5,
+    "projC631": 5,
+        "projS631": 5,
+        "projC632": 5,
+        "projS633": 5,
+        "projC633": 5,
+        "projS633": 5,
+        "projC634": 5,
+        "projS634": 5,
+        "projC635": 5,
+        "projS635": 5,
+        "projC636": 5,
+        "projS636": 5,
+        "projC637": 5,
+        "projS637": 5,
+        "projC638": 5,
+        "projS638": 5,
+        "projC639": 5,
+        "projS639": 5,
+        "projC640": 5,
+        "projS640": 5,
 }
 W11_PHASING = {proj: PHASE_TESTING[W11_PHASING_PROJ[proj]-1] for proj in W11_PHASING_PROJ}
 
@@ -303,6 +343,27 @@ W2_BRD_PROJECTS = {
         "projS629": 5,
         "projC630": 5,
         "projS630": 5,
+
+        "projC631": 5,
+                "projS631": 5,
+                "projC632": 5,
+                "projS633": 5,
+                "projC633": 5,
+                "projS633": 5,
+                "projC634": 5,
+                "projS634": 5,
+                "projC635": 5,
+                "projS635": 5,
+                "projC636": 5,
+                "projS636": 5,
+                "projC637": 5,
+                "projS637": 5,
+                "projC638": 5,
+                "projS638": 5,
+                "projC639": 5,
+                "projS639": 5,
+                "projC640": 5,
+                "projS640": 5,
 
 }
 
@@ -449,6 +510,16 @@ PROJECT_TYPE = {
                 "projC628": "DAC",
                 "projC629": "DAC",
                 "projC630": "DAC",
+                "projC631": "DAC",
+                                "projC632": "DAC",
+                                "projC633": "DAC",
+                                "projC634": "DAC",
+                                "projC635": "DAC",
+                                "projC636": "DAC",
+                                "projC637": "DAC",
+                                "projC638": "DAC",
+                                "projC639": "DAC",
+                                "projC640": "DAC",
 
                 # storages
                 "projS0": "storage",
@@ -489,6 +560,16 @@ PROJECT_TYPE = {
                 "projS628": "storage",
                 "projS629": "storage",
                 "projS630": "storage",
+                "projS631": "storage",
+                                "projS633": "storage",
+                                "projS633": "storage",
+                                "projS634": "storage",
+                                "projS635": "storage",
+                                "projS636": "storage",
+                                "projS637": "storage",
+                                "projS638": "storage",
+                                "projS639": "storage",
+                                "projS640": "storage",
 
                 # group 1 transports
                 "projT11": "transport", "projT12": "transport", "projT13": "transport", "projT14": "transport", "projT15": "transport", 
@@ -658,6 +739,17 @@ CAPTURE_PIPE = {
                 "projC628": "projS628",
                 "projC629": "projS629",
                 "projC630": "projS630",
+
+                "projC631": "projS631",
+                                "projC632": "projS632",
+                                "projC633": "projS633",
+                                "projC634": "projS634",
+                                "projC635": "projS635",
+                                "projC636": "projS636",
+                                "projC637": "projS637",
+                                "projC638": "projS638",
+                                "projC639": "projS639",
+                                "projC640": "projS640",
                 }
 
 TRUNKS = [
@@ -826,7 +918,17 @@ CAPTURE_VOLUMES = {
     "projC627": 1,
     "projC628": 1,
     "projC629": 1,
-    "projC630": 1
+    "projC630": 1,
+    "projC631": 1,
+        "projC632": 1,
+        "projC633": 1,
+        "projC634": 1,
+        "projC635": 1,
+        "projC636": 1,
+        "projC637": 1,
+        "projC638": 1,
+        "projC639": 1,
+        "projC640": 1,
 }
 
 # dictionary for storage project duration
