@@ -1,6 +1,10 @@
+import w2_network_pipelength
+
 #==================================================================
 # PARAMETERS AND CONSTANTS
 #==================================================================
+
+# Note that DACs now go from projC62 to projC631 because projC61 is non-DAC
 
 DURATION_BY_TYPE = {
     "storage": {"definition": 24, "approval": 30, "construction": 24},
@@ -23,7 +27,6 @@ DURATION_BY_TYPE = {
 PHASE_TESTING = [40, 58, 76, 94, 112]
 
 DAC_PROJECTS = {
-    "projC61": 3,
     "projC62": 3,
     "projC63": 3,
     "projC64": 4,
@@ -53,13 +56,13 @@ DAC_PROJECTS = {
     "projC628": 5,
     "projC629": 5,
     "projC630": 5,
+    "projC631": 3,
 }
 
 W11_2_PHASE = {cap: PHASE_TESTING[DAC_PROJECTS[cap]-1] for cap in DAC_PROJECTS}
 
 NO_PIPE_PROJECTS = [
     # DACS
-    "projC61",
     "projC62",
     "projC63",
     "projC64",
@@ -89,110 +92,117 @@ NO_PIPE_PROJECTS = [
     "projC628",
     "projC629",
     "projC630",
+    "projC631"
 ]
 
-# add in phasing for all BECCS and refineries (captures + transports)
+# phasing for BECCS (3) and refineries (4), derived from uncoordinated_multipliers.csv;
+# DAC phasing (also in this dict) lives below in DAC_PROJECTS
 W2_BRD_PROJECTS = {
-    # group 1 
-        "projC29": 3,
-        "projT29": 3,
-        "projS29": 3,
+        # refineries (phase 4)
+        "projC21": 4,
+        "projT21": 4,
+        "projS21": 4,
 
-        "projC42": 3,
-        "projT42": 3,
-        "projS42": 3,
+        "projC23": 4,
+        "projT23": 4,
+        "projS23": 4,
 
+        # BECCS (phase 3)
         "projC37": 3,
         "projT37": 3,
         "projS37": 3,
+
+        "projC38": 3,
+        "projT38": 3,
+        "projS38": 3,
 
         "projC39": 3,
         "projT39": 3,
         "projS39": 3,
 
-        "projC25": 2,
-        "projT25": 2,
-        "projS25": 2,
-
-        "projC28": 3,
-        "projS28": 3,
-        "projT28": 3,
-
-        "projC24": 3,
-        "projT24": 3,
-        "projS24": 3,
-
-        "projC35": 4,
-        "projT35": 4,
-        "projS35": 4,
-
-        "projC32": 3,
+        "projC40": 3,
         "projT40": 3,
+        "projS40": 3,
+
+        "projC41": 3,
+        "projT41": 3,
+        "projS41": 3,
+
+        "projC42": 3,
+        "projT42": 3,
+        "projS42": 3,
+
+        "projC43": 3,
+        "projT43": 3,
+        "projS43": 3,
+
+        "projC44": 3,
+        "projT44": 3,
+        "projS44": 3,
+
+        "projC45": 3,
+        "projT45": 3,
+        "projS45": 3,
+
+        "projC46": 3,
+        "projT46": 3,
         "projS46": 3,
 
         "projC47": 3,
         "projT47": 3,
         "projS47": 3,
 
-        "projC38": 3,
-        "projT38": 3,
-        "projS38": 3,
-    
-        # group 2
-        "projC13": 4,
-        "projT13": 4,
-        "projS13": 4,
+        "projC48": 3,
+        "projT48": 3,
+        "projS48": 3,
 
-        "projC26": 3,
-        "projT26": 3,
-        "projS26": 3,
+        "projC49": 3,
+        "projT49": 3,
+        "projS49": 3,
 
-        "projC36": 3,
-        "projT36": 3,
-        "projS36": 3,
+        "projC50": 3,
+        "projT50": 3,
+        "projS50": 3,
 
-        "projC34": 3,
-        "projT34": 3,
-        "projS34": 3,
+        "projC51": 3,
+        "projT51": 3,
+        "projS51": 3,
 
-        "projC33": 3,
-        "projT33": 3,
-        "projS33": 3,
+        "projC52": 3,
+        "projT52": 3,
+        "projS52": 3,
 
-        "projC44": 3,
-        "projT44": 3,
-        "projS44": 3,
-    
-        # group 3
-        "projC31": 3,
-        "projT31": 3,
-        "projS31": 3,
+        "projC53": 3,
+        "projT53": 3,
+        "projS53": 3,
 
-        "projC27": 2, 
-        "projT27": 2,
-        "projS27": 2,
-    
-        # group 4
-        "projC43": 2,
-        "projT43": 2,
-        "projS43": 2,
+        "projC54": 3,
+        "projT54": 3,
+        "projS54": 3,
 
-        "projC20": 2,
-        "projT20": 2,
-        "projS20": 2,
-    
-        # group 5
-        "projC30": 2,
-        "projT30": 2,
-        "projS30": 2,
+        "projC55": 3,
+        "projT55": 3,
+        "projS55": 3,
 
-        "projC45": 4,
-        "projT45": 4,
-        "projS45": 4,
-        
-        "projC15": 4,
-        "projT15": 4,
-        "projS15": 4,
+        "projC56": 3,
+        "projT56": 3,
+        "projS56": 3,
+
+        "projC57": 3,
+        "projT57": 3,
+        "projS57": 3,
+
+        "projC58": 3,
+        "projT58": 3,
+        "projS58": 3,
+
+        "projC59": 3,
+        "projT59": 3,
+        "projS59": 3,
+
+        "projC60": 3,
+        "projT60": 3,
+        "projS60": 3,
 
         # DAC
         "projC61": 3,
@@ -208,7 +218,7 @@ W2_BRD_PROJECTS = {
             "projS64": 4,
 
             "projC65": 4,
-            "projS64": 4,
+            "projS65": 4,
 
             "projC66": 4,
             "projS66": 4,
@@ -273,64 +283,7 @@ W2_BRD_PHASE = {proj: PHASE_TESTING[W2_BRD_PROJECTS[proj]-1] for proj in W2_BRD_
 # DURATION MULTIPLIERS FOR PIPELINE
 #==================================================================
 
-PIPE_MULT = {
-        "projT0": 0.05,
-        "projT1": 2.22,
-        "projT2": 2.5,
-        "projT4": 0.55,
-        "projT5": 0.25,
-        "projT7": 1.67,
-        "projT8": 1.74,
-        "projT10": 0.07,
-        "projT12": 0.04,
-        "projT13": 0.01,
-        "projT16": 0.37,
-        "projT17": 0.79,
-        "projT18": 1.79,
-        "projT19": 1.26,
-        "projT20": 2.12,
-        "projT21": 0.59,
-        "projT22": 1.87,
-        "projT23": 2.04,
-        "projT24": 0.02,
-        "projT25": 2.33,
-        "projT26": 0.77,
-        "projT27": 0.57,
-        "projT28": 0.29,
-        "projT29": 0.44,
-        "projT31": 0.13,
-        "projT32": 3.10,
-        "projT33": 2.28,
-        "projT35": 0.68,
-        
-        "projT37": 0.34,
-        "projT38": 0.34,
-        "projT39": 0.75,
-        
-        
-        "projT42": 2.10,
-        "projT43": 0.30,
-        
-        "projT45": 1.26,
-        
-        "projT47": 0.83,
-        "projT48": 0.82,
-        
-        "projT50": 1.24,
-        "projT51": 0.92,
-        "projT52": 2.14,
-        "projT53": 0.99,
-        
-        "projT55": 1.23,
-        "projT56": 0.32,
-        "projT57": 0.72,
-        "projT58": 0.44,
-        "projT59": 0.36,
-        "projT60": 0.56,
-        "projT61": 
-
-    # note: no DAC pipe multipliers — DAC has no transport project at all
-}
+PIPE_MULT = w2_network_pipelength.UNCOORD_PIPE_MULT
 
 NO_PIPE_MULT = {project: 1 for project in PIPE_MULT}
 
@@ -339,65 +292,58 @@ NO_PIPE_MULT = {project: 1 for project in PIPE_MULT}
 #==================================================================
 
 PROJECT_TYPE = {
-                # group 1
-                "projC46": "biomass_gasification",
-                "projC40": "biomass_gasification",
-                "projC32": "biomass_gasification",
-                "projC6": "NGCC",
-                "projC47": "biomass_gasification",
-                "projC38": "biomass_gasification",
-                "projC25": "biomass_gasification",
-                "projC28": "biomass_gasification",
-                "projC24": "biomass_gasification",
-                "projC35": "biomass_gasification",
-                "projC37": "biomass_gasification",
-                "projC42": "biomass_gasification",
-                "projC29": "biomass_gasification",
-                "projC11": "cement",
-                "projC39": "biomass_gasification",
-
-                # group 2
-                "projC16": "NGCC",
-                "projC7": "NGCC",
-                "projC3": "hydrogen",
-                "projC13": "refinery",
-                "projC26": "biomass_gasification",
-                "projC36": "biomass_gasification",
-                "projC33": "biomass_gasification",
-                "projC0": "ethanol",
-                "projC44": "biomass_gasification",
-                "projC18": "NGCC",
-                "projC34": "biomass_gasification",
-
-                # group 3
-                "projC31": "biomass_gasification",
-                "projC27": "biomass_gasification",
-
-                # group 4
-                "projC43": "biomass_gasification",
-                "projC20": "ethanol",
-
-                # group 5
-                "projC5": "gas_processing",
-                "projC30": "biomass_gasification",
-                "projC8": "NGCC",
-                "projC45": "biomass_gasification",
-                "projC19": "cement",
-                "projC23": "cement",
-                "projC9": "cement",
-                "projC15": "refinery",
-                "projC4": "hydrogen",
-                "projC1": "NGCC",
-                "projC2": "NGCC",
-                "projC22": "NGCC",
-                "projC14": "NGCC",
-                "projC12": "cement",
-                "projC10": "cement",
-                "projC17": "cement",
-                "projC21": "NGCC",
+                # non-DAC captures, from uncoordinated_multipliers.csv
+                "projC0": "ethanol",  # Aemetis-Keyes
+                "projC1": "NGCC",  # AES-Alamitos
+                "projC2": "NGCC",  # AES-HuntingtonBeach
+                "projC4": "hydrogen",  # AirLiquide-Rodeo
+                "projC5": "hydrogen",  # AirProducts-Martinez
+                "projC10": "gas_processing",  # CRC-ElkHills-GasPlant
+                "projC12": "NGCC",  # Calpine-Sutter
+                "projC13": "NGCC",  # Calpine-Delta
+                "projC17": "cement",  # CalPortland-Mojave
+                "projC18": "cement",  # CalPortland-OroGrande
+                "projC19": "cement",  # CalPortland-Redding
+                "projC20": "cement",  # Cemex-Victorville
+                "projC21": "refinery",  # Chevron-Richmond
+                "projC22": "NGCC",  # HighDesertPower
+                "projC23": "refinery",  # LosAngelesRefinery
+                "projC24": "NGCC",  # MarshLanding
+                "projC25": "cement",  # MitsubishiCement
+                "projC26": "NGCC",  # MossLanding
+                "projC27": "cement",  # NationalCement-Lebec
+                "projC29": "NGCC",  # PGE-Colusa
+                "projC31": "ethanol",  # Pixley-Calgren
+                "projC32": "NGCC",  # Sentinel-EnergyCenter
+                "projC33": "NGCC",  # SCE-Mountainview
+                "projC35": "cement",  # Tehachapi-Cement
+                "projC37": "biomass_gasification",  # Butte-BECCS
+                "projC38": "biomass_gasification",  # Colusa-BECCS
+                "projC39": "biomass_gasification",  # ElDorado-BECCS
+                "projC40": "biomass_gasification",  # Fresno-BECCS
+                "projC41": "biomass_gasification",  # Glenn-BECCS
+                "projC42": "biomass_gasification",  # Humboldt-BECCS
+                "projC43": "biomass_gasification",  # Kern-BECCS
+                "projC44": "biomass_gasification",  # Madera-BECCS
+                "projC45": "biomass_gasification",  # Mendocino-BECCS
+                "projC46": "biomass_gasification",  # Merced-BECCS
+                "projC47": "biomass_gasification",  # Monterey-BECCS
+                "projC48": "biomass_gasification",  # Plumas-BECCS
+                "projC49": "biomass_gasification",  # SanJoaquin-BECCS
+                "projC50": "biomass_gasification",  # Shasta-BECCS
+                "projC51": "biomass_gasification",  # Sierra-BECCS
+                "projC52": "biomass_gasification",  # Siskiyou-BECCS
+                "projC53": "biomass_gasification",  # Sonoma-BECCS
+                "projC54": "biomass_gasification",  # Stanislaus-BECCS
+                "projC55": "biomass_gasification",  # Trinity-BECCS
+                "projC56": "biomass_gasification",  # Tulare-BECCS
+                "projC57": "biomass_gasification",  # Tuolumne-BECCS
+                "projC58": "biomass_gasification",  # Ventura-BECCS
+                "projC59": "biomass_gasification",  # Yolo-BECCS
+                "projC60": "biomass_gasification",  # Yuba-BECCS
+                "projC61": "NGCC",  # CRC-ElkHills-Powerplant (non-DAC, see note above)
 
                 # DACS
-                "projC61": "DAC",
                 "projC62": "DAC",
                 "projC63": "DAC",
                 "projC64": "DAC",
@@ -427,21 +373,20 @@ PROJECT_TYPE = {
                 "projC628": "DAC",
                 "projC629": "DAC",
                 "projC630": "DAC",
+                "projC631": "DAC",
 
-                # storages
+                # storages (one per non-DAC capture, from uncoordinated_multipliers.csv)
                 "projS0": "storage",
                 "projS1": "storage",
                 "projS2": "storage",
                 "projS4": "storage",
                 "projS5": "storage",
-                
-                "projS10":"storage",
+                "projS10": "storage",
                 "projS12": "storage",
                 "projS13": "storage",
-                
                 "projS17": "storage",
                 "projS18": "storage",
-                
+                "projS19": "storage",
                 "projS20": "storage",
                 "projS21": "storage",
                 "projS22": "storage",
@@ -450,15 +395,14 @@ PROJECT_TYPE = {
                 "projS25": "storage",
                 "projS26": "storage",
                 "projS27": "storage",
-                
                 "projS29": "storage",
                 "projS31": "storage",
                 "projS32": "storage",
                 "projS33": "storage",
-                
+                "projS35": "storage",
                 "projS37": "storage",
                 "projS38": "storage",
-                
+                "projS39": "storage",
                 "projS40": "storage",
                 "projS41": "storage",
                 "projS42": "storage",
@@ -477,12 +421,12 @@ PROJECT_TYPE = {
                 "projS55": "storage",
                 "projS56": "storage",
                 "projS57": "storage",
-                
+                "projS58": "storage",
                 "projS59": "storage",
                 "projS60": "storage",
+                "projS61": "storage",
 
                 # DAC storages
-                "projS61": "storage",
                 "projS62": "storage",
                 "projS63": "storage",
                 "projS64": "storage",
@@ -512,21 +456,20 @@ PROJECT_TYPE = {
                 "projS628": "storage",
                 "projS629": "storage",
                 "projS630": "storage",
+                "projS631": "storage",
 
-                # transports
+                # transports (one per non-DAC capture, from uncoordinated_multipliers.csv)
                 "projT0": "transport",
                 "projT1": "transport",
                 "projT2": "transport",
                 "projT4": "transport",
                 "projT5": "transport",
-                
                 "projT10": "transport",
                 "projT12": "transport",
                 "projT13": "transport",
-                
                 "projT17": "transport",
                 "projT18": "transport",
-                
+                "projT19": "transport",
                 "projT20": "transport",
                 "projT21": "transport",
                 "projT22": "transport",
@@ -535,15 +478,14 @@ PROJECT_TYPE = {
                 "projT25": "transport",
                 "projT26": "transport",
                 "projT27": "transport",
-                
                 "projT29": "transport",
                 "projT31": "transport",
                 "projT32": "transport",
                 "projT33": "transport",
-                
+                "projT35": "transport",
                 "projT37": "transport",
                 "projT38": "transport",
-
+                "projT39": "transport",
                 "projT40": "transport",
                 "projT41": "transport",
                 "projT42": "transport",
@@ -562,9 +504,10 @@ PROJECT_TYPE = {
                 "projT55": "transport",
                 "projT56": "transport",
                 "projT57": "transport",
-                
+                "projT58": "transport",
                 "projT59": "transport",
                 "projT60": "transport",
+                "projT61": "transport",
 
                 # note: no DAC transports — DAC has no real pipeline, so CAPTURE_PIPE
                 # points DAC captures straight at their storage (see dac_no_pipeline_proxy)
@@ -581,14 +524,12 @@ PIPE_DOWNSTREAM = {
                     "projT2": "projS2",
                     "projT4": "projS4",
                     "projT5": "projS5",
-
                     "projT10": "projS10",
                     "projT12": "projS12",
                     "projT13": "projS13",
-                    
                     "projT17": "projS17",
                     "projT18": "projS18",
-                   
+                    "projT19": "projS19",
                     "projT20": "projS20",
                     "projT21": "projS21",
                     "projT22": "projS22",
@@ -597,15 +538,14 @@ PIPE_DOWNSTREAM = {
                     "projT25": "projS25",
                     "projT26": "projS26",
                     "projT27": "projS27",
-                    
                     "projT29": "projS29",
                     "projT31": "projS31",
                     "projT32": "projS32",
                     "projT33": "projS33",
-                    
+                    "projT35": "projS35",
                     "projT37": "projS37",
                     "projT38": "projS38",
-
+                    "projT39": "projS39",
                     "projT40": "projS40",
                     "projT41": "projS41",
                     "projT42": "projS42",
@@ -624,76 +564,70 @@ PIPE_DOWNSTREAM = {
                     "projT55": "projS55",
                     "projT56": "projS56",
                     "projT57": "projS57",
-                    
+                    "projT58": "projS58",
                     "projT59": "projS59",
                     "projT60": "projS60",
+                    "projT61": "projS61",
 
                     # note: no DAC transports here: see CAPTURE_PIPE
                    }
 
 # stores the transport every single capture flows into next
 CAPTURE_PIPE = {
-    
-                # group 1
-                "projC46": "projT46",
-                "projC40": "projT40",
-                "projC32": "projT32",
-                "projC6": "projT6",
-                "projC47": "projT47",
-                "projC38": "projT38",
-                "projC25": "projT25",
-                "projC28": "projT28",
-                "projC24": "projT24",
-                "projC35": "projT35",
-                "projC37": "projT37",
-                "projC42": "projT42",
-                "projC29": "projT29",
-                "projC11": "projT11",
-                "projC39": "projT39",
 
-                # group 2
-                "projC16": "projT16",
-                "projC7": "projT7",
-                "projC3": "projT3",
-                "projC13": "projT13",
-                "projC26": "projT26",
-                "projC36": "projT36",
-                "projC33": "projT33",
+                # non-DAC captures, each with its own transport, from uncoordinated_multipliers.csv
                 "projC0": "projT0",
-                "projC44": "projT44",
-                "projC18": "projT18",
-                "projC34": "projT34",
-
-                # group 3
-                "projC31": "projT31",
-                "projC27": "projT27",
-
-                # group 4
-                "projC43": "projT43",
-                "projC20": "projT20",
-
-                # group 5
-                "projC5": "projT5",
-                "projC30": "projT30",
-                "projC8": "projT8",
-                "projC45": "projT45",
-                "projC19": "projT19",
-                "projC23": "projT23",
-                "projC9": "projT9",
-                "projC15": "projT15",
-                "projC4": "projT4",
                 "projC1": "projT1",
                 "projC2": "projT2",
-                "projC22": "projT22",
-                "projC14": "projT12",
-                "projC12": "projT12",
+                "projC4": "projT4",
+                "projC5": "projT5",
                 "projC10": "projT10",
+                "projC12": "projT12",
+                "projC13": "projT13",
                 "projC17": "projT17",
+                "projC18": "projT18",
+                "projC19": "projT19",
+                "projC20": "projT20",
                 "projC21": "projT21",
+                "projC22": "projT22",
+                "projC23": "projT23",
+                "projC24": "projT24",
+                "projC25": "projT25",
+                "projC26": "projT26",
+                "projC27": "projT27",
+                "projC29": "projT29",
+                "projC31": "projT31",
+                "projC32": "projT32",
+                "projC33": "projT33",
+                "projC35": "projT35",
+                "projC37": "projT37",
+                "projC38": "projT38",
+                "projC39": "projT39",
+                "projC40": "projT40",
+                "projC41": "projT41",
+                "projC42": "projT42",
+                "projC43": "projT43",
+                "projC44": "projT44",
+                "projC45": "projT45",
+                "projC46": "projT46",
+                "projC47": "projT47",
+                "projC48": "projT48",
+                "projC49": "projT49",
+                "projC50": "projT50",
+                "projC51": "projT51",
+                "projC52": "projT52",
+                "projC53": "projT53",
+                "projC54": "projT54",
+                "projC55": "projT55",
+                "projC56": "projT56",
+                "projC57": "projT57",
+                "projC58": "projT58",
+                "projC59": "projT59",
+                "projC60": "projT60",
+                "projC61": "projT61",
 
                 # DACs feed straight into its storage; DACs do not have
                 # a pipeline, so no intermediate transport projects exist
-                "projC61": "projS61",
                 "projC62": "projS62",
                 "projC63": "projS63",
                 "projC64": "projS64",
@@ -723,6 +657,7 @@ CAPTURE_PIPE = {
                 "projC628": "projS628",
                 "projC629": "projS629",
                 "projC630": "projS630",
+                "projC631": "projS631"
                 }
 
 TRUNKS = [transport for transport in PIPE_DOWNSTREAM]
@@ -778,69 +713,58 @@ CAPTURE = {
 }
 
 CAPTURE_VOLUMES = {
-    # group 1 
-    "projC52": 1.94,
-    "projC19": 0.33,
-    "projC50": 1.89,
-    "projC55": 1.37,
-    "projC42": 3.59,
-    "projC41": 1.12,
-    "projC37": 1.03,
-    "projC48": 1.38,
-    "projC38": 0.84,
-    "projC29": 1.89,
-    "projC39": 0.95,
-    "projC51": 1.39,
-    "projC60": 0.57,
-    "projC59": 0.51,
-    "projC53": 1.10,
-    "projC45": 2.62,
-    "projC4": 0.74,
-    "projC21": 2.16,
-    "projC24": 3.38,
-    "projC13": 2.46,
-    "projC12": 1.70,
-
-    # group 2
-    "projC49": 1.00,
-    "projC54": 1.76,
-    "projC46": 0.77,
+    # non-DAC captures, from uncoordinated_multipliers.csv (rate_mt_per_yr)
     "projC0": 0.06,
-    "projC57": 1.40,
-
-    # group 3
-    "projC26": 5.46,
-    "projC47": 0.78,
-    "projC40": 3.11, 
-    "projC44": 1.54,
-    "projC28": 1.44,
-
-    # group 4
-    "projC56": 1.06,
-    "projC31": 0.11,
-
-    # group 5
-    "projC10": 0.1,
-    "projC43": 2.35,
-    "projC27": 0.73,
-    "projC58": 0.63,
-    "projC16": 1.94,
-    "projC17": 0.89,
-    "projC35": 0.47,
-    "projC22": 2.5,
-    "projC18": 1.28,
-    "projC20": 1.75,
-    "projC33": 2.87,
-    "projC25": 1.09,
-    "projC32": 2.76,
-    "projC7": 0.8,
-    "projC8": 0.75,
-    "projC23": 3.06,
     "projC1": 5.39,
     "projC2": 2.37,
+    "projC4": 0.74,
+    "projC5": 0.55,
+    "projC10": 0.1,
+    "projC12": 1.7,
+    "projC13": 2.46,
+    "projC17": 0.89,
+    "projC18": 1.28,
+    "projC19": 0.33,
+    "projC20": 1.75,
+    "projC21": 2.16,
+    "projC22": 2.5,
+    "projC23": 3.06,
+    "projC24": 3.38,
+    "projC25": 1.09,
+    "projC26": 5.46,
+    "projC27": 0.73,
+    "projC29": 1.89,
+    "projC31": 0.11,
+    "projC32": 2.76,
+    "projC33": 2.87,
+    "projC35": 0.47,
+    "projC37": 1.03,
+    "projC38": 0.84,
+    "projC39": 0.95,
+    "projC40": 3.11,
+    "projC41": 1.12,
+    "projC42": 3.59,
+    "projC43": 2.35,
+    "projC44": 1.54,
+    "projC45": 2.62,
+    "projC46": 0.77,
+    "projC47": 0.78,
+    "projC48": 1.38,
+    "projC49": 1.0,
+    "projC50": 1.89,
+    "projC51": 1.39,
+    "projC52": 1.94,
+    "projC53": 1.1,
+    "projC54": 1.76,
+    "projC55": 1.37,
+    "projC56": 1.06,
+    "projC57": 1.4,
+    "projC58": 0.63,
+    "projC59": 0.51,
+    "projC60": 0.57,
+    "projC61": 1.19,
 
     # DACs
-    "projC61": 1,
     "projC62": 1,
     "projC63": 1,
     "projC64": 1,
@@ -869,7 +793,8 @@ CAPTURE_VOLUMES = {
     "projC627": 1,
     "projC628": 1,
     "projC629": 1,
-    "projC630": 1
+    "projC630": 1,
+    "projC631": 1
 }
 
 # dictionary for storage project duration

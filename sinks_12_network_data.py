@@ -63,7 +63,6 @@ PHASE_ENFORCEMENT_STAGES_NEW = {
     "projC45": 4,
     "projC18": 2,
     "projC23": 2,
-    "projC8": 2,
     "projC14": 4,
     "projC1": 2,
     "projC2": 2,
@@ -170,7 +169,7 @@ W11_PHASING_PROJ = {
     "projS64": 4,
 
     "projC65": 4,
-    "projS64": 4,
+    "projS65": 4,
 
     "projC66": 4,
     "projS66": 4,
@@ -248,7 +247,7 @@ W2_BRD_PROJECTS = {
         "projS64": 4,
 
         "projC65": 4,
-        "projS64": 4,
+        "projS65": 4,
 
         "projC66": 4,
         "projS66": 4,
@@ -669,8 +668,7 @@ TRUNKS = [
           
           # group 2
           "projT21",
-          "projT22",
-          "projT24",
+          "projT23",
           
           # group 3
           "projT31",
@@ -680,6 +678,9 @@ TRUNKS = [
 
           # group 5
           "projT51",
+
+          # group 7
+          "projT71"
 
           # note: no DAC trunks — DAC has no transport projects
           ]
