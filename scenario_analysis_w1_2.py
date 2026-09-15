@@ -1,5 +1,5 @@
 import world_1_s2 as w1_2
-import sinks_12_network_data as project_data
+import sinks_7_network_data as project_data
 import networkx as nx
 from world_1_s2 import (
     build_model,
@@ -297,7 +297,7 @@ if __name__ == "__main__":
     # Getting node level data
     #===========================
     _, nodes = monte_carlo(300)
-    nodes.to_csv("DACphase_nonopt_w1_2_nodes.csv", index=False)
+    nodes.to_csv("w12_7-sinks_2045.csv", index=False)
     # delay_analysis("phase2_nohammock_nonopt_w1_2_nodes.csv").to_csv("phase2_nohammock_nonopt_w1_2_delay_by_type.csv", index=False)
 
     #===========================
