@@ -229,7 +229,7 @@ W2_BRD_PROJECTS = {
             "projS64": 4,
 
             "projC65": 4,
-            "projS64": 4,
+            "projS65": 4,
 
             "projC66": 4,
             "projS66": 4,

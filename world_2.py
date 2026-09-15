@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import hashlib
-import sinks_7_network_data as project_data
+import w2_12sinks_independent as project_data
 
 #==================================================================
 # CONSTANTS (INPUT DATA AND PARAMETERS)
@@ -412,7 +412,7 @@ def projEdges(G: nx.DiGraph,
         )
 
         # add edges from stor cluster joint FID to construction of individual dependent projects
-        captures, pipes = everything_upstream(storage)
+        captures, pipes = everything_upstream(storage, pipe_downstream, capture_pipe)
         for capture in captures:
             G.add_edge(
                 (cluster_naming(storage), joint_naming("approval")),
