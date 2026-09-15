@@ -27,7 +27,7 @@ DURATION_BY_TYPE = {
 # the phase-testing enforcement months below by the same factor, so the
 # whole schedule stretches or compresses together (e.g. to target a
 # different overall w1.2 finish year: ~1.0 -> 2050, <1.0 -> 2045, >1.0 -> 2055).
-DURATION_MULTIPLIER = 1.0
+DURATION_MULTIPLIER = 1
 
 DURATION_BY_TYPE = {
     ptype: {stage: round(dur * DURATION_MULTIPLIER) for stage, dur in stages.items()}
